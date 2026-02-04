@@ -1,20 +1,25 @@
 [project]
 name = "idfkit"
-version = "0.0.1"
-description = "This is a template repository for Python projects that use uv for their dependency management."
+version = "0.1.0"
+description = "A fast, modern EnergyPlus IDF/epJSON parser with O(1) lookups and reference tracking"
 authors = [{ name = "Samuel Letellier-Duchesne", email = "samuelduchesne@me.com" }]
 readme = "README.md"
-keywords = ['python']
+keywords = ["energyplus", "idf", "epjson", "parser", "building simulation", "energy modeling"]
 requires-python = ">=3.10,<4.0"
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 
 [project.urls]
@@ -106,4 +111,3 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["src"]
-

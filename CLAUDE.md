@@ -62,7 +62,7 @@ Use pytest fixtures (in `conftest.py`) for shared test setup.
 
 ## Type Checking
 
-This project uses **pyright** for static type analysis.
+This project uses **pyright** for static type analysis. **ALWAYS** try to fix the typing issues with a proper solution rather than adding an ignore statement.
 
 ```bash
 uv run pyright
