@@ -40,14 +40,10 @@ MINIMUM_VERSION: Final[tuple[int, int, int]] = ENERGYPLUS_VERSIONS[0]
 _VERSION_SET: Final[frozenset[tuple[int, int, int]]] = frozenset(ENERGYPLUS_VERSIONS)
 
 # Mapping from GitHub release tags to version tuples
-_TAG_TO_VERSION: Final[dict[str, tuple[int, int, int]]] = {
-    f"v{v[0]}.{v[1]}.{v[2]}": v for v in ENERGYPLUS_VERSIONS
-}
+_TAG_TO_VERSION: Final[dict[str, tuple[int, int, int]]] = {f"v{v[0]}.{v[1]}.{v[2]}": v for v in ENERGYPLUS_VERSIONS}
 
 # Mapping from version tuple to the directory name used for bundled schemas
-_VERSION_TO_DIRNAME: Final[dict[tuple[int, int, int], str]] = {
-    v: f"V{v[0]}-{v[1]}-{v[2]}" for v in ENERGYPLUS_VERSIONS
-}
+_VERSION_TO_DIRNAME: Final[dict[tuple[int, int, int], str]] = {v: f"V{v[0]}-{v[1]}-{v[2]}" for v in ENERGYPLUS_VERSIONS}
 
 
 def is_supported_version(version: tuple[int, int, int]) -> bool:

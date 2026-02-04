@@ -162,7 +162,9 @@ def download_all_schemas(
 
     for version in ENERGYPLUS_VERSIONS:
         try:
-            path = download_schema(version, target_dir=base_dir.parent if target_dir is None else target_dir, compress=compress)
+            path = download_schema(
+                version, target_dir=base_dir.parent if target_dir is None else target_dir, compress=compress
+            )
             results[version] = path
         except Exception as e:
             results[version] = e

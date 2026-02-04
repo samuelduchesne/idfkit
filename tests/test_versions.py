@@ -156,7 +156,9 @@ class TestSchemaManager:
                         }
                     },
                     "name": {"reference": ["ZoneNames"]},
-                    "legacy_idd": {"fields": ["name", "direction_of_relative_north", "x_origin", "y_origin", "z_origin"]},
+                    "legacy_idd": {
+                        "fields": ["name", "direction_of_relative_north", "x_origin", "y_origin", "z_origin"]
+                    },
                 },
             }
         }
