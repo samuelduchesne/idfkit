@@ -5,9 +5,44 @@
 [![codecov](https://codecov.io/gh/samuelduchesne/idfkit/branch/main/graph/badge.svg)](https://codecov.io/gh/samuelduchesne/idfkit)
 [![License](https://img.shields.io/github/license/samuelduchesne/idfkit)](https://github.com/samuelduchesne/idfkit/blob/main/LICENSE)
 
-This is a template repository for Python projects that use uv for their dependency management.
+A fast, modern EnergyPlus IDF/epJSON parser with O(1) lookups and reference tracking.
 
 **[Documentation](https://samuelduchesne.github.io/idfkit/)** | **[GitHub](https://github.com/samuelduchesne/idfkit/)**
+
+## Performance
+
+idfkit is designed from the ground up for speed. Benchmarked against
+[eppy](https://github.com/santoshphilip/eppy) (the most widely-used EnergyPlus
+IDF library) on a **1,700-object IDF file** (500 zones, 100 materials, 100
+constructions, 1,000 surfaces):
+
+![benchmark chart](docs/assets/benchmark.png)
+
+<details>
+<summary>Detailed results</summary>
+
+| Operation | idfkit | eppy | Speedup |
+|---|--:|--:|--:|
+| **Load IDF file** | 46.0 ms | 516.6 ms | **11x** |
+| **Get all objects by type** | 7.7 us | 6.0 us | _~1x_ |
+| **Get single object by name** | 4.2 us | 2.8 ms | **662x** |
+| **Add 100 objects** | 853.0 us | 517.8 ms | **607x** |
+| **Modify fields (all zones)** | 332.7 us | 3.2 ms | **10x** |
+| **Write IDF to string** | 16.4 ms | 60.7 ms | **4x** |
+
+</details>
+
+Key architectural advantages:
+
+- **O(1) object lookups** via name-indexed collections (vs O(n) linear scans in
+  eppy)
+- **Streaming regex parser** with memory-mapped I/O for large files
+- **`__slots__`-based objects** (~200 bytes each) for low memory overhead
+- **epJSON schema** instead of IDD for faster field resolution
+
+Benchmarks measured with Python 3.12 on Linux x86_64. Each operation was run 10
+times (100 for sub-millisecond ops) and the minimum time is reported. See
+[`benchmarks/bench.py`](benchmarks/bench.py) to reproduce.
 
 ## Installation
 
