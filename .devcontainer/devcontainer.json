@@ -1,0 +1,25 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/python
+{
+    "name": "idfkit",
+    // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+    "image": "mcr.microsoft.com/devcontainers/python:3.12",
+    "features": {},
+
+    // Use 'postCreateCommand' to run commands after the container is created.
+    "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
+
+    // Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            "extensions": ["ms-python.python", "editorconfig.editorconfig"],
+            "settings": {
+                "python.testing.pytestArgs": ["tests"],
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestEnabled": true,
+                "python.defaultInterpreterPath": "/workspaces/idfkit/.venv/bin/python",
+                "python.testing.pytestPath": "/workspaces/idfkit/.venv/bin/pytest"
+            }
+        }
+    }
+}
