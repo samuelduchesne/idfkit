@@ -38,6 +38,37 @@ class WeatherStation:
     elevation: float
     url: str
 
+    def to_dict(self) -> dict[str, str | int | float]:
+        """Serialize to a plain dictionary for JSON storage."""
+        return {
+            "country": self.country,
+            "state": self.state,
+            "city": self.city,
+            "wmo": self.wmo,
+            "source": self.source,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "timezone": self.timezone,
+            "elevation": self.elevation,
+            "url": self.url,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str | int | float]) -> WeatherStation:
+        """Deserialize from a plain dictionary."""
+        return cls(
+            country=str(data["country"]),
+            state=str(data["state"]),
+            city=str(data["city"]),
+            wmo=int(data["wmo"]),
+            source=str(data["source"]),
+            latitude=float(data["latitude"]),
+            longitude=float(data["longitude"]),
+            timezone=float(data["timezone"]),
+            elevation=float(data["elevation"]),
+            url=str(data["url"]),
+        )
+
     @property
     def display_name(self) -> str:
         """Human-readable station name with location context.

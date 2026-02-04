@@ -62,7 +62,7 @@ packages = ["src/idfkit"]
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
-exclude = ["benchmarks", "src/idfkit/schemas", ".venv", "**/node_modules", "**/__pycache__"]
+exclude = ["benchmarks", "src/idfkit/schemas", "src/idfkit/weather/data", ".venv", "**/node_modules", "**/__pycache__"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -115,6 +115,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
 "benchmarks/*" = ["S603", "S607", "SIM115", "B007", "B905"]
+"scripts/*" = ["T201"]
 
 [tool.ruff.format]
 preview = true

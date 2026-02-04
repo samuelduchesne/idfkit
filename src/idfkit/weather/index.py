@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import gzip
+import json
 import math
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -30,6 +33,9 @@ _INDEX_FILES: tuple[str, ...] = (
 _SOURCES_BASE_URL = "https://climate.onebuilding.org/sources"
 _USER_AGENT = "idfkit (https://github.com/samuelduchesne/idfkit)"
 
+_BUNDLED_INDEX = Path(__file__).parent / "data" / "stations.json.gz"
+_CACHED_INDEX = "stations.json.gz"
+
 
 def default_cache_dir() -> Path:
     """Return the platform-appropriate cache directory for idfkit weather data."""
@@ -44,26 +50,41 @@ def default_cache_dir() -> Path:
     return base / "idfkit" / "weather"
 
 
-def _download_file(url: str, dest: Path) -> None:
-    """Download a file from *url* to *dest*, creating parent dirs as needed."""
+# ---------------------------------------------------------------------------
+# Download / parse helpers (used by refresh and build script)
+# ---------------------------------------------------------------------------
+
+
+def _download_file(url: str, dest: Path) -> str | None:
+    """Download a file from *url* to *dest*, creating parent dirs as needed.
+
+    Returns the ``Last-Modified`` response header value, or ``None`` if
+    the header is absent.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     req = Request(url, headers={"User-Agent": _USER_AGENT})  # noqa: S310
     with urlopen(req, timeout=60) as resp:  # noqa: S310
+        last_modified: str | None = resp.headers.get("Last-Modified")
         dest.write_bytes(resp.read())
+    return last_modified
 
 
-def _ensure_index_file(filename: str, cache_dir: Path) -> Path:
-    """Return the local path for an Excel index file, downloading if absent."""
+def _ensure_index_file(filename: str, cache_dir: Path) -> tuple[Path, str | None]:
+    """Return the local path for an Excel index file, downloading if absent.
+
+    Returns ``(path, last_modified_header)``.  When the file already exists
+    in the cache the header is ``None`` (we don't know it).
+    """
     local = cache_dir / "indexes" / filename
     if local.exists():
-        return local
+        return local, None
     url = f"{_SOURCES_BASE_URL}/{filename}"
     try:
-        _download_file(url, local)
+        last_modified = _download_file(url, local)
     except (HTTPError, URLError, TimeoutError, OSError) as exc:
         msg = f"Failed to download weather index {filename}: {exc}"
         raise RuntimeError(msg) from exc
-    return local
+    return local, last_modified
 
 
 def _parse_excel(path: Path) -> list[WeatherStation]:
@@ -78,7 +99,8 @@ def _parse_excel(path: Path) -> list[WeatherStation]:
         from openpyxl import load_workbook
     except ImportError:
         msg = (
-            "openpyxl is required for loading the weather station index. Install it with:  pip install idfkit[weather]"
+            "openpyxl is required for refreshing the weather station index. "
+            "Install it with:  pip install idfkit[weather]"
         )
         raise ImportError(msg)  # noqa: B904
 
@@ -112,7 +134,7 @@ def _parse_excel(path: Path) -> list[WeatherStation]:
                 country=str(country or ""),
                 state=str(state or ""),
                 city=str(city or ""),
-                wmo=int(wmo) if wmo is not None else 0,
+                wmo=int(wmo) if wmo is not None and str(wmo).isdigit() else 0,
                 source=str(source or ""),
                 latitude=float(lat),
                 longitude=float(lon),
@@ -123,6 +145,50 @@ def _parse_excel(path: Path) -> list[WeatherStation]:
         )
     wb.close()
     return stations
+
+
+# ---------------------------------------------------------------------------
+# Compressed index serialization
+# ---------------------------------------------------------------------------
+
+
+def _load_compressed_index(path: Path) -> tuple[list[WeatherStation], dict[str, str], str]:
+    """Load a gzip-compressed JSON station index.
+
+    Returns ``(stations, last_modified_headers, built_at_iso)``.
+    """
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        data: dict[str, Any] = json.load(f)
+    stations = [WeatherStation.from_dict(d) for d in data["stations"]]
+    last_modified: dict[str, str] = data.get("last_modified", {})
+    built_at: str = data.get("built_at", "")
+    return stations, last_modified, built_at
+
+
+def _save_compressed_index(
+    stations: list[WeatherStation],
+    last_modified: dict[str, str],
+    dest: Path,
+) -> None:
+    """Serialize stations and metadata to a gzip-compressed JSON file."""
+    data = {
+        "built_at": datetime.now(tz=timezone.utc).isoformat(),
+        "last_modified": last_modified,
+        "stations": [s.to_dict() for s in stations],
+    }
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(dest, "wt", encoding="utf-8") as f:
+        json.dump(data, f, separators=(",", ":"))
+
+
+def _head_last_modified(url: str) -> str | None:
+    """Send a HEAD request and return the ``Last-Modified`` header, or ``None``."""
+    req = Request(url, method="HEAD", headers={"User-Agent": _USER_AGENT})  # noqa: S310
+    try:
+        with urlopen(req, timeout=30) as resp:  # noqa: S310
+            return resp.headers.get("Last-Modified")
+    except (HTTPError, URLError, TimeoutError, OSError):
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -182,8 +248,11 @@ def _score_station(station: WeatherStation, query: str, tokens: list[str]) -> tu
 class StationIndex:
     """Searchable index of weather stations from climate.onebuilding.org.
 
-    Use :meth:`load` to download (or load from cache) the worldwide station
-    index.  Then search by name, coordinates, or metadata filters.
+    Use :meth:`load` to load the bundled (or user-refreshed) station index.
+    No network access or ``openpyxl`` is required for :meth:`load`.
+
+    Use :meth:`check_for_updates` to see if upstream data has changed, and
+    :meth:`refresh` to re-download and rebuild the index.
 
     Example::
 
@@ -193,52 +262,103 @@ class StationIndex:
             print(r.station.display_name, r.score)
     """
 
-    __slots__ = ("_by_wmo", "_stations")
+    __slots__ = ("_by_wmo", "_last_modified", "_stations")
 
     _stations: list[WeatherStation]
     _by_wmo: dict[int, list[WeatherStation]]
+    _last_modified: dict[str, str]
 
     def __init__(self, stations: list[WeatherStation]) -> None:
         self._stations = stations
         self._by_wmo: dict[int, list[WeatherStation]] = {}
         for s in stations:
             self._by_wmo.setdefault(s.wmo, []).append(s)
+        self._last_modified: dict[str, str] = {}
 
     # --- Construction -------------------------------------------------------
 
     @classmethod
-    def load(
-        cls,
-        *,
-        cache_dir: Path | None = None,
-        index_files: tuple[str, ...] | None = None,
-    ) -> StationIndex:
-        """Download (or load from cache) the station index.
+    def load(cls, *, cache_dir: Path | None = None) -> StationIndex:
+        """Load the station index from a local compressed file.
 
-        On first call this downloads the regional Excel index files from
-        climate.onebuilding.org and caches them locally.  Subsequent calls
-        reuse the cached files.
-
-        Requires ``openpyxl``.  Install with ``pip install idfkit[weather]``.
+        Checks for a user-refreshed cache first, then falls back to the
+        bundled index shipped with the package.  No network access is
+        required.
 
         Args:
             cache_dir: Override the default cache directory.
-            index_files: Override which Excel files to download.
         """
         cache = cache_dir or default_cache_dir()
-        files = index_files or _INDEX_FILES
+        cached_path = cache / _CACHED_INDEX
 
-        all_stations: list[WeatherStation] = []
-        for fname in files:
-            local_path = _ensure_index_file(fname, cache)
-            all_stations.extend(_parse_excel(local_path))
+        if cached_path.is_file():
+            source = cached_path
+        elif _BUNDLED_INDEX.is_file():
+            source = _BUNDLED_INDEX
+        else:
+            msg = (
+                "No station index found. The bundled index is missing and no "
+                "cached index exists. Run StationIndex.refresh() to download one."
+            )
+            raise FileNotFoundError(msg)
 
-        return cls(all_stations)
+        stations, last_modified, _ = _load_compressed_index(source)
+        instance = cls(stations)
+        instance._last_modified = last_modified
+        return instance
 
     @classmethod
     def from_stations(cls, stations: list[WeatherStation]) -> StationIndex:
         """Create an index from an explicit list of stations (useful for tests)."""
         return cls(stations)
+
+    @classmethod
+    def refresh(cls, *, cache_dir: Path | None = None) -> StationIndex:
+        """Re-download Excel indexes from climate.onebuilding.org and rebuild the cache.
+
+        Requires ``openpyxl``.  Install with ``pip install idfkit[weather]``.
+
+        Args:
+            cache_dir: Override the default cache directory.
+        """
+        cache = cache_dir or default_cache_dir()
+
+        all_stations: list[WeatherStation] = []
+        last_modified: dict[str, str] = {}
+        for fname in _INDEX_FILES:
+            local_path, lm = _ensure_index_file(fname, cache)
+            if lm is not None:
+                last_modified[fname] = lm
+            all_stations.extend(_parse_excel(local_path))
+
+        dest = cache / _CACHED_INDEX
+        _save_compressed_index(all_stations, last_modified, dest)
+
+        instance = cls(all_stations)
+        instance._last_modified = last_modified
+        return instance
+
+    # --- Freshness ----------------------------------------------------------
+
+    def check_for_updates(self) -> bool:
+        """Check if upstream Excel files have changed since this index was built.
+
+        Sends lightweight HEAD requests to climate.onebuilding.org.
+        Returns ``True`` if any file has a newer ``Last-Modified`` date.
+        Returns ``False`` if all files match or if the check fails (offline,
+        timeout, etc.).
+        """
+        if not self._last_modified:
+            return False
+        for fname in _INDEX_FILES:
+            stored = self._last_modified.get(fname)
+            if stored is None:
+                continue
+            url = f"{_SOURCES_BASE_URL}/{fname}"
+            upstream = _head_last_modified(url)
+            if upstream is not None and upstream != stored:
+                return True
+        return False
 
     # --- Properties ---------------------------------------------------------
 

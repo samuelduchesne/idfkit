@@ -49,6 +49,51 @@ class TestWeatherStation:
             s.wmo = 999999  # type: ignore[misc]
 
 
+class TestSerialization:
+    def test_to_dict_round_trip(self) -> None:
+        s = _make_station()
+        d = s.to_dict()
+        restored = WeatherStation.from_dict(d)
+        assert restored == s
+
+    def test_to_dict_keys(self) -> None:
+        s = _make_station()
+        d = s.to_dict()
+        expected_keys = {
+            "country",
+            "state",
+            "city",
+            "wmo",
+            "source",
+            "latitude",
+            "longitude",
+            "timezone",
+            "elevation",
+            "url",
+        }
+        assert set(d.keys()) == expected_keys
+
+    def test_from_dict_type_coercion(self) -> None:
+        """Ensure from_dict coerces string values to correct types."""
+        d = {
+            "country": "USA",
+            "state": "IL",
+            "city": "Test",
+            "wmo": "725300",
+            "source": "SRC",
+            "latitude": "41.98",
+            "longitude": "-87.92",
+            "timezone": "-6.0",
+            "elevation": "201.0",
+            "url": "https://example.com/test.zip",
+        }
+        s = WeatherStation.from_dict(d)  # type: ignore[arg-type]
+        assert isinstance(s.wmo, int)
+        assert isinstance(s.latitude, float)
+        assert s.wmo == 725300
+        assert s.latitude == 41.98
+
+
 class TestSearchResult:
     def test_fields(self) -> None:
         s = _make_station()

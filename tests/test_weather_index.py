@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
-from idfkit.weather.index import StationIndex
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from idfkit.weather.index import (
+    StationIndex,
+    _load_compressed_index,
+    _save_compressed_index,
+)
 from idfkit.weather.station import WeatherStation
 
 
@@ -176,3 +185,124 @@ class TestFilter:
     def test_countries(self) -> None:
         idx = StationIndex.from_stations(_fixture_stations())
         assert idx.countries == ["FRA", "GBR", "USA"]
+
+
+# ---------------------------------------------------------------------------
+# Compressed index (bundled / cache) tests
+# ---------------------------------------------------------------------------
+
+
+class TestCompressedIndex:
+    """Round-trip tests for save/load of compressed JSON index."""
+
+    def test_save_and_load_round_trip(self, tmp_path: Path) -> None:
+        stations = _fixture_stations()
+        last_modified = {"file_a.xlsx": "Wed, 15 Jan 2026 10:30:00 GMT"}
+        dest = tmp_path / "stations.json.gz"
+
+        _save_compressed_index(stations, last_modified, dest)
+        loaded_stations, loaded_lm, built_at = _load_compressed_index(dest)
+
+        assert len(loaded_stations) == len(stations)
+        assert loaded_stations[0] == stations[0]
+        assert loaded_lm == last_modified
+        assert built_at  # non-empty ISO timestamp
+
+    def test_empty_index(self, tmp_path: Path) -> None:
+        dest = tmp_path / "empty.json.gz"
+        _save_compressed_index([], {}, dest)
+        stations, lm, _ = _load_compressed_index(dest)
+        assert stations == []
+        assert lm == {}
+
+
+class TestLoadBundled:
+    """Tests for StationIndex.load() with bundled and cached indexes."""
+
+    def test_load_from_bundled(self) -> None:
+        """load() should succeed using the bundled index."""
+        idx = StationIndex.load(cache_dir=Path("/nonexistent/cache/dir"))
+        assert len(idx) > 0
+
+    def test_load_from_cache_takes_priority(self, tmp_path: Path) -> None:
+        """A cached index in cache_dir should take priority over bundled."""
+        stations = _fixture_stations()[:2]
+        last_modified = {"test.xlsx": "Mon, 01 Jan 2026 00:00:00 GMT"}
+        dest = tmp_path / "stations.json.gz"
+        _save_compressed_index(stations, last_modified, dest)
+
+        idx = StationIndex.load(cache_dir=tmp_path)
+        assert len(idx) == 2
+
+    def test_load_missing_raises(self, tmp_path: Path) -> None:
+        """load() should raise FileNotFoundError if no index exists."""
+        with (
+            patch("idfkit.weather.index._BUNDLED_INDEX", tmp_path / "nope.json.gz"),
+            pytest.raises(FileNotFoundError, match="No station index found"),
+        ):
+            StationIndex.load(cache_dir=tmp_path)
+
+
+class TestCheckForUpdates:
+    """Tests for StationIndex.check_for_updates()."""
+
+    def test_stale_returns_true(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        idx._last_modified = {
+            "Region1_Africa_TMYx_EPW_Processing_locations.xlsx": "Wed, 01 Jan 2020 00:00:00 GMT",
+        }
+        with patch(
+            "idfkit.weather.index._head_last_modified",
+            return_value="Wed, 15 Jan 2026 10:30:00 GMT",
+        ):
+            assert idx.check_for_updates() is True
+
+    def test_fresh_returns_false(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        same_date = "Wed, 15 Jan 2026 10:30:00 GMT"
+        idx._last_modified = {
+            "Region1_Africa_TMYx_EPW_Processing_locations.xlsx": same_date,
+        }
+        with patch("idfkit.weather.index._head_last_modified", return_value=same_date):
+            assert idx.check_for_updates() is False
+
+    def test_offline_returns_false(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        idx._last_modified = {
+            "Region1_Africa_TMYx_EPW_Processing_locations.xlsx": "Wed, 01 Jan 2020 00:00:00 GMT",
+        }
+        with patch("idfkit.weather.index._head_last_modified", return_value=None):
+            assert idx.check_for_updates() is False
+
+    def test_no_metadata_returns_false(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        assert idx.check_for_updates() is False
+
+
+class TestRefresh:
+    """Tests for StationIndex.refresh() with mocked network."""
+
+    def test_refresh_saves_and_loads(self, tmp_path: Path) -> None:
+        stations = _fixture_stations()
+
+        def mock_ensure(filename: str, cache_dir: Path) -> tuple[Path, str | None]:
+            # Write a tiny Excel-like file? No — just return a path.
+            # We'll mock _parse_excel instead.
+            return tmp_path / filename, "Wed, 15 Jan 2026 10:30:00 GMT"
+
+        with (
+            patch("idfkit.weather.index._ensure_index_file", side_effect=mock_ensure),
+            patch("idfkit.weather.index._parse_excel", return_value=stations),
+        ):
+            idx = StationIndex.refresh(cache_dir=tmp_path)
+
+        # The index should have stations (5 fixtures x 10 region files)
+        assert len(idx) == len(stations) * 10
+
+        # A compressed cache file should have been written
+        cached = tmp_path / "stations.json.gz"
+        assert cached.is_file()
+
+        # Loading from cache should reproduce the same count
+        idx2 = StationIndex.load(cache_dir=tmp_path)
+        assert len(idx2) == len(idx)

@@ -15,7 +15,11 @@ _USER_AGENT = "idfkit (https://github.com/samuelduchesne/idfkit)"
 _last_request_time: float = 0.0
 
 
-def geocode(address: str) -> tuple[float, float] | None:
+class GeocodingError(Exception):
+    """Raised when an address cannot be geocoded."""
+
+
+def geocode(address: str) -> tuple[float, float]:
     """Convert a street address to ``(latitude, longitude)`` via Nominatim.
 
     Uses the free OpenStreetMap Nominatim geocoding service.  No API key is
@@ -27,16 +31,17 @@ def geocode(address: str) -> tuple[float, float] | None:
 
         from idfkit.weather import StationIndex, geocode
 
-        coords = geocode("350 Fifth Avenue, New York, NY")
-        if coords:
-            results = StationIndex.load().nearest(*coords)
+        results = StationIndex.load().nearest(*geocode("350 Fifth Avenue, New York, NY"))
 
     Args:
         address: A free-form address string (e.g. ``"Willis Tower, Chicago"``).
 
     Returns:
-        A ``(latitude, longitude)`` tuple, or ``None`` if the address could
-        not be resolved.
+        A ``(latitude, longitude)`` tuple.
+
+    Raises:
+        GeocodingError: If the address cannot be resolved or the service is
+            unreachable.
     """
     global _last_request_time
 
@@ -55,6 +60,8 @@ def geocode(address: str) -> tuple[float, float] | None:
             data = json.loads(resp.read())
             if data:
                 return float(data[0]["lat"]), float(data[0]["lon"])
-    except (URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError):
-        pass
-    return None
+    except (URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError) as exc:
+        msg = f"Failed to geocode address: {address}"
+        raise GeocodingError(msg) from exc
+    msg = f"No results found for address: {address}"
+    raise GeocodingError(msg)
