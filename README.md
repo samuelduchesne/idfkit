@@ -16,7 +16,8 @@ idfkit is designed from the ground up for speed. Benchmarked against
 [opyplus](https://github.com/openergy/opyplus), and
 [energyplus-idd-idf-utilities](https://github.com/Myoldmopar/py-idd-idf) on a
 **1,700-object IDF file** (500 zones, 100 materials, 100 constructions, 1,000
-surfaces):
+surfaces) using EnergyPlus V9.3 - the newest version natively supported by all
+four tools:
 
 ![benchmark chart](docs/assets/benchmark.png)
 
@@ -25,12 +26,12 @@ surfaces):
 
 | Operation | idfkit | eppy | opyplus | idd-idf-utilities |
 |---|--:|--:|--:|--:|
-| **Load IDF file** | 43.5 ms | 522.8 ms | 143.6 ms | 19.1 ms |
-| **Get all objects by type** | 6.4 us | 5.1 us | 15.5 us | 167.4 us |
-| **Get single object by name** | 3.6 us | 2.9 ms | 4.3 ms | 169.1 us |
-| **Add 100 objects** | 807.4 us | 533.2 ms | 141.8 ms | n/a |
-| **Modify fields (all zones)** | 330.5 us | 3.4 ms | 3.7 ms | n/a |
-| **Write IDF to string** | 16.2 ms | 60.2 ms | 57.2 ms | n/a |
+| **Load IDF file** | 42.6 ms | 522.8 ms | 138.0 ms | 19.1 ms |
+| **Get all objects by type** | 7.7 us | 6.7 us | 19.7 us | 128.0 us |
+| **Get single object by name** | 4.0 us | 3.0 ms | 4.4 ms | 141.5 us |
+| **Add 100 objects** | 851.7 us | 514.2 ms | 138.2 ms | n/a |
+| **Modify fields (all zones)** | 349.6 us | 3.4 ms | 3.8 ms | n/a |
+| **Write IDF to string** | 15.5 ms | 59.9 ms | 56.3 ms | 30.7 ms |
 
 </details>
 
@@ -41,6 +42,18 @@ Key architectural advantages:
 - **Streaming regex parser** with memory-mapped I/O for large files
 - **`__slots__`-based objects** for low memory overhead
 - **epJSON schema** instead of IDD for faster field resolution
+
+<details>
+<summary>Supported EnergyPlus versions</summary>
+
+| Tool | Versions | Schema format |
+|---|---|---|
+| **idfkit** | 8.9 - 25.2 | epJSON schema (bundled, gzip-compressed) |
+| **eppy** | 1.1 - 9.2 (bundled IDD); any version with external IDD | IDD file |
+| **opyplus** | 8.0 - 9.6, 22.1 - 24.1 | IDD file (bundled) |
+| **idd-idf-utilities** | any version up to ~23.2 (IDD parser breaks on 24.1+) | IDD file (external) |
+
+</details>
 
 Benchmarks measured with Python 3.12 on Linux x86_64. Each operation was run 10
 times (100 for sub-millisecond ops) and the minimum time is reported. See

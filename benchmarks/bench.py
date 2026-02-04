@@ -2,6 +2,10 @@
 """
 Benchmark idfkit against eppy, opyplus, and energyplus-idd-idf-utilities.
 
+All four tools are benchmarked against EnergyPlus **V9.3** - the newest
+version natively supported by every tool - so every operation (including
+write) can be tested fairly.
+
 This script generates a realistic IDF file and benchmarks each tool on:
 - Parsing/loading IDF files
 - Querying objects by type
@@ -35,12 +39,11 @@ NUM_SURFACES = 1000
 ITERATIONS = 10  # Repeat each benchmark
 RESULTS_FILE = Path(__file__).parent / "results.json"
 
-# The V24.1 IDD template is fetched from EnergyPlus source and patched at
-# runtime.  We cache the result under a .gitignored directory so repeated
-# runs are fast.
-_IDD_CACHE_DIR = Path(__file__).parent / ".cache"
-_IDD_FILE = _IDD_CACHE_DIR / "Energy+V24_1_0.idd"
-_IDD_TEMPLATE_URL = "https://raw.githubusercontent.com/NREL/EnergyPlus/v24.1.0/idd/Energy%2B.idd.in"
+# EnergyPlus version used for all benchmarks.  V9.3 is the newest version
+# natively supported by all four tools (eppy needs an external IDD, but
+# opyplus bundles one; opyplus's IDD corrections crash on < V9.3).
+ENERGYPLUS_VERSION = (9, 3, 0)
+ENERGYPLUS_VERSION_STR = "9.3"
 
 # Tool names (display order)
 TOOL_IDFKIT = "idfkit"
@@ -58,35 +61,19 @@ COLORS = {
 
 
 # ---------------------------------------------------------------------------
-# IDD download helper
+# IDD helper - locate opyplus's bundled V9.3 IDD
 # ---------------------------------------------------------------------------
 
 
-def _ensure_idd() -> Path:
-    """Download and cache the EnergyPlus V24.1 IDD if not already present."""
-    if _IDD_FILE.exists():
-        return _IDD_FILE
+def _get_idd_path() -> Path:
+    """Return the path to the V9.3 IDD bundled with opyplus."""
+    import opyplus
 
-    import subprocess
-
-    _IDD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    print("  Downloading EnergyPlus V24.1 IDD template from GitHub ...")
-    result = subprocess.run(
-        ["curl", "-sL", _IDD_TEMPLATE_URL],
-        capture_output=True,
-        check=True,
-    )
-    # Replace CMake template variables with actual version numbers
-    content = result.stdout.decode("latin-1")
-    content = (
-        content.replace("${CMAKE_VERSION_MAJOR}", "24")
-        .replace("${CMAKE_VERSION_MINOR}", "1")
-        .replace("${CMAKE_VERSION_PATCH}", "0")
-        .replace("${CMAKE_VERSION_BUILD}", "9d7789a3ac")
-    )
-    _IDD_FILE.write_text(content, encoding="latin-1")
-    print(f"  Cached IDD at {_IDD_FILE} ({_IDD_FILE.stat().st_size / 1024:.0f} KB)")
-    return _IDD_FILE
+    idd_path = Path(opyplus.__file__).parent / "idd" / "resources" / "V9-3-0-Energy+.idd"
+    if not idd_path.exists():
+        msg = f"opyplus V9.3 IDD not found at {idd_path}"
+        raise FileNotFoundError(msg)
+    return idd_path
 
 
 # ---------------------------------------------------------------------------
@@ -99,13 +86,9 @@ def generate_test_idf(
     num_materials: int = NUM_MATERIALS,
     num_surfaces: int = NUM_SURFACES,
 ) -> str:
-    """Generate a realistic IDF file for benchmarking.
-
-    Uses Version 24.1 with a downloaded V24.1 IDD for eppy and idfkit's
-    bundled V24.1 epJSON schema.
-    """
+    """Generate a realistic V9.2 IDF file for benchmarking."""
     lines: list[str] = []
-    lines.append("Version, 24.1;")
+    lines.append(f"Version, {ENERGYPLUS_VERSION_STR};")
     lines.append("")
 
     # Zones
@@ -141,7 +124,7 @@ def generate_test_idf(
         lines.append(f"Construction,\n  Construction_{i},        !- Name\n  Material_{i};            !- Outside Layer")
         lines.append("")
 
-    # Building surfaces
+    # Building surfaces (V9.2 does not have the "Space Name" field)
     for i in range(num_surfaces):
         zone_idx = i % num_zones
         const_idx = i % num_materials
@@ -151,7 +134,6 @@ def generate_test_idf(
             f"  Wall,                    !- Surface Type\n"
             f"  Construction_{const_idx},!- Construction Name\n"
             f"  Zone_{zone_idx},         !- Zone Name\n"
-            f"  ,                        !- Space Name\n"
             f"  Outdoors,                !- Outside Boundary Condition\n"
             f"  ,                        !- Outside Boundary Condition Object\n"
             f"  SunExposed,              !- Sun Exposure\n"
@@ -205,10 +187,10 @@ def benchmark_idfkit(idf_path: str) -> dict[str, dict[str, float]]:
 
     # 1. Parse / Load
     def load():
-        load_idf(idf_path)
+        load_idf(idf_path, version=ENERGYPLUS_VERSION)
 
     results["Load IDF file"] = bench(load)
-    model = load_idf(idf_path)
+    model = load_idf(idf_path, version=ENERGYPLUS_VERSION)
 
     # 2. Query all objects of a type
     def query_type():
@@ -224,7 +206,7 @@ def benchmark_idfkit(idf_path: str) -> dict[str, dict[str, float]]:
 
     # 4. Add 100 new objects
     def add_objects():
-        doc = new_document(version=(24, 1, 0))
+        doc = new_document(version=ENERGYPLUS_VERSION)
         for i in range(100):
             doc.add("Zone", f"NewZone_{i}", {"x_origin": float(i * 5)})
 
@@ -255,7 +237,7 @@ def benchmark_eppy(idf_path: str) -> dict[str, dict[str, float]]:
     """Benchmark eppy on all operations."""
     from eppy.modeleditor import IDF
 
-    idd_path = _ensure_idd()
+    idd_path = _get_idd_path()
     IDF.setiddname(str(idd_path))
 
     results: dict[str, dict[str, float]] = {}
@@ -372,19 +354,26 @@ def benchmark_opyplus(idf_path: str) -> dict[str, dict[str, float]]:
 def benchmark_iddidf(idf_path: str) -> dict[str, dict[str, float]]:
     """Benchmark energyplus-idd-idf-utilities on supported operations.
 
-    This tool has a minimal, read-oriented API - no add/modify support.
+    This tool has a read-oriented API with no add/modify support, but it
+    can write IDF strings when paired with a parsed IDD file.
     """
+    from energyplus_iddidf.idd_processor import IDDProcessor
     from energyplus_iddidf.idf_processor import IDFProcessor
 
     results: dict[str, dict[str, float]] = {}
-    processor = IDFProcessor()
+    idf_processor = IDFProcessor()
+
+    # Pre-load the V9.2 IDD for write support
+    idd_processor = IDDProcessor()
+    idd_path = _get_idd_path()
+    idd_structure = idd_processor.process_file_given_file_path(str(idd_path))
 
     # 1. Parse / Load
     def load():
-        processor.process_file_given_file_path(idf_path)
+        idf_processor.process_file_given_file_path(idf_path)
 
     results["Load IDF file"] = bench(load)
-    idf = processor.process_file_given_file_path(idf_path)
+    idf = idf_processor.process_file_given_file_path(idf_path)
 
     # 2. Query all objects of a type
     def query_type():
@@ -402,8 +391,12 @@ def benchmark_iddidf(idf_path: str) -> dict[str, dict[str, float]]:
     results["Get single object by name"] = bench(query_name, iterations=ITERATIONS * 10)
 
     # 4-5. Add / Modify not supported by this library
-    # 6. Write - whole_idf_string() requires a paired IDD which this tool
-    #    cannot parse for recent EnergyPlus versions, so we skip it.
+
+    # 6. Write IDF to string (paired with IDD for formatted output)
+    def write():
+        idf.whole_idf_string(idd_structure)
+
+    results["Write IDF to string"] = bench(write)
 
     return results
 
@@ -504,6 +497,7 @@ def generate_chart(
 
     fig.suptitle(
         f"idfkit vs eppy vs opyplus vs energyplus-idd-idf-utilities\n"
+        f"EnergyPlus V{ENERGYPLUS_VERSION_STR} - "
         f"{NUM_ZONES} zones, {NUM_MATERIALS} materials, "
         f"{NUM_SURFACES} surfaces ({_total_objects()} total objects)",
         fontsize=12,
@@ -542,6 +536,7 @@ def main() -> None:
     print("=" * 60)
     print(f"  Python  : {sys.version.split()[0]}")
     print(f"  Platform: {platform.system()} {platform.machine()}")
+    print(f"  EPlus   : V{ENERGYPLUS_VERSION_STR}")
     print(f"  Objects : {NUM_ZONES} zones, {NUM_MATERIALS} materials,")
     print(f"            {NUM_MATERIALS} constructions, {NUM_SURFACES} surfaces")
     print(f"            ({_total_objects()} total)")
@@ -557,9 +552,6 @@ def main() -> None:
     idf_path = tmp.name
     file_size = os.path.getsize(idf_path)
     print(f"  File size: {file_size / 1024:.1f} KB")
-
-    # Ensure the IDD is ready before starting timers
-    _ensure_idd()
 
     all_results: dict[str, dict[str, dict[str, float]]] = {}
 
@@ -603,6 +595,7 @@ def main() -> None:
             "metadata": {
                 "python": sys.version.split()[0],
                 "platform": f"{platform.system()} {platform.machine()}",
+                "energyplus_version": ENERGYPLUS_VERSION_STR,
                 "num_zones": NUM_ZONES,
                 "num_materials": NUM_MATERIALS,
                 "num_surfaces": NUM_SURFACES,
