@@ -329,6 +329,119 @@ class TestIDFObjectsView:
         assert 42 not in view
 
 
+class TestNameChangeConsistency:
+    """Verify that name changes via all code paths update collection index, referencing objects, and graph."""
+
+    def test_name_setter_updates_collection_index(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone.name = "RenamedZone"
+        assert simple_doc.getobject("Zone", "RenamedZone") is zone
+        assert simple_doc.getobject("Zone", "TestZone") is None
+
+    def test_name_setter_updates_referencing_objects(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone.name = "RenamedZone"
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        assert wall.zone_name == "RenamedZone"
+
+    def test_name_setter_updates_graph(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone.name = "RenamedZone"
+        refs = simple_doc.references.get_referencing("RenamedZone")
+        assert len(refs) > 0
+        assert not simple_doc.references.is_referenced("TestZone")
+
+    def test_capital_name_setter_updates_all(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone.Name = "ViaCapitalName"
+        assert simple_doc.getobject("Zone", "ViaCapitalName") is zone
+        assert simple_doc.getobject("Zone", "TestZone") is None
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        assert wall.zone_name == "ViaCapitalName"
+
+    def test_setattr_name_updates_all(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone.NAME = "ViaSetattr"
+        assert simple_doc.getobject("Zone", "ViaSetattr") is zone
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        assert wall.zone_name == "ViaSetattr"
+
+    def test_setitem_index_zero_updates_all(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone[0] = "ViaIndex"
+        assert simple_doc.getobject("Zone", "ViaIndex") is zone
+        assert simple_doc.getobject("Zone", "TestZone") is None
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        assert wall.zone_name == "ViaIndex"
+
+    def test_rename_method_still_works(self, simple_doc: IDFDocument) -> None:
+        simple_doc.rename("Zone", "TestZone", "ViaRename")
+        assert simple_doc.getobject("Zone", "ViaRename") is not None
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        assert wall.zone_name == "ViaRename"
+
+    def test_name_change_noop_when_same(self, simple_doc: IDFDocument) -> None:
+        zone = simple_doc.getobject("Zone", "TestZone")
+        assert zone is not None
+        zone.name = "TestZone"
+        assert simple_doc.getobject("Zone", "TestZone") is zone
+
+
+class TestReferenceFieldChangeConsistency:
+    """Verify that reference field changes update the graph."""
+
+    def test_setattr_reference_field_updates_graph(self, simple_doc: IDFDocument) -> None:
+        # Change the zone_name on a surface
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        # Add a second zone
+        simple_doc.add("Zone", "Zone2")
+        wall.zone_name = "Zone2"
+        # Graph should now show the wall referencing Zone2
+        refs = simple_doc.references.get_referencing("Zone2")
+        assert wall in refs
+        # Old reference should be removed
+        refs_old = simple_doc.references.get_referencing("TestZone")
+        assert wall not in refs_old
+
+    def test_setitem_reference_field_updates_graph(self, simple_doc: IDFDocument) -> None:
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        assert wall.field_order is not None
+        # Find the index of zone_name in field_order
+        zone_idx = wall.field_order.index("zone_name") + 1  # +1 because index 0 is name
+        simple_doc.add("Zone", "Zone2")
+        wall[zone_idx] = "Zone2"
+        refs = simple_doc.references.get_referencing("Zone2")
+        assert wall in refs
+
+    def test_non_reference_field_does_not_touch_graph(self, simple_doc: IDFDocument) -> None:
+        wall = simple_doc.getobject("BuildingSurface:Detailed", "TestWall")
+        assert wall is not None
+        initial_refs = len(simple_doc.references)
+        wall.number_of_vertices = 3
+        assert len(simple_doc.references) == initial_refs
+
+    def test_detached_object_no_crash(self) -> None:
+        obj = IDFObject(obj_type="Zone", name="Detached")
+        # No document, no crash
+        obj.name = "Renamed"
+        assert obj.name == "Renamed"
+        obj.x_origin = 5.0
+        assert obj.x_origin == 5.0
+
+
 class TestGetIddGroupDict:
     def test_basic(self, simple_doc: IDFDocument) -> None:
         groups = simple_doc.getiddgroupdict()

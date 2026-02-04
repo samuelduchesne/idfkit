@@ -143,3 +143,91 @@ class TestReferenceGraphMisc:
         assert stats["total_references"] == 3
         assert stats["objects_with_references"] == 3
         assert stats["names_referenced"] == 2
+
+
+class TestReferenceGraphRenameTarget:
+    def test_rename_target_updates_referenced_by(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.register(obj, "zone_name", "OldZone")
+        graph.rename_target("OldZone", "NewZone")
+        assert graph.is_referenced("NewZone")
+        assert not graph.is_referenced("OldZone")
+
+    def test_rename_target_updates_references(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.register(obj, "zone_name", "OldZone")
+        graph.rename_target("OldZone", "NewZone")
+        refs = graph.get_references(obj)
+        assert "NEWZONE" in refs
+        assert "OLDZONE" not in refs
+
+    def test_rename_target_multiple_referrers(self) -> None:
+        graph = ReferenceGraph()
+        obj_a = IDFObject(obj_type="People", name="P1")
+        obj_b = IDFObject(obj_type="Lights", name="L1")
+        graph.register(obj_a, "zone_name", "Z1")
+        graph.register(obj_b, "zone_name", "Z1")
+        graph.rename_target("Z1", "Z1_Renamed")
+        refs = graph.get_referencing("Z1_Renamed")
+        assert obj_a in refs
+        assert obj_b in refs
+        assert not graph.is_referenced("Z1")
+
+    def test_rename_target_noop_same_name(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.register(obj, "zone_name", "Z1")
+        graph.rename_target("Z1", "Z1")
+        assert graph.is_referenced("Z1")
+
+    def test_rename_target_nonexistent_is_noop(self) -> None:
+        graph = ReferenceGraph()
+        graph.rename_target("NoSuchName", "Whatever")
+        assert len(graph) == 0
+
+    def test_rename_target_merges_with_existing(self) -> None:
+        graph = ReferenceGraph()
+        obj_a = IDFObject(obj_type="People", name="P1")
+        obj_b = IDFObject(obj_type="Lights", name="L1")
+        graph.register(obj_a, "zone_name", "Z1")
+        graph.register(obj_b, "zone_name", "Z2")
+        # Rename Z1 -> Z2 should merge
+        graph.rename_target("Z1", "Z2")
+        refs = graph.get_referencing("Z2")
+        assert obj_a in refs
+        assert obj_b in refs
+
+
+class TestReferenceGraphUpdateReference:
+    def test_update_reference_basic(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.register(obj, "zone_name", "Z1")
+        graph.update_reference(obj, "zone_name", "Z1", "Z2")
+        assert graph.is_referenced("Z2")
+        assert not graph.is_referenced("Z1")
+        refs = graph.get_references(obj)
+        assert "Z2" in refs
+        assert "Z1" not in refs
+
+    def test_update_reference_old_none(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.update_reference(obj, "zone_name", None, "Z1")
+        assert graph.is_referenced("Z1")
+
+    def test_update_reference_new_none(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.register(obj, "zone_name", "Z1")
+        graph.update_reference(obj, "zone_name", "Z1", None)
+        assert not graph.is_referenced("Z1")
+
+    def test_update_reference_new_empty_string(self) -> None:
+        graph = ReferenceGraph()
+        obj = IDFObject(obj_type="People", name="P1")
+        graph.register(obj, "zone_name", "Z1")
+        graph.update_reference(obj, "zone_name", "Z1", "")
+        assert not graph.is_referenced("Z1")

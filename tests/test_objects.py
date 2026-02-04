@@ -160,13 +160,25 @@ class TestIDFObject:
         obj1 = IDFObject(obj_type="Zone", name="A")
         assert obj1 != "not an object"
 
-    def test_hash(self) -> None:
+    def test_hash_identity_based(self) -> None:
         obj1 = IDFObject(obj_type="Zone", name="MyZone")
         obj2 = IDFObject(obj_type="Zone", name="MyZone")
-        assert hash(obj1) == hash(obj2)
-        # Can be used in sets
+        # Hash is identity-based, so distinct objects have different hashes
+        assert hash(obj1) != hash(obj2)
         s = {obj1, obj2}
-        assert len(s) == 1
+        assert len(s) == 2
+
+    def test_hash_stable_after_name_change(self) -> None:
+        obj = IDFObject(obj_type="Zone", name="OldName")
+        h_before = hash(obj)
+        obj.name = "NewName"
+        assert hash(obj) == h_before
+
+    def test_hash_usable_as_dict_key(self) -> None:
+        obj = IDFObject(obj_type="Zone", name="MyZone")
+        d: dict[IDFObject, str] = {obj: "value"}
+        obj.name = "Renamed"
+        assert d[obj] == "value"
 
     def test_to_dict(self) -> None:
         obj = IDFObject(obj_type="Zone", name="MyZone", data={"x_origin": 5.0})

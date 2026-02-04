@@ -267,9 +267,11 @@ class IDFDocument:
         # Get schema info
         obj_schema: dict[str, Any] | None = None
         field_order: list[str] | None = None
+        ref_fields: frozenset[str] | None = None
         if self._schema:
             obj_schema = self._schema.get_object_schema(obj_type)
             field_order = self._schema.get_field_names(obj_type)
+            ref_fields = self._compute_ref_fields(self._schema, obj_type)
 
         # Create object
         obj = IDFObject(
@@ -279,6 +281,7 @@ class IDFDocument:
             schema=obj_schema,
             document=self,
             field_order=field_order,
+            ref_fields=ref_fields,
         )
 
         # Add to collection
@@ -306,6 +309,10 @@ class IDFDocument:
         """Add an existing IDFObject to the document."""
         # Set document reference
         object.__setattr__(obj, "_document", self)
+
+        # Compute ref_fields if not already set
+        if object.__getattribute__(obj, "_ref_fields") is None and self._schema:
+            object.__setattr__(obj, "_ref_fields", self._compute_ref_fields(self._schema, obj.obj_type))
 
         # Add to collection
         self[obj.obj_type].add(obj)
@@ -358,25 +365,52 @@ class IDFDocument:
         if not obj:
             raise KeyError(f"No {obj_type} named '{old_name}'")  # noqa: TRY003
 
-        # Update all objects that reference this one
-        referencing = self._references.get_referencing_with_fields(old_name)
-        for ref_obj, field_name in referencing:
-            if getattr(ref_obj, field_name, "").upper() == old_name.upper():
-                setattr(ref_obj, field_name, new_name)
-
-        # Update the name index in the collection
-        collection = self._collections[obj_type]
-        old_key = old_name.upper()
-        if old_key in collection.by_name:
-            del collection.by_name[old_key]
-        collection.by_name[new_name.upper()] = obj
-
-        # Update the object itself
+        # Setting the name triggers _set_name -> _on_name_change which handles
+        # collection index, referencing objects, and graph updates.
         obj.name = new_name
 
     # -------------------------------------------------------------------------
     # Reference Graph
     # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _compute_ref_fields(schema: EpJSONSchema, obj_type: str) -> frozenset[str]:
+        """Return frozenset of reference field names (python-style) for an object type."""
+        field_names = schema.get_field_names(obj_type)
+        return frozenset(f for f in field_names if schema.is_reference_field(obj_type, f))
+
+    def notify_name_change(self, obj: IDFObject, old_name: str, new_name: str) -> None:
+        """Called by IDFObject._set_name when a name changes."""
+        # 1. Update collection index
+        obj_type = obj.obj_type
+        if obj_type in self._collections:
+            collection = self._collections[obj_type]
+            old_key = old_name.upper()
+            if old_key in collection.by_name:
+                del collection.by_name[old_key]
+            new_key = new_name.upper()
+            if new_name:
+                collection.by_name[new_key] = obj
+
+        # 2. Update referencing objects' _data directly (bypass _set_field to avoid recursion)
+        referencing = self._references.get_referencing_with_fields(old_name)
+        for ref_obj, field_name in referencing:
+            current = ref_obj.data.get(field_name, "")
+            if isinstance(current, str) and current.upper() == old_name.upper():
+                ref_obj.data[field_name] = new_name
+
+        # 3. Update graph indexes
+        self._references.rename_target(old_name, new_name)
+
+        # 4. Invalidate schedules cache if needed
+        if obj_type.upper().startswith("SCHEDULE"):
+            self._schedules_cache = None
+
+    def notify_reference_change(self, obj: IDFObject, field_name: str, old_value: Any, new_value: Any) -> None:
+        """Called by IDFObject._set_field when a reference field changes."""
+        old_str = old_value if isinstance(old_value, str) else None
+        new_str = new_value if isinstance(new_value, str) else None
+        self._references.update_reference(obj, field_name, old_str, new_str)
 
     def _index_object_references(self, obj: IDFObject) -> None:
         """Index all references in an object using schema information."""

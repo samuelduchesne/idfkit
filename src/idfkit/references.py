@@ -148,6 +148,69 @@ class ReferenceGraph:
                 if name_upper not in valid_upper:
                     yield (obj, field_name, name_upper)
 
+    def rename_target(self, old_name: str, new_name: str) -> None:
+        """
+        Update indexes when a referenced target is renamed.
+
+        Moves _referenced_by[OLD] -> _referenced_by[NEW] and updates
+        corresponding _references entries for all affected objects.
+
+        Args:
+            old_name: The old target name
+            new_name: The new target name
+        """
+        old_upper = old_name.upper()
+        new_upper = new_name.upper()
+        if old_upper == new_upper:
+            return
+
+        referrers = self._referenced_by.pop(old_upper, set())
+        if not referrers:
+            return
+
+        # Update _references for each referring object
+        for obj, field_name in referrers:
+            obj_refs = self._references.get(obj)
+            if obj_refs is not None:
+                obj_refs.discard((old_upper, field_name))
+                obj_refs.add((new_upper, field_name))
+
+        # Merge into new key (there may already be refs to new_name)
+        if new_upper in self._referenced_by:
+            self._referenced_by[new_upper].update(referrers)
+        else:
+            self._referenced_by[new_upper] = referrers
+
+    def update_reference(self, obj: IDFObject, field_name: str, old_value: str | None, new_value: str | None) -> None:
+        """
+        Update indexes when an object's reference field changes.
+
+        Removes the old entry from both indexes and adds the new entry.
+
+        Args:
+            obj: The object whose field changed
+            field_name: The field that changed
+            old_value: The previous referenced name (or None)
+            new_value: The new referenced name (or None)
+        """
+        # Remove old
+        if old_value:
+            old_upper = old_value.upper()
+            refs_set = self._referenced_by.get(old_upper)
+            if refs_set is not None:
+                refs_set.discard((obj, field_name))
+                if not refs_set:
+                    del self._referenced_by[old_upper]
+            obj_refs = self._references.get(obj)
+            if obj_refs is not None:
+                obj_refs.discard((old_upper, field_name))
+
+        # Add new
+        if new_value and new_value.strip():
+            new_upper = new_value.upper()
+            self._referenced_by[new_upper].add((obj, field_name))
+            self._references[obj].add((new_upper, field_name))
+
     def clear(self) -> None:
         """Clear all reference tracking."""
         self._referenced_by.clear()

@@ -51,7 +51,7 @@ class IDFObject:
         _field_order: Ordered list of field names from schema
     """
 
-    __slots__ = ("_data", "_document", "_field_order", "_name", "_schema", "_type")
+    __slots__ = ("_data", "_document", "_field_order", "_name", "_ref_fields", "_schema", "_type")
 
     _type: str
     _name: str
@@ -59,6 +59,7 @@ class IDFObject:
     _schema: dict[str, Any] | None
     _document: IDFDocument | None
     _field_order: list[str] | None
+    _ref_fields: frozenset[str] | None
 
     def __init__(
         self,
@@ -68,6 +69,7 @@ class IDFObject:
         schema: dict[str, Any] | None = None,
         document: IDFDocument | None = None,
         field_order: list[str] | None = None,
+        ref_fields: frozenset[str] | None = None,
     ) -> None:
         object.__setattr__(self, "_type", obj_type)
         object.__setattr__(self, "_name", name)
@@ -75,6 +77,7 @@ class IDFObject:
         object.__setattr__(self, "_schema", schema)
         object.__setattr__(self, "_document", document)
         object.__setattr__(self, "_field_order", field_order)
+        object.__setattr__(self, "_ref_fields", ref_fields)
 
     @property
     def obj_type(self) -> str:
@@ -104,7 +107,7 @@ class IDFObject:
     @name.setter
     def name(self, value: str) -> None:
         """Set the object's name."""
-        object.__setattr__(self, "_name", value)
+        self._set_name(value)
 
     @property
     def key(self) -> str:
@@ -119,7 +122,7 @@ class IDFObject:
     @Name.setter
     def Name(self, value: str) -> None:
         """Set the object's name (eppy compatibility)."""
-        object.__setattr__(self, "_name", value)
+        self._set_name(value)
 
     @property
     def fieldnames(self) -> list[str]:
@@ -168,11 +171,11 @@ class IDFObject:
         if key.startswith("_"):
             object.__setattr__(self, key, value)
         elif key.lower() == "name":
-            object.__setattr__(self, "_name", value)
+            self._set_name(value)
         else:
             # Normalize key to python style
             python_key = to_python_name(key)
-            self._data[python_key] = value
+            self._set_field(python_key, value)
 
     def __getitem__(self, key: str | int) -> Any:
         """Get field value by name or index."""
@@ -189,10 +192,10 @@ class IDFObject:
         """Set field value by name or index."""
         if isinstance(key, int):
             if key == 0:
-                self._name = value
+                self._set_name(value)
             elif self._field_order and 0 < key <= len(self._field_order):
                 field_name = self._field_order[key - 1]
-                self._data[field_name] = value
+                self._set_field(field_name, value)
             else:
                 raise IndexError(f"Field index {key} out of range")  # noqa: TRY003
         else:
@@ -210,7 +213,29 @@ class IDFObject:
         return self._type == other._type and self._name == other._name and self._data == other._data
 
     def __hash__(self) -> int:
-        return hash((self._type, self._name))
+        return id(self)
+
+    def _set_name(self, value: str) -> None:
+        """Centralized name-change logic with document notification."""
+        old = self._name
+        if old == value:
+            return
+        object.__setattr__(self, "_name", value)
+        doc = self._document
+        if doc is not None:
+            doc.notify_name_change(self, old, value)
+
+    def _set_field(self, python_key: str, value: Any) -> None:
+        """Centralized data-field write with reference graph notification."""
+        doc = self._document
+        ref_fields = self._ref_fields
+        if doc is not None and ref_fields is not None and python_key in ref_fields:
+            old = self._data.get(python_key)
+            self._data[python_key] = value
+            if old != value:
+                doc.notify_reference_change(self, python_key, old, value)
+        else:
+            self._data[python_key] = value
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
@@ -248,6 +273,7 @@ class IDFObject:
             schema=self._schema,
             document=None,  # Don't copy document reference
             field_order=self._field_order,
+            ref_fields=self._ref_fields,
         )
 
 
