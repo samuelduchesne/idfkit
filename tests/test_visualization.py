@@ -309,8 +309,8 @@ class TestLayerColors:
         )
 
         svg = construction_to_svg(doc["Construction"]["InsulationOnly"])
-        # Insulation should get yellow color and use insulation pattern
-        assert "hatch-insulation" in svg or "#f5e6a3" in svg.lower()
+        # Insulation should use insulation pattern or CSS variable
+        assert "hatch-insulation" in svg or "var(--idfkit-mat-insulation)" in svg
 
     def test_concrete_gets_gray_color(self) -> None:
         doc = new_document(version=(24, 1, 0))
@@ -334,5 +334,81 @@ class TestLayerColors:
         )
 
         svg = construction_to_svg(doc["Construction"]["ConcreteWall"])
-        # Concrete should get gray color and use concrete pattern
-        assert "hatch-concrete" in svg or "#a8a8a8" in svg.lower()
+        # Concrete should use concrete pattern or CSS variable
+        assert "hatch-concrete" in svg or "var(--idfkit-mat-concrete)" in svg
+
+
+class TestThemeSupport:
+    """Tests for CSS-class-based theme support."""
+
+    @pytest.fixture
+    def opaque_construction(self) -> IDFObject:
+        """Create a simple opaque construction for theme tests."""
+        doc = new_document(version=(24, 1, 0))
+        doc.add(
+            "Material",
+            "Concrete",
+            {
+                "roughness": "MediumRough",
+                "thickness": 0.2,
+                "conductivity": 1.7,
+                "density": 2300,
+                "specific_heat": 900,
+            },
+        )
+        doc.add("Construction", "Wall", {"outside_layer": "Concrete"})
+        return doc["Construction"]["Wall"]
+
+    def test_default_theme_is_light(self) -> None:
+        assert SVGConfig().theme == "light"
+
+    def test_light_theme_svg_class(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction)
+        assert 'class="idfkit-theme-light"' in svg
+
+    def test_light_theme_css_variables(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction)
+        assert "--idfkit-bg: #ffffff" in svg
+        assert "--idfkit-text-title: #333" in svg
+
+    def test_dark_theme_svg_class(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction, config=SVGConfig(theme="dark"))
+        assert 'class="idfkit-theme-dark"' in svg
+
+    def test_dark_theme_has_dark_bg(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction, config=SVGConfig(theme="dark"))
+        assert "--idfkit-bg: #1e1e1e" in svg
+
+    def test_auto_theme_svg_class(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction, config=SVGConfig(theme="auto"))
+        assert 'class="idfkit-theme-auto"' in svg
+
+    def test_auto_theme_media_query(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction, config=SVGConfig(theme="auto"))
+        assert "@media (prefers-color-scheme: dark)" in svg
+
+    def test_auto_theme_both_palettes(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction, config=SVGConfig(theme="auto"))
+        assert "--idfkit-bg: #ffffff" in svg
+        assert "--idfkit-bg: #1e1e1e" in svg
+
+    def test_patterns_use_css_variables(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction)
+        assert "var(--idfkit-mat-concrete)" in svg
+
+    def test_background_uses_css_variable(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction)
+        assert 'fill="var(--idfkit-bg)"' in svg
+
+    def test_construction_to_svg_accepts_config(self, opaque_construction: IDFObject) -> None:
+        svg = construction_to_svg(opaque_construction, config=SVGConfig(theme="dark"))
+        assert 'class="idfkit-theme-dark"' in svg
+        assert "--idfkit-bg: #1e1e1e" in svg
+
+    def test_empty_svg_respects_theme(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Construction", "Empty", {}, validate=False)
+        props = get_thermal_properties(doc["Construction"]["Empty"])
+        svg = generate_construction_svg(props, SVGConfig(theme="dark"))
+        assert 'class="idfkit-theme-dark"' in svg
+        assert 'fill="var(--idfkit-bg)"' in svg

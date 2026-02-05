@@ -149,6 +149,31 @@ svg = generate_construction_svg(props, config)
 | `font_family` | system-ui | Font family for text |
 | `font_size` | 12 | Base font size |
 | `font_size_small` | 10 | Small label font size |
+| `theme` | `"light"` | Color theme: `"light"`, `"dark"`, or `"auto"` |
+
+## Theming
+
+SVG diagrams support light and dark color themes via CSS custom properties.
+
+### Dark Mode
+
+```python
+from idfkit.visualization import SVGConfig, construction_to_svg
+
+svg = construction_to_svg(wall, config=SVGConfig(theme="dark"))
+```
+
+### Auto (OS Preference)
+
+The `"auto"` theme uses `@media (prefers-color-scheme: dark)` to automatically
+match the user's OS or browser setting:
+
+```python
+svg = construction_to_svg(wall, config=SVGConfig(theme="auto"))
+```
+
+When embedded in HTML or displayed in Jupyter, the SVG will switch between
+light and dark palettes based on the host environment's color scheme.
 
 ## Embedding in HTML
 
@@ -178,12 +203,13 @@ with open("wall.html", "w") as f:
 
 ### Functions
 
-#### `construction_to_svg(construction)`
+#### `construction_to_svg(construction, config=None)`
 
 Generate SVG for a Construction IDFObject.
 
 **Parameters:**
 - `construction`: Construction IDFObject (must have `obj_type == "Construction"`)
+- `config`: Optional `SVGConfig` for customization (including theme)
 
 **Returns:** SVG string
 
