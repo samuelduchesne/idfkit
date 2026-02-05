@@ -245,8 +245,12 @@ class IDFParser:
             for i, value in enumerate(remaining_fields):
                 if i < len(field_names):
                     field_name = field_names[i]
-                    if value:  # Only store non-empty values
+                    # Always store values to preserve field positions
+                    # Empty strings are stored as empty strings
+                    if value:
                         data[field_name] = self._coerce_value(obj_type, field_name, value, schema)
+                    else:
+                        data[field_name] = ""
             self._parse_extensible_fields(obj_type, remaining_fields, field_names, data, schema)
         else:
             # No schema — use generic field names
@@ -276,9 +280,14 @@ class IDFParser:
             group = extra[group_idx : group_idx + ext_size]
             suffix = "" if group_idx == 0 else f"_{group_idx // ext_size + 1}"
             for j, value in enumerate(group):
-                if j < len(ext_names) and value:
+                if j < len(ext_names):
                     ext_field = f"{ext_names[j]}{suffix}"
-                    data[ext_field] = self._coerce_value(obj_type, ext_names[j], value, schema)
+                    # Always store values to preserve field positions in extensible groups
+                    # Empty strings are stored as empty strings
+                    if value:
+                        data[ext_field] = self._coerce_value(obj_type, ext_names[j], value, schema)
+                    else:
+                        data[ext_field] = ""
                     field_names.append(ext_field)  # extend field_order
 
     def _parse_fields(self, fields_raw: str) -> list[str]:

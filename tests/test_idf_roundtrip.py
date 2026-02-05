@@ -192,6 +192,121 @@ Zone,
         assert "Zone" in obj_types
 
 
+class TestExtensibleFieldsWithEmptyValues:
+    """Bug fix 5: Empty values in extensible fields must be preserved.
+
+    ZoneHVAC:EquipmentList has 6 fields per equipment group, including
+    optional schedule fields that are often empty. If empty fields are
+    dropped, the field positions shift and EnergyPlus fails with:
+    "zone_equipment_object_type - 2 - Failed to match against any enum values."
+    """
+
+    @pytest.fixture
+    def hvac_equipment_idf(self, tmp_path: Path) -> Path:
+        """IDF with ZoneHVAC:EquipmentList containing empty schedule fields."""
+        content = """\
+Version, 24.1;
+
+Zone,
+  Main Zone,
+  0, 0, 0, 0;
+
+ZoneHVAC:EquipmentConnections,
+  Main Zone,               !- Zone Name
+  Main Zone Equipment,     !- Zone Conditioning Equipment List Name
+  Main Zone Inlet Node,    !- Zone Air Inlet Node or NodeList Name
+  ,                        !- Zone Air Exhaust Node or NodeList Name
+  Main Zone Air Node,      !- Zone Air Node Name
+  Main Zone Return Node;   !- Zone Return Air Node or NodeList Name
+
+ZoneHVAC:EquipmentList,
+  Main Zone Equipment,     !- Name
+  SequentialLoad,          !- Load Distribution Scheme
+  ZoneHVAC:IdealLoadsAirSystem,!- Zone Equipment 1 Object Type
+  Main Zone Ideal Loads,   !- Zone Equipment 1 Name
+  1,                       !- Zone Equipment 1 Cooling Sequence
+  1,                       !- Zone Equipment 1 Heating or No-Load Sequence
+  ,                        !- Zone Equipment 1 Sequential Cooling Fraction Schedule Name
+  ,                        !- Zone Equipment 1 Sequential Heating Fraction Schedule Name
+  ZoneHVAC:IdealLoadsAirSystem,!- Zone Equipment 2 Object Type
+  Main Zone Ideal Loads 2, !- Zone Equipment 2 Name
+  2,                       !- Zone Equipment 2 Cooling Sequence
+  2,                       !- Zone Equipment 2 Heating or No-Load Sequence
+  ,                        !- Zone Equipment 2 Sequential Cooling Fraction Schedule Name
+  ;                        !- Zone Equipment 2 Sequential Heating Fraction Schedule Name
+
+ZoneHVAC:IdealLoadsAirSystem,
+  Main Zone Ideal Loads,
+  ,
+  Main Zone Inlet Node,
+  ;
+
+ZoneHVAC:IdealLoadsAirSystem,
+  Main Zone Ideal Loads 2,
+  ,
+  Main Zone Inlet Node 2,
+  ;
+"""
+        filepath = tmp_path / "hvac_equipment.idf"
+        filepath.write_text(content, encoding="latin-1")
+        return filepath
+
+    def test_empty_schedule_fields_stored(self, hvac_equipment_idf: Path) -> None:
+        """Empty schedule fields should be stored as empty strings."""
+        doc = parse_idf(hvac_equipment_idf)
+        eq_list = doc["ZoneHVAC:EquipmentList"][0]
+
+        # Equipment 1 - verify all 6 fields are present
+        assert eq_list.data.get("zone_equipment_object_type") == "ZoneHVAC:IdealLoadsAirSystem"
+        assert eq_list.data.get("zone_equipment_name") == "Main Zone Ideal Loads"
+        assert eq_list.data.get("zone_equipment_cooling_sequence") == 1.0
+        assert eq_list.data.get("zone_equipment_heating_or_no_load_sequence") == 1.0
+        # Empty schedule fields must be stored as ""
+        assert eq_list.data.get("zone_equipment_sequential_cooling_fraction_schedule_name") == ""
+        assert eq_list.data.get("zone_equipment_sequential_heating_fraction_schedule_name") == ""
+
+        # Equipment 2 - these would have wrong values if empty fields weren't stored
+        assert eq_list.data.get("zone_equipment_object_type_2") == "ZoneHVAC:IdealLoadsAirSystem"
+        assert eq_list.data.get("zone_equipment_name_2") == "Main Zone Ideal Loads 2"
+        assert eq_list.data.get("zone_equipment_cooling_sequence_2") == 2.0
+        assert eq_list.data.get("zone_equipment_heating_or_no_load_sequence_2") == 2.0
+
+    def test_empty_schedule_fields_roundtrip(self, hvac_equipment_idf: Path, tmp_path: Path) -> None:
+        """Empty schedule fields should survive roundtrip."""
+        doc1 = parse_idf(hvac_equipment_idf)
+        output_path = tmp_path / "roundtrip.idf"
+        write_idf(doc1, output_path)
+
+        # Check written IDF has empty fields in correct positions
+        content = output_path.read_text(encoding="latin-1")
+
+        # The empty schedule fields should appear before equipment 2
+        lines = content.split("\n")
+        eq_list_lines = []
+        in_eq_list = False
+        for line in lines:
+            if "ZoneHVAC:EquipmentList" in line:
+                in_eq_list = True
+            if in_eq_list:
+                eq_list_lines.append(line)
+                if ";" in line:
+                    break
+
+        # Should have 14 fields: name, scheme, 6 for equip 1, 6 for equip 2
+        # But trailing empty fields are trimmed, so we check structure
+        eq_text = "\n".join(eq_list_lines)
+        # Equipment 2's object type should come AFTER empty schedule fields
+        assert "Zone Equipment Sequential Cooling Fraction Schedule Name" in eq_text
+        assert "Zone Equipment Sequential Heating Fraction Schedule Name" in eq_text
+
+        # Re-parse and verify data integrity
+        doc2 = parse_idf(output_path)
+        eq_list2 = doc2["ZoneHVAC:EquipmentList"][0]
+        # If empty fields weren't preserved, equipment 2 would have wrong values
+        assert eq_list2.data.get("zone_equipment_object_type_2") == "ZoneHVAC:IdealLoadsAirSystem"
+        assert eq_list2.data.get("zone_equipment_name_2") == "Main Zone Ideal Loads 2"
+
+
 class TestExtensibleFields:
     """Bug fix 4: Extensible fields (vertices) should be preserved."""
 
