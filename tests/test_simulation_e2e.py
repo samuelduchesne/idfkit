@@ -178,7 +178,8 @@ class TestAnnualSimulation:
     def test_sql_timeseries(self, annual_result: SimulationResult) -> None:
         sql = annual_result.sql
         assert sql is not None
-        ts = sql.get_timeseries("Zone Mean Air Temperature")
+        # Filter for annual data only (excludes design days)
+        ts = sql.get_timeseries("Zone Mean Air Temperature", environment="annual")
         # 8760 hourly values for a full year
         assert len(ts.values) == 8760
         assert ts.units == "C"
@@ -189,7 +190,8 @@ class TestAnnualSimulation:
     def test_sql_outdoor_temperature(self, annual_result: SimulationResult) -> None:
         sql = annual_result.sql
         assert sql is not None
-        ts = sql.get_timeseries("Site Outdoor Air Drybulb Temperature")
+        # Filter for annual data only (excludes design days)
+        ts = sql.get_timeseries("Site Outdoor Air Drybulb Temperature", environment="annual")
         assert len(ts.values) == 8760
 
     def test_sql_tabular_data(self, annual_result: SimulationResult) -> None:

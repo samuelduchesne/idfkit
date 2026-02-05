@@ -57,20 +57,35 @@ print(f"Min: {min(ts.values):.1f}, Max: {max(ts.values):.1f}")
 Specify which simulation environment to query:
 
 ```python
-# Design day results only
+# Design day results only (use for design_day=True simulations)
 ts = sql.get_timeseries(
     "Zone Mean Air Temperature",
     "ZONE 1",
-    environment_name="CHICAGO ANN HTG 99.6% CONDNS DB",
+    environment="sizing",
 )
 
-# Run period results only
+# Annual/run period results only (default)
 ts = sql.get_timeseries(
     "Zone Mean Air Temperature",
     "ZONE 1",
-    environment_name="RUN PERIOD 1",
+    environment="annual",
+)
+
+# All environments (design days + run periods)
+ts = sql.get_timeseries(
+    "Zone Mean Air Temperature",
+    "ZONE 1",
+    environment=None,
 )
 ```
+
+The `environment` parameter accepts:
+
+| Value | Description |
+|-------|-------------|
+| `None` | All data from all environments (default) |
+| `"annual"` | Weather-file run period data only |
+| `"sizing"` | Design day data only |
 
 ### Converting to DataFrame
 
@@ -145,7 +160,7 @@ rows = sql.get_tabular_data(
 ### List Available Variables
 
 ```python
-variables = sql.get_available_variables()
+variables = sql.list_variables()
 
 for var in variables[:10]:
     print(f"{var.name} ({var.key_value}) [{var.units}] - {var.frequency}")
@@ -238,15 +253,16 @@ if sql is None:
     print("No SQL output - was Output:SQLite in the model?")
     return
 
-# Get time series (returns None if not found)
-ts = sql.get_timeseries("Nonexistent Variable", "ZONE 1")
-if ts is None:
-    print("Variable not found in database")
+# Get time series (raises KeyError if not found)
+try:
+    ts = sql.get_timeseries("Nonexistent Variable", "ZONE 1")
+except KeyError as e:
+    print(f"Variable not found: {e}")
 ```
 
 ## Performance Tips
 
-1. **Filter early** — Use `environment_name` to reduce data size
+1. **Filter early** — Use the `environment` parameter to reduce data size
 2. **Query once** — Store results in variables rather than re-querying
 3. **Use lazy loading** — Don't access `result.sql` if you don't need it
 

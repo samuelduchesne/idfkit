@@ -165,6 +165,9 @@ class IDFDocument:
         Examples:
             doc.zones  # -> Zone collection
             doc.building_surfaces  # -> BuildingSurface:Detailed collection
+
+        Raises:
+            AttributeError: If the attribute is not a known collection mapping.
         """
         if name.startswith("_"):
             raise AttributeError(name)
@@ -179,8 +182,8 @@ class IDFDocument:
             if key.lower().replace(":", "_").replace(" ", "_") == name.lower():
                 return self._collections[key]
 
-        # Return empty collection for unknown types
-        return self[name]
+        # Raise AttributeError for unknown attributes
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")  # noqa: TRY003
 
     def __contains__(self, obj_type: str) -> bool:
         """Check if document has objects of a type."""
@@ -193,6 +196,18 @@ class IDFDocument:
     def __len__(self) -> int:
         """Return total number of objects."""
         return sum(len(c) for c in self._collections.values())
+
+    def keys(self) -> list[str]:
+        """Return list of object type names that have objects."""
+        return [k for k, v in self._collections.items() if v]
+
+    def values(self) -> list[IDFCollection]:
+        """Return list of non-empty collections."""
+        return [v for v in self._collections.values() if v]
+
+    def items(self) -> list[tuple[str, IDFCollection]]:
+        """Return list of (object_type, collection) pairs for non-empty collections."""
+        return [(k, v) for k, v in self._collections.items() if v]
 
     # -------------------------------------------------------------------------
     # Object Access (eppy compatibility)

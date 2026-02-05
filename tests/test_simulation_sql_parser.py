@@ -191,9 +191,9 @@ class TestSQLResultTimeSeries:
     def test_get_outdoor_temp(self, sql_db: Path) -> None:
         with SQLResult(sql_db) as sql:
             ts = sql.get_timeseries("Site Outdoor Air Drybulb Temperature")
-        # Default environment="annual" returns only run-period data
-        assert len(ts.values) == 4
-        assert ts.values[0] == -5.2
+        # Default environment=None returns all data (sizing + annual)
+        assert len(ts.values) == 5
+        assert ts.values[0] == -17.0  # Sizing data first
         assert ts.units == "C"
         assert ts.variable_name == "Site Outdoor Air Drybulb Temperature"
 
@@ -266,7 +266,8 @@ class TestSQLResultTimeSeries:
     def test_get_by_key_value(self, sql_db: Path) -> None:
         with SQLResult(sql_db) as sql:
             ts = sql.get_timeseries("Zone Mean Air Temperature", "THERMAL ZONE 1")
-        assert len(ts.values) == 4
+        # Default environment=None returns all data (sizing + annual)
+        assert len(ts.values) == 5
         assert ts.key_value == "THERMAL ZONE 1"
 
     def test_variable_not_found(self, sql_db: Path) -> None:
@@ -295,11 +296,12 @@ class TestSQLResultEnvironmentFilter:
         assert ts.values[0] == -17.0
         assert ts.timestamps[0] == datetime(2017, 12, 21, 1, 0)
 
-    def test_default_is_annual(self, sql_db: Path) -> None:
+    def test_default_returns_all(self, sql_db: Path) -> None:
         with SQLResult(sql_db) as sql:
             ts = sql.get_timeseries("Site Outdoor Air Drybulb Temperature")
-        assert len(ts.values) == 4
-        assert ts.values[0] == -5.2
+        # Default environment=None returns all data (sizing + annual)
+        assert len(ts.values) == 5
+        assert ts.values[0] == -17.0  # Sizing data first
 
     def test_none_returns_all(self, sql_db: Path) -> None:
         with SQLResult(sql_db) as sql:

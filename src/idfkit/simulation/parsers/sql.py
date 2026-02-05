@@ -230,18 +230,18 @@ class SQLResult:
         variable_name: str,
         key_value: str = "*",
         frequency: str | None = None,
-        environment: Environment | None = "annual",
+        environment: Environment | None = None,
     ) -> TimeSeriesResult:
         """Retrieve a time series for a variable.
 
         Args:
             variable_name: The output variable name.
             key_value: The key value (e.g. zone name). Use ``"*"`` for
-                environment-level variables.
+                environment-level variables. Case-insensitive matching.
             frequency: Optional frequency filter (e.g. ``"Hourly"``).
-            environment: Filter by environment type. ``"annual"`` (default)
-                returns only weather-file run period data, ``"sizing"`` returns
-                only design-day data, and ``None`` returns all data.
+            environment: Filter by environment type. ``None`` (default)
+                returns all data, ``"annual"`` returns only weather-file
+                run period data, and ``"sizing"`` returns only design-day data.
 
         Returns:
             A TimeSeriesResult with timestamps and values.
@@ -261,7 +261,7 @@ class SQLResult:
         params: list[object] = [variable_name]
 
         if key_value != "*":
-            query += " AND rdd.KeyValue = ?"
+            query += " AND UPPER(rdd.KeyValue) = UPPER(?)"
             params.append(key_value)
 
         if frequency is not None:
@@ -426,7 +426,7 @@ class SQLResult:
         variable_name: str,
         key_value: str = "*",
         frequency: str | None = None,
-        environment: Environment | None = "annual",
+        environment: Environment | None = None,
     ) -> Any:
         """Retrieve a time series as a pandas DataFrame.
 
@@ -437,8 +437,9 @@ class SQLResult:
             variable_name: The output variable name.
             key_value: The key value. Use ``"*"`` for environment-level variables.
             frequency: Optional frequency filter.
-            environment: Filter by environment type (``"annual"`` by default,
-                ``"sizing"``, or ``None`` for all).
+            environment: Filter by environment type (``None`` by default
+                for all data, ``"annual"`` for run periods, ``"sizing"`` for
+                design days).
 
         Returns:
             A pandas DataFrame with a ``timestamp`` index.
