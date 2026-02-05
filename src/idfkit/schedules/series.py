@@ -52,7 +52,7 @@ def to_series(
         ImportError: If pandas is not installed.
     """
     try:
-        import pandas  # pyright: ignore[reportMissingTypeStubs]
+        import pandas  # pyright: ignore[reportMissingImports, reportMissingTypeStubs]
     except ImportError:
         msg = "pandas is required for to_series(). Install with: pip install idfkit[dataframes]"
         raise ImportError(msg) from None
