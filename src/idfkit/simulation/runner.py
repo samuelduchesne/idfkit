@@ -18,6 +18,7 @@ from .result import SimulationResult
 
 if TYPE_CHECKING:
     from ..document import IDFDocument
+    from .cache import CacheKey, SimulationCache
 
 
 def simulate(
@@ -34,6 +35,7 @@ def simulate(
     readvars: bool = False,
     timeout: float = 3600.0,
     extra_args: list[str] | None = None,
+    cache: SimulationCache | None = None,
 ) -> SimulationResult:
     """Run an EnergyPlus simulation.
 
@@ -54,6 +56,7 @@ def simulate(
         readvars: Run ReadVarsESO after simulation (``-r`` flag).
         timeout: Maximum runtime in seconds (default 3600).
         extra_args: Additional command-line arguments.
+        cache: Optional simulation cache for content-hash lookups.
 
     Returns:
         SimulationResult with paths to output files.
@@ -68,6 +71,21 @@ def simulate(
     if not weather_path.is_file():
         msg = f"Weather file not found: {weather_path}"
         raise SimulationError(msg)
+
+    cache_key: CacheKey | None = None
+    if cache is not None:
+        cache_key = cache.compute_key(
+            model,
+            weather_path,
+            expand_objects=expand_objects,
+            annual=annual,
+            design_day=design_day,
+            output_suffix=output_suffix,
+            extra_args=extra_args,
+        )
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
 
     # Copy model to avoid mutation
     sim_model = model.copy()
@@ -103,16 +121,6 @@ def simulate(
             timeout=timeout,
             cwd=str(run_dir),
         )
-        elapsed = time.monotonic() - start
-        return SimulationResult(
-            run_dir=run_dir,
-            success=proc.returncode == 0,
-            exit_code=proc.returncode,
-            stdout=proc.stdout,
-            stderr=proc.stderr,
-            runtime_seconds=elapsed,
-            output_prefix=output_prefix,
-        )
     except subprocess.TimeoutExpired as exc:
         elapsed = time.monotonic() - start
         msg = f"Simulation timed out after {timeout} seconds"
@@ -128,6 +136,20 @@ def simulate(
             exit_code=None,
             stderr=None,
         ) from exc
+    else:
+        elapsed = time.monotonic() - start
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=proc.returncode == 0,
+            exit_code=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+        )
+        if cache is not None and cache_key is not None and result.success:
+            cache.put(cache_key, result)
+        return result
 
 
 # ---------------------------------------------------------------------------

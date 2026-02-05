@@ -1786,21 +1786,40 @@ def _import_pandas() -> Any:
 - `pyproject.toml` — added `dataframes` optional dependency
 - `uv.lock` — updated for new optional dependency
 
-### Phase 3: Parallel Execution and Caching
+### Phase 3: Parallel Execution and Caching ✅ COMPLETED
 
 **Scope**: Batch simulation, caching, and performance.
 
-- `simulate_batch()` with `ProcessPoolExecutor`
-- `SimulationJob` serializable data class
-- Content-hash-based simulation caching
-- Progress reporting (callback-based)
-- Timeout handling and graceful cancellation
+- ✅ `SimulationCache` class with SHA-256 content-addressed caching: `compute_key()` normalises models (ensures `Output:SQLite`), hashes IDF text + weather bytes + sorted flags JSON; `get()`/`put()` with atomic directory rename; `contains()` and `clear()`
+- ✅ `CacheKey` frozen dataclass wrapping a hex digest string
+- ✅ `default_simulation_cache_dir()` with platform-appropriate paths (Windows/macOS/Linux), following the same pattern as `idfkit.weather.index.default_cache_dir()`
+- ✅ `simulate()` updated with `cache: SimulationCache | None = None` parameter — cache lookup before execution, cache store on success
+- ✅ `SimulationJob` frozen dataclass with all simulation parameters (`model`, `weather`, `label`, `output_dir`, flags, `timeout`, `extra_args` as tuple)
+- ✅ `BatchResult` frozen dataclass with `succeeded`/`failed` properties, `all_succeeded`, `__len__`, `__getitem__`
+- ✅ `simulate_batch()` with `ThreadPoolExecutor` and `as_completed()` pattern — resolves config once, validates non-empty jobs, defaults `max_workers` to `min(len(jobs), cpu_count)`, preserves original job order via index tracking
+- ✅ Progress reporting via `progress(completed=N, total=M, label=label, success=bool)` callback
+- ✅ Per-job error handling: `SimulationError` caught and converted to failed `SimulationResult` (batch never raises due to individual failures)
+- ✅ Cache integration in batch: `cache` parameter passed through to `simulate()` per job
+- ✅ Updated `__init__.py` exports: `BatchResult`, `CacheKey`, `SimulationCache`, `SimulationJob`, `simulate_batch`
+- ✅ Unit tests (35 new tests) covering platform cache dirs, key equality/frozenness, deterministic hashing, Output:SQLite normalisation, get/put round-trip, metadata preservation, failure exclusion, contains/clear, job/result dataclass properties, single/multiple/ordered batch execution, failed job non-cancellation, progress callbacks, cache integration
 
-**New files**:
-- `src/idfkit/sim/batch.py`
-- `src/idfkit/sim/cache.py`
-- `tests/test_sim_batch.py`
-- `tests/test_sim_cache.py`
+**Deviations from original plan**:
+- Uses `ThreadPoolExecutor` (not `ProcessPoolExecutor`) since `simulate()` delegates to `subprocess.run()` which releases the GIL — avoids all `IDFDocument` pickling issues
+- Package named `idfkit.simulation` (not `idfkit.sim`) — consistent with Phases 1 and 2
+- `SimulationJob.model` typed as `object` at class level to avoid import-time dependency on `IDFDocument`; cast at call site
+- `SimulationJob.extra_args` is `tuple[str, ...] | None` (not `list`) since the dataclass is frozen
+- Cache `put()` only stores successful results; uses `shutil.copytree` + `os.rename` for atomic writes with `_cache_meta.json` manifest
+- Graceful cancellation deferred — timeout is handled per-job via the existing `simulate()` timeout parameter
+
+**Files created**:
+- `src/idfkit/simulation/cache.py`
+- `src/idfkit/simulation/batch.py`
+- `tests/test_simulation_cache.py`
+- `tests/test_simulation_batch.py`
+
+**Files modified**:
+- `src/idfkit/simulation/runner.py` — added `cache` parameter, cache lookup/store logic, moved result construction to `else` block (TRY300)
+- `src/idfkit/simulation/__init__.py` — added 5 new exports to `__all__`
 
 ### Phase 4: File System Abstraction
 
