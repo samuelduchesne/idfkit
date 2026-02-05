@@ -39,7 +39,11 @@ idfkit is designed from the ground up for speed. On a **1,700-object IDF**,
 looking up a single object by name is **over 750x faster** than eppy and opyplus
 thanks to O(1) dict-based indexing:
 
-![benchmark chart](docs/assets/benchmark.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/benchmark_dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/benchmark.svg">
+  <img alt="benchmark chart" src="docs/assets/benchmark.svg">
+</picture>
 
 See [full benchmark results](https://samuelduchesne.github.io/idfkit/benchmarks/)
 for all six operations (load, query, add, modify, write) across four tools.

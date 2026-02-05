@@ -59,6 +59,26 @@ COLORS = {
     TOOL_IDDIDF: "#72B7B2",
 }
 
+# Theme palettes for light/dark chart generation
+_THEMES: dict[str, dict[str, str]] = {
+    "light": {
+        "bg": "white",
+        "text": "#333",
+        "bar_text": "white",
+        "spine": "#cccccc",
+        "tick": "#333",
+        "title": "#333",
+    },
+    "dark": {
+        "bg": "#1e1e1e",
+        "text": "#cccccc",
+        "bar_text": "#1e1e1e",
+        "spine": "#444444",
+        "tick": "#cccccc",
+        "title": "#cccccc",
+    },
+}
+
 
 # ---------------------------------------------------------------------------
 # IDD helper - locate opyplus's bundled V9.3 IDD
@@ -425,6 +445,7 @@ def _draw_operation(
     all_results: dict[str, dict[str, dict[str, float]]],
     *,
     show_title: bool = True,
+    theme: str = "light",
 ) -> None:
     """Draw a single horizontal bar chart on *ax* for one operation.
 
@@ -432,6 +453,7 @@ def _draw_operation(
     """
     import matplotlib.ticker as ticker
 
+    palette = _THEMES[theme]
     tools = [TOOL_IDFKIT, TOOL_EPPY, TOOL_OPYPLUS, TOOL_IDDIDF]
 
     # Collect times for tools that support this operation
@@ -460,7 +482,7 @@ def _draw_operation(
         times,
         color=bar_colors,
         height=0.6,
-        edgecolor="white",
+        edgecolor=palette["bg"],
         linewidth=0.5,
     )
 
@@ -477,7 +499,7 @@ def _draw_operation(
                 ha="left",
                 fontsize=9,
                 fontweight="bold",
-                color="#333",
+                color=palette["text"],
             )
         else:
             ax.text(
@@ -488,18 +510,21 @@ def _draw_operation(
                 ha="right",
                 fontsize=9,
                 fontweight="bold",
-                color="white",
+                color=palette["bar_text"],
             )
 
     if show_title:
         title = f"{op}  ({speedup:.0f}x)" if speedup > 1.05 else op
-        ax.set_title(title, fontsize=11, fontweight="bold", loc="left", pad=8)
+        ax.set_title(title, fontsize=11, fontweight="bold", loc="left", pad=8, color=palette["title"])
     ax.set_xlim(0, max_t * 1.18)
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: _format_time(x)))
-    ax.tick_params(axis="x", labelsize=9)
-    ax.tick_params(axis="y", labelsize=9)
+    ax.tick_params(axis="x", labelsize=9, colors=palette["tick"])
+    ax.tick_params(axis="y", labelsize=9, colors=palette["tick"])
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_color(palette["spine"])
+    ax.spines["left"].set_color(palette["spine"])
+    ax.set_facecolor(palette["bg"])
     ax.invert_yaxis()
 
 
@@ -507,38 +532,43 @@ def generate_hero_chart(
     all_results: dict[str, dict[str, dict[str, float]]],
     output_path: Path,
 ) -> None:
-    """Generate the single-operation hero chart for the README."""
+    """Generate the single-operation hero chart for the README (light + dark)."""
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(10, 2.8), constrained_layout=True)
-    _draw_operation(ax, HERO_OPERATION, all_results, show_title=False)
+    for theme in ("light", "dark"):
+        palette = _THEMES[theme]
+        fig, ax = plt.subplots(figsize=(10, 2.8), constrained_layout=True)
+        _draw_operation(ax, HERO_OPERATION, all_results, show_title=False, theme=theme)
 
-    # Compute speedup for the title
-    idfkit_t = all_results[TOOL_IDFKIT][HERO_OPERATION]["min"]
-    slowest = max(r[HERO_OPERATION]["min"] for r in all_results.values() if HERO_OPERATION in r)
-    speedup = slowest / idfkit_t if idfkit_t > 0 else float("inf")
-    speedup_str = f"  ({speedup:.0f}x)" if speedup > 1.05 else ""
+        # Compute speedup for the title
+        idfkit_t = all_results[TOOL_IDFKIT][HERO_OPERATION]["min"]
+        slowest = max(r[HERO_OPERATION]["min"] for r in all_results.values() if HERO_OPERATION in r)
+        speedup = slowest / idfkit_t if idfkit_t > 0 else float("inf")
+        speedup_str = f"  ({speedup:.0f}x)" if speedup > 1.05 else ""
 
-    fig.suptitle(
-        f"{HERO_OPERATION}{speedup_str}\nEnergyPlus V{ENERGYPLUS_VERSION_STR} - {_total_objects()} objects",
-        fontsize=12,
-        fontweight="bold",
-        y=1.06,
-    )
+        fig.suptitle(
+            f"{HERO_OPERATION}{speedup_str}\nEnergyPlus V{ENERGYPLUS_VERSION_STR} - {_total_objects()} objects",
+            fontsize=12,
+            fontweight="bold",
+            y=1.06,
+            color=palette["title"],
+        )
 
-    fig.savefig(str(output_path), dpi=150, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    print(f"Hero chart saved to {output_path}")
+        suffix = f"_{theme}" if theme == "dark" else ""
+        out = output_path.with_stem(output_path.stem + suffix)
+        fig.savefig(str(out), bbox_inches="tight", facecolor=palette["bg"])
+        plt.close(fig)
+        print(f"Hero chart ({theme}) saved to {out}")
 
 
 def generate_operation_charts(
     all_results: dict[str, dict[str, dict[str, float]]],
     output_dir: Path,
 ) -> None:
-    """Generate one chart per operation for the docs benchmarks page."""
+    """Generate one chart per operation for the docs benchmarks page (light + dark)."""
     import matplotlib
 
     matplotlib.use("Agg")
@@ -548,14 +578,17 @@ def generate_operation_charts(
 
     for op in operations:
         slug = _OP_SLUGS.get(op, op.lower().replace(" ", "_"))
-        out = output_dir / f"benchmark_{slug}.png"
+        for theme in ("light", "dark"):
+            palette = _THEMES[theme]
+            suffix = f"_{theme}" if theme == "dark" else ""
+            out = output_dir / f"benchmark_{slug}{suffix}.svg"
 
-        fig, ax = plt.subplots(figsize=(10, 2.8), constrained_layout=True)
-        _draw_operation(ax, op, all_results)
+            fig, ax = plt.subplots(figsize=(10, 2.8), constrained_layout=True)
+            _draw_operation(ax, op, all_results, theme=theme)
 
-        fig.savefig(str(out), dpi=150, bbox_inches="tight", facecolor="white")
-        plt.close(fig)
-        print(f"  {out}")
+            fig.savefig(str(out), bbox_inches="tight", facecolor=palette["bg"])
+            plt.close(fig)
+            print(f"  {out}")
 
 
 def _total_objects() -> int:
@@ -664,7 +697,7 @@ def main() -> None:
         assets_dir.mkdir(parents=True, exist_ok=True)
 
         # Hero chart for README (single operation)
-        generate_hero_chart(all_results, assets_dir / "benchmark.png")
+        generate_hero_chart(all_results, assets_dir / "benchmark.svg")
 
         # Per-operation charts for docs benchmarks page
         print("Per-operation charts:")

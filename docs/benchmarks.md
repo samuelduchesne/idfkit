@@ -13,27 +13,33 @@ time is reported. Bars are sorted fastest to slowest.
 
 ## Load IDF file
 
-![Load IDF file](assets/benchmark_load_idf.png)
+![Load IDF file](assets/benchmark_load_idf.svg#only-light)
+![Load IDF file](assets/benchmark_load_idf_dark.svg#only-dark)
 
 ## Get all objects by type
 
-![Get all objects by type](assets/benchmark_get_by_type.png)
+![Get all objects by type](assets/benchmark_get_by_type.svg#only-light)
+![Get all objects by type](assets/benchmark_get_by_type_dark.svg#only-dark)
 
 ## Get single object by name
 
-![Get single object by name](assets/benchmark_get_by_name.png)
+![Get single object by name](assets/benchmark_get_by_name.svg#only-light)
+![Get single object by name](assets/benchmark_get_by_name_dark.svg#only-dark)
 
 ## Add 100 objects
 
-![Add 100 objects](assets/benchmark_add_objects.png)
+![Add 100 objects](assets/benchmark_add_objects.svg#only-light)
+![Add 100 objects](assets/benchmark_add_objects_dark.svg#only-dark)
 
 ## Modify fields (all zones)
 
-![Modify fields](assets/benchmark_modify_fields.png)
+![Modify fields](assets/benchmark_modify_fields.svg#only-light)
+![Modify fields](assets/benchmark_modify_fields_dark.svg#only-dark)
 
 ## Write IDF to string
 
-![Write IDF to string](assets/benchmark_write_idf.png)
+![Write IDF to string](assets/benchmark_write_idf.svg#only-light)
+![Write IDF to string](assets/benchmark_write_idf_dark.svg#only-dark)
 
 ## Supported EnergyPlus versions
 
