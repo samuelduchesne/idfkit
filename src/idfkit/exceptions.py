@@ -94,3 +94,82 @@ class ValidationFailedError(IdfKitError):
         if len(errors) > 5:
             msg += f"  ... and {len(errors) - 5} more errors"
         super().__init__(msg)
+
+
+class EnergyPlusNotFoundError(IdfKitError):
+    """Raised when EnergyPlus installation cannot be found."""
+
+    def __init__(self, searched_locations: list[str] | None = None) -> None:
+        self.searched_locations = searched_locations or []
+        msg = "Could not find an EnergyPlus installation."
+        if self.searched_locations:
+            msg += "\nSearched in:\n"
+            for loc in self.searched_locations:
+                msg += f"  - {loc}\n"
+        msg += (
+            "\nTo fix this, either:\n"
+            "  1. Set the ENERGYPLUS_DIR environment variable to your EnergyPlus install directory\n"
+            "  2. Pass an explicit path: find_energyplus(path='/path/to/EnergyPlus')\n"
+            "  3. Ensure 'energyplus' is on your PATH"
+        )
+        super().__init__(msg)
+
+
+class SimulationError(IdfKitError):
+    """Raised when an EnergyPlus simulation fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        exit_code: int | None = None,
+        stderr: str | None = None,
+    ) -> None:
+        self.exit_code = exit_code
+        self.stderr = stderr
+        msg = message
+        if exit_code is not None:
+            msg += f" (exit code {exit_code})"
+        if stderr:
+            trimmed = stderr.strip()[:500]
+            msg += f"\nstderr: {trimmed}"
+        super().__init__(msg)
+
+
+class NoDesignDaysError(IdfKitError):
+    """Raised when a DDY file contains no SizingPeriod:DesignDay objects.
+
+    This typically occurs for weather stations that lack ASHRAE design
+    conditions data in the climate.onebuilding.org database.
+
+    Attributes:
+        station_name: Display name of the station (if available).
+        ddy_path: Path to the DDY file that was parsed.
+        nearby_suggestions: List of nearby stations that may have design days.
+    """
+
+    def __init__(
+        self,
+        station_name: str | None = None,
+        ddy_path: str | None = None,
+        nearby_suggestions: list[str] | None = None,
+    ) -> None:
+        self.station_name = station_name
+        self.ddy_path = ddy_path
+        self.nearby_suggestions = nearby_suggestions or []
+
+        if station_name:
+            msg = f"DDY file for '{station_name}' contains no SizingPeriod:DesignDay objects."
+        elif ddy_path:
+            msg = f"DDY file '{ddy_path}' contains no SizingPeriod:DesignDay objects."
+        else:
+            msg = "DDY file contains no SizingPeriod:DesignDay objects."
+
+        msg += "\nThis station may lack ASHRAE design conditions data."
+
+        if self.nearby_suggestions:
+            msg += "\n\nNearby stations that may have design days:"
+            for suggestion in self.nearby_suggestions[:5]:
+                msg += f"\n  - {suggestion}"
+
+        super().__init__(msg)
