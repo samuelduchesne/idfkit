@@ -15,6 +15,8 @@ Example:
 
 from __future__ import annotations
 
+from .batch import BatchResult, SimulationJob, simulate_batch
+from .cache import CacheKey, SimulationCache
 from .config import EnergyPlusConfig, find_energyplus
 from .outputs import OutputVariableIndex
 from .parsers.csv import CSVColumn, CSVResult
@@ -25,8 +27,10 @@ from .result import SimulationResult
 from .runner import simulate
 
 __all__ = [
+    "BatchResult",
     "CSVColumn",
     "CSVResult",
+    "CacheKey",
     "EnergyPlusConfig",
     "EnvironmentInfo",
     "ErrorMessage",
@@ -35,10 +39,13 @@ __all__ = [
     "OutputVariable",
     "OutputVariableIndex",
     "SQLResult",
+    "SimulationCache",
+    "SimulationJob",
     "SimulationResult",
     "TabularRow",
     "TimeSeriesResult",
     "VariableInfo",
     "find_energyplus",
     "simulate",
+    "simulate_batch",
 ]
