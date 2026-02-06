@@ -1,9 +1,9 @@
-"""Expand HVACTemplate and other macro objects using the EnergyPlus ExpandObjects preprocessor.
+"""Expand HVACTemplate objects using the EnergyPlus ExpandObjects preprocessor.
 
 The ``ExpandObjects`` utility ships with every EnergyPlus installation and
-converts high-level template objects (such as ``HVACTemplate:*``) into their
-detailed low-level equivalents.  This module wraps that utility so users can
-inspect the expanded result without running a full simulation.
+converts ``HVACTemplate:*`` objects into their detailed low-level HVAC
+equivalents.  This module wraps that utility so users can inspect the
+expanded result without running a full simulation.
 
 Example::
 
@@ -32,17 +32,16 @@ if TYPE_CHECKING:
     from ..document import IDFDocument
 
 
-_EXPANDABLE_GROUPS = frozenset({
-    "HVAC Templates",
-    "Detailed Ground Heat Transfer",
-})
-"""Schema group names whose objects are handled by the ExpandObjects preprocessor."""
+_EXPANDABLE_GROUP = "HVAC Templates"
+"""Schema group name whose objects are handled by the ExpandObjects preprocessor.
 
-_EXPANDABLE_PREFIXES = (
-    "HVACTemplate:",
-    "GroundHeatTransfer:",
-)
-"""Fallback prefixes used when the document has no schema loaded."""
+Note: ``GroundHeatTransfer:*`` objects belong to the *Detailed Ground Heat
+Transfer* group and are handled by the separate **Slab** and **Basement**
+preprocessors, not by ExpandObjects.
+"""
+
+_EXPANDABLE_PREFIX = "HVACTemplate:"
+"""Fallback prefix used when the document has no schema loaded."""
 
 
 def _needs_expansion(model: IDFDocument) -> bool:
@@ -54,8 +53,8 @@ def _needs_expansion(model: IDFDocument) -> bool:
     """
     schema = model.schema
     if schema is not None:
-        return any(schema.get_group(obj_type) in _EXPANDABLE_GROUPS for obj_type in model)
-    return any(obj_type.startswith(_EXPANDABLE_PREFIXES) for obj_type in model)
+        return any(schema.get_group(obj_type) == _EXPANDABLE_GROUP for obj_type in model)
+    return any(obj_type.startswith(_EXPANDABLE_PREFIX) for obj_type in model)
 
 
 def expand_objects(
@@ -66,9 +65,9 @@ def expand_objects(
 ) -> IDFDocument:
     """Run the EnergyPlus *ExpandObjects* preprocessor and return the expanded document.
 
-    ``ExpandObjects`` replaces high-level template objects
-    (``HVACTemplate:*``, ``GroundHeatTransfer:*``, etc.) with their fully
-    specified low-level equivalents.  The original *model* is **not** mutated.
+    ``ExpandObjects`` replaces ``HVACTemplate:*`` objects with their fully
+    specified low-level HVAC equivalents.  The original *model* is **not**
+    mutated.
 
     If the document contains no expandable objects, a
     :meth:`~idfkit.document.IDFDocument.copy` is returned immediately without

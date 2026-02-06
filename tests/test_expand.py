@@ -263,11 +263,11 @@ def test_needs_expansion_uses_schema_group(model_with_hvac_template: IDFDocument
     assert _needs_expansion(model_with_hvac_template) is True
 
 
-def test_needs_expansion_detects_ground_heat_transfer() -> None:
-    """Schema-based detection works for GroundHeatTransfer objects too."""
+def test_needs_expansion_ignores_ground_heat_transfer() -> None:
+    """GroundHeatTransfer objects are handled by Slab/Basement, not ExpandObjects."""
     doc = new_document(version=(24, 1, 0))
     doc.add("GroundHeatTransfer:Control", "", {"name": "test", "run_basement_preprocessor": "No"}, validate=False)
-    assert _needs_expansion(doc) is True
+    assert _needs_expansion(doc) is False
 
 
 def test_needs_expansion_false_for_plain_model() -> None:

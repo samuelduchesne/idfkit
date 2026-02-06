@@ -622,9 +622,9 @@ class IDFDocument:
     ) -> IDFDocument:
         """Run the EnergyPlus *ExpandObjects* preprocessor on this document.
 
-        This replaces high-level template objects (``HVACTemplate:*``, etc.)
-        with their fully specified low-level equivalents and returns a **new**
-        document.  The current document is not mutated.
+        This replaces ``HVACTemplate:*`` objects with their fully specified
+        low-level HVAC equivalents and returns a **new** document.  The
+        current document is not mutated.
 
         If the document contains no expandable objects, a copy is returned
         immediately without invoking the preprocessor.
