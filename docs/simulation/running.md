@@ -43,6 +43,65 @@ Without flags, EnergyPlus uses whatever run periods are defined in the model:
 result = simulate(model, weather)  # Uses model's RunPeriod objects
 ```
 
+## Preprocessing
+
+Some EnergyPlus models contain high-level template objects that must be
+expanded into their low-level equivalents before simulation.  idfkit provides
+standalone preprocessing functions for this.
+
+### Expanding HVAC Templates
+
+`HVACTemplate:*` objects are shorthand for complex HVAC systems.
+`expand_objects()` converts them into their fully specified equivalents:
+
+```python
+from idfkit.simulation import expand_objects
+
+expanded = expand_objects(model)
+# HVACTemplate:Zone:IdealLoadsAirSystem → ZoneHVAC:IdealLoadsAirSystem + ...
+```
+
+!!! note
+    `simulate()` runs ExpandObjects automatically when `expand_objects=True`
+    (the default).  Call `expand_objects()` directly only when you need to
+    inspect or modify the expanded model before simulation.
+
+### Ground Heat Transfer (Slab & Basement)
+
+Models with `GroundHeatTransfer:Slab:*` or `GroundHeatTransfer:Basement:*`
+objects need the Slab or Basement preprocessor to compute ground temperatures.
+
+!!! note
+    `simulate()` **automatically** runs the Slab and/or Basement
+    preprocessors when `expand_objects=True` (the default) and the model
+    contains the corresponding ground heat-transfer objects.  In most
+    cases you do not need to call these functions yourself.
+
+For cases where you need to inspect or modify the preprocessed model
+before simulation, standalone functions are available:
+
+```python
+from idfkit.simulation import run_slab_preprocessor, run_basement_preprocessor
+
+# Slab-on-grade foundation
+expanded = run_slab_preprocessor(model, weather="weather.epw")
+
+# Basement walls and floors
+expanded = run_basement_preprocessor(model, weather="weather.epw")
+```
+
+Each function runs ExpandObjects first (to extract the ground heat-transfer
+input), then the Fortran solver, and returns a new `IDFDocument` with the
+computed temperature schedules appended.
+
+All preprocessing functions raise
+[`ExpandObjectsError`](errors.md) on failure, with
+structured `preprocessor`, `exit_code`, and `stderr` fields for
+programmatic error handling.
+
+See the [Preprocessing API](../api/simulation/expand.md) reference for full
+details.
+
 ## Function Signature
 
 ```python
@@ -80,7 +139,7 @@ def simulate(
 |-----------|---------|-------------|
 | `output_dir` | Auto temp | Directory for output files |
 | `energyplus` | Auto-detect | Pre-configured EnergyPlus installation |
-| `expand_objects` | `True` | Run ExpandObjects before simulation |
+| `expand_objects` | `True` | Run ExpandObjects (and Slab/Basement if needed) before simulation |
 | `annual` | `False` | Run annual simulation (`-a` flag) |
 | `design_day` | `False` | Run design-day-only (`-D` flag) |
 | `output_prefix` | `"eplus"` | Prefix for output files |

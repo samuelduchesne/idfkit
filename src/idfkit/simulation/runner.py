@@ -44,13 +44,23 @@ def simulate(
     Creates an isolated run directory, writes the model, and executes
     EnergyPlus as a subprocess. The caller's model is not mutated.
 
+    When *expand_objects* is ``True`` (the default) and the model contains
+    ``GroundHeatTransfer:Slab:*`` or ``GroundHeatTransfer:Basement:*``
+    objects, the Slab and/or Basement ground heat-transfer preprocessors
+    are run automatically before simulation.  This is equivalent to
+    calling :func:`~idfkit.simulation.expand.run_slab_preprocessor` or
+    :func:`~idfkit.simulation.expand.run_basement_preprocessor`
+    individually, but happens transparently.
+
     Args:
         model: The EnergyPlus model to simulate.
         weather: Path to the weather file (.epw).
         output_dir: Directory for output files (default: auto temp dir).
         energyplus: Pre-configured EnergyPlus installation. If None,
             uses :func:`find_energyplus` for auto-discovery.
-        expand_objects: Run ExpandObjects before simulation.
+        expand_objects: Run ExpandObjects before simulation.  When
+            ``True``, also runs the Slab and Basement ground heat-transfer
+            preprocessors if the model contains the corresponding objects.
         annual: Run annual simulation (``-a`` flag).
         design_day: Run design-day-only simulation (``-D`` flag).
         output_prefix: Prefix for output files (default "eplus").
@@ -80,6 +90,8 @@ def simulate(
 
     Raises:
         SimulationError: On timeout, OS error, or missing weather file.
+        ExpandObjectsError: If a preprocessing step (ExpandObjects, Slab,
+            or Basement) fails during automatic preprocessing.
         EnergyPlusNotFoundError: If EnergyPlus cannot be found.
     """
     if fs is not None and output_dir is None:
@@ -112,6 +124,9 @@ def simulate(
     sim_model = model.copy()
     _ensure_sql_output(sim_model)
 
+    # Auto-preprocess ground heat-transfer objects when needed.
+    sim_model, ep_expand = _maybe_preprocess(model, sim_model, config, weather_path, expand_objects)
+
     # When using a remote fs, always run locally in a temp dir
     local_output_dir = None if fs is not None else output_dir
     run_dir = _prepare_run_directory(local_output_dir, weather_path)
@@ -128,7 +143,7 @@ def simulate(
         output_dir=run_dir,
         output_prefix=output_prefix,
         output_suffix=output_suffix,
-        expand_objects=expand_objects,
+        expand_objects=ep_expand,
         annual=annual,
         design_day=design_day,
         readvars=readvars,
@@ -193,6 +208,55 @@ def simulate(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _maybe_preprocess(
+    original: IDFDocument,
+    sim_model: IDFDocument,
+    config: EnergyPlusConfig,
+    weather_path: Path,
+    expand_objects: bool,
+) -> tuple[IDFDocument, bool]:
+    """Run ground heat-transfer preprocessing if needed.
+
+    The EnergyPlus CLI's ``-x`` flag runs ExpandObjects for HVACTemplate
+    expansion, but does **not** invoke the Slab or Basement Fortran
+    solvers.  When GHT objects are present we run the full preprocessing
+    pipeline (ExpandObjects + Slab/Basement) ourselves and disable the
+    ``-x`` flag.
+
+    Preprocessing uses the default timeout from
+    :func:`~idfkit.simulation.expand.run_preprocessing` (120 s per
+    subprocess), independent of the simulation timeout.
+
+    Args:
+        original: The original (unmutated) model, used for GHT detection.
+        sim_model: The working copy of the model (may already have
+            ``Output:SQLite`` injected).
+        config: EnergyPlus configuration.
+        weather_path: Resolved path to the weather file.
+        expand_objects: Whether the caller requested expansion.
+
+    Returns:
+        A ``(model, ep_expand)`` tuple where *model* is either the
+        preprocessed model or the original *sim_model*, and *ep_expand*
+        indicates whether EnergyPlus should still run ExpandObjects
+        via the ``-x`` flag.
+    """
+    if not expand_objects:
+        return sim_model, False
+
+    from .expand import needs_ground_heat_preprocessing, run_preprocessing
+
+    if needs_ground_heat_preprocessing(original):
+        preprocessed = run_preprocessing(
+            sim_model,
+            energyplus=config,
+            weather=weather_path,
+        )
+        return preprocessed, False  # Already expanded by preprocessing
+
+    return sim_model, True  # Let EnergyPlus handle ExpandObjects via -x
 
 
 def _upload_results(local_dir: Path, remote_dir: Path, fs: FileSystem) -> None:

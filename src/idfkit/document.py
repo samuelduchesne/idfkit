@@ -23,6 +23,7 @@ from .versions import LATEST_VERSION
 
 if TYPE_CHECKING:
     from .schema import EpJSONSchema
+    from .simulation.config import EnergyPlusConfig
 
 
 # Common object type mappings for attribute access
@@ -608,6 +609,48 @@ class IDFDocument:
         for obj_type, collection in self._collections.items():
             if collection:
                 yield obj_type, collection
+
+    # -------------------------------------------------------------------------
+    # Expansion
+    # -------------------------------------------------------------------------
+
+    def expand(
+        self,
+        *,
+        energyplus: EnergyPlusConfig | None = None,
+        timeout: float = 120.0,
+    ) -> IDFDocument:
+        """Run the EnergyPlus *ExpandObjects* preprocessor on this document.
+
+        This replaces ``HVACTemplate:*`` objects with their fully specified
+        low-level HVAC equivalents and returns a **new** document.  The
+        current document is not mutated.
+
+        If the document contains no expandable objects, a copy is returned
+        immediately without invoking the preprocessor.
+
+        Args:
+            energyplus: Pre-configured EnergyPlus installation.  If ``None``,
+                auto-discovery is used.
+            timeout: Maximum time in seconds to wait for the preprocessor
+                (default 120).
+
+        Returns:
+            A new :class:`IDFDocument` with all template objects expanded.
+
+        Raises:
+            EnergyPlusNotFoundError: If no EnergyPlus installation is found.
+            ExpandObjectsError: If the preprocessor fails.
+
+        Example:
+            >>> model = load_idf("building_with_templates.idf")
+            >>> expanded = model.expand()
+            >>> for obj in expanded["ZoneHVAC:IdealLoadsAirSystem"]:
+            ...     print(obj.name)
+        """
+        from .simulation.expand import expand_objects
+
+        return expand_objects(self, energyplus=energyplus, timeout=timeout)
 
     # -------------------------------------------------------------------------
     # Copying
