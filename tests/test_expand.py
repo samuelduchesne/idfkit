@@ -212,11 +212,12 @@ ZoneHVAC:IdealLoadsAirSystem,
         assert "HVACTemplate:Zone:IdealLoadsAirSystem" in model_with_hvac_template
 
     def test_copies_idd_to_run_dir(self, model_with_hvac_template: IDFDocument, mock_config: EnergyPlusConfig) -> None:
-        run_dirs: list[Path] = []
+        idd_found: list[bool] = []
 
         def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
             cwd = Path(str(kwargs.get("cwd", "")))
-            run_dirs.append(cwd)
+            # Assert during execution, before the run_dir is cleaned up
+            idd_found.append((cwd / "Energy+.idd").is_file())
             (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
             result = MagicMock()
             result.returncode = 0
@@ -227,8 +228,8 @@ ZoneHVAC:IdealLoadsAirSystem,
         with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
             expand_objects(model_with_hvac_template, energyplus=mock_config)
 
-        assert len(run_dirs) == 1
-        assert (run_dirs[0] / "Energy+.idd").is_file()
+        assert len(idd_found) == 1
+        assert idd_found[0] is True
 
     def test_skips_subprocess_when_nothing_to_expand(self) -> None:
         doc = new_document(version=(24, 1, 0))
@@ -588,7 +589,7 @@ class TestRunSlabPreprocessor:
         doc = new_document(version=(24, 1, 0))
         doc.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
 
-        idd_copied = []
+        idd_copied: list[str] = []
 
         original_copy2 = shutil.copy2
 
@@ -617,6 +618,7 @@ class TestRunSlabPreprocessor:
             run_slab_preprocessor(doc, energyplus=mock_config)
 
         # Energy+.idd for ExpandObjects + SlabGHT.idd for Slab
+        # (idd_copied is populated during execution, before cleanup)
         assert len(idd_copied) == 2
         idd_names = [Path(p).name for p in idd_copied]
         assert "Energy+.idd" in idd_names
@@ -629,13 +631,15 @@ class TestRunSlabPreprocessor:
         epw = tmp_path / "test.epw"
         epw.write_text("LOCATION,Chicago\n")
 
-        run_dirs: list[Path] = []
+        epw_checks: list[tuple[bool, str]] = []
 
         def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
             cwd = Path(str(kwargs.get("cwd", "")))
-            run_dirs.append(cwd)
             exe_name = Path(cmd[0]).name
             if exe_name == "ExpandObjects":
+                # Check weather file during execution, before cleanup
+                epw_path = cwd / "in.epw"
+                epw_checks.append((epw_path.is_file(), epw_path.read_text() if epw_path.is_file() else ""))
                 (cwd / "expanded.idf").write_text("Version, 24.1;\n")
                 (cwd / "GHTIn.idf").write_text("! input\n")
             elif exe_name == "Slab":
@@ -649,9 +653,9 @@ class TestRunSlabPreprocessor:
         with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
             run_slab_preprocessor(doc, energyplus=mock_config, weather=epw)
 
-        assert len(run_dirs) > 0
-        assert (run_dirs[0] / "in.epw").is_file()
-        assert (run_dirs[0] / "in.epw").read_text() == "LOCATION,Chicago\n"
+        assert len(epw_checks) == 1
+        assert epw_checks[0][0] is True
+        assert epw_checks[0][1] == "LOCATION,Chicago\n"
 
     def test_raises_on_slab_crash(self, mock_config: EnergyPlusConfig) -> None:
         """Slab SIGSEGV (exit code 139) with empty output files is caught."""
@@ -780,13 +784,14 @@ class TestRunBasementPreprocessor:
         epw = tmp_path / "test.epw"
         epw.write_text("LOCATION,Chicago\n")
 
-        run_dirs: list[Path] = []
+        epw_checks: list[bool] = []
 
         def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
             cwd = Path(str(kwargs.get("cwd", "")))
-            run_dirs.append(cwd)
             exe_name = Path(cmd[0]).name
             if exe_name == "ExpandObjects":
+                # Check weather file during execution, before cleanup
+                epw_checks.append((cwd / "in.epw").is_file())
                 (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
                 (cwd / "BasementGHTIn.idf").write_text("! basement input extracted\n")
             elif exe_name == "Basement":
@@ -802,8 +807,8 @@ class TestRunBasementPreprocessor:
         with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
             expanded = run_basement_preprocessor(doc, energyplus=mock_config, weather=epw)
 
-        assert len(run_dirs) > 0
-        assert (run_dirs[0] / "in.epw").is_file()
+        assert len(epw_checks) == 1
+        assert epw_checks[0] is True
         assert "Site:GroundTemperature:BuildingSurface" in expanded
 
     def test_raises_when_weather_file_missing(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
