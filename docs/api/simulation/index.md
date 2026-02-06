@@ -12,6 +12,8 @@ The simulation module provides EnergyPlus execution and result parsing.
 | [`expand_objects()`](expand.md) | Expand `HVACTemplate:*` objects |
 | [`run_slab_preprocessor()`](expand.md) | Run the Slab ground heat-transfer preprocessor |
 | [`run_basement_preprocessor()`](expand.md) | Run the Basement ground heat-transfer preprocessor |
+| [`run_preprocessing()`](expand.md) | Run all needed preprocessors (combined pipeline) |
+| [`needs_ground_heat_preprocessing()`](expand.md) | Check if model needs GHT preprocessing |
 | [`SimulationResult`](results.md) | Simulation result container |
 | [`SimulationJob`](batch.md) | Job specification for batch runs |
 | [`BatchResult`](batch.md) | Aggregated batch results |

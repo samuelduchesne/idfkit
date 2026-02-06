@@ -21,6 +21,7 @@ from idfkit.simulation.expand import (
     _needs_expansion,
     expand_objects,
     run_basement_preprocessor,
+    run_preprocessing,
     run_slab_preprocessor,
 )
 
@@ -903,6 +904,181 @@ class TestRunBasementPreprocessor:
         ):
             run_basement_preprocessor(doc, energyplus=config)
         assert exc_info.value.preprocessor == "Basement"
+
+
+# ---------------------------------------------------------------------------
+# run_preprocessing tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunPreprocessing:
+    """Tests for run_preprocessing used by simulate()."""
+
+    def test_runs_slab_when_ght_input_produced(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        doc.add("GroundHeatTransfer:Control", "", {"run_slab_preprocessor": "Yes"}, validate=False)
+        doc.add("Zone", "Office", {"x_origin": 0.0})
+
+        epw = tmp_path / "weather.epw"
+        epw.write_text("LOCATION,Chicago\n")
+
+        calls: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            cwd = Path(str(kwargs.get("cwd", "")))
+            exe_name = Path(cmd[0]).name
+            calls.append(exe_name)
+            if exe_name == "ExpandObjects":
+                (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
+                (cwd / "GHTIn.idf").write_text("! slab input\n")
+            elif exe_name == "Slab":
+                (cwd / "SLABSurfaceTemps.TXT").write_text(
+                    "Site:GroundTemperature:BuildingSurface,\n  18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18;\n"
+                )
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
+            expanded = run_preprocessing(doc, energyplus=mock_config, weather=epw, timeout=120.0)
+
+        assert calls == ["ExpandObjects", "Slab"]
+        assert "Site:GroundTemperature:BuildingSurface" in expanded
+
+    def test_runs_basement_when_ght_input_produced(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("GroundHeatTransfer:Basement:SimParameters", "", {}, validate=False)
+        doc.add("GroundHeatTransfer:Control", "", {"run_basement_preprocessor": "Yes"}, validate=False)
+        doc.add("Zone", "Office", {"x_origin": 0.0})
+
+        epw = tmp_path / "weather.epw"
+        epw.write_text("LOCATION,Chicago\n")
+
+        calls: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            cwd = Path(str(kwargs.get("cwd", "")))
+            exe_name = Path(cmd[0]).name
+            calls.append(exe_name)
+            if exe_name == "ExpandObjects":
+                (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
+                (cwd / "BasementGHTIn.idf").write_text("! basement input\n")
+            elif exe_name == "Basement":
+                (cwd / "EPObjects.TXT").write_text(
+                    "Site:GroundTemperature:BuildingSurface,\n  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16;\n"
+                )
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
+            expanded = run_preprocessing(doc, energyplus=mock_config, weather=epw, timeout=120.0)
+
+        assert calls == ["ExpandObjects", "Basement"]
+        assert "Site:GroundTemperature:BuildingSurface" in expanded
+
+    def test_runs_both_slab_and_basement(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        doc.add("GroundHeatTransfer:Basement:SimParameters", "", {}, validate=False)
+        doc.add(
+            "GroundHeatTransfer:Control",
+            "",
+            {"run_slab_preprocessor": "Yes", "run_basement_preprocessor": "Yes"},
+            validate=False,
+        )
+        doc.add("Zone", "Office", {"x_origin": 0.0})
+
+        epw = tmp_path / "weather.epw"
+        epw.write_text("LOCATION,Chicago\n")
+
+        calls: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            cwd = Path(str(kwargs.get("cwd", "")))
+            exe_name = Path(cmd[0]).name
+            calls.append(exe_name)
+            if exe_name == "ExpandObjects":
+                (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
+                (cwd / "GHTIn.idf").write_text("! slab input\n")
+                (cwd / "BasementGHTIn.idf").write_text("! basement input\n")
+            elif exe_name == "Slab":
+                (cwd / "SLABSurfaceTemps.TXT").write_text("! slab temps\n")
+            elif exe_name == "Basement":
+                (cwd / "EPObjects.TXT").write_text("! basement temps\n")
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
+            run_preprocessing(doc, energyplus=mock_config, weather=epw, timeout=120.0)
+
+        assert calls == ["ExpandObjects", "Slab", "Basement"]
+
+    def test_skips_slab_when_ght_input_not_produced(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
+        """When ExpandObjects doesn't produce GHTIn.idf (control=No), Slab is skipped."""
+        doc = new_document(version=(24, 1, 0))
+        doc.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        doc.add("GroundHeatTransfer:Control", "", {"run_slab_preprocessor": "No"}, validate=False)
+        doc.add("Zone", "Office", {"x_origin": 0.0})
+
+        epw = tmp_path / "weather.epw"
+        epw.write_text("LOCATION,Chicago\n")
+
+        calls: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            cwd = Path(str(kwargs.get("cwd", "")))
+            exe_name = Path(cmd[0]).name
+            calls.append(exe_name)
+            if exe_name == "ExpandObjects":
+                # No GHTIn.idf produced (run_slab_preprocessor=No)
+                (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
+            run_preprocessing(doc, energyplus=mock_config, weather=epw, timeout=120.0)
+
+        assert calls == ["ExpandObjects"]
+
+    def test_expand_objects_only_when_no_ght_inputs(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
+        """When model has HVACTemplate but no GHT objects, only ExpandObjects runs."""
+        doc = new_document(version=(24, 1, 0))
+        doc.add("HVACTemplate:Zone:IdealLoadsAirSystem", "Test", {"zone_name": "Office"}, validate=False)
+        doc.add("Zone", "Office", {"x_origin": 0.0})
+
+        epw = tmp_path / "weather.epw"
+        epw.write_text("LOCATION,Chicago\n")
+
+        calls: list[str] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            cwd = Path(str(kwargs.get("cwd", "")))
+            exe_name = Path(cmd[0]).name
+            calls.append(exe_name)
+            if exe_name == "ExpandObjects":
+                (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
+            run_preprocessing(doc, energyplus=mock_config, weather=epw, timeout=120.0)
+
+        assert calls == ["ExpandObjects"]
 
 
 # ---------------------------------------------------------------------------

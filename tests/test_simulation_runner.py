@@ -10,7 +10,7 @@ import pytest
 from conftest import InMemoryFileSystem
 
 from idfkit import new_document
-from idfkit.exceptions import SimulationError
+from idfkit.exceptions import ExpandObjectsError, SimulationError
 from idfkit.simulation.config import EnergyPlusConfig
 from idfkit.simulation.runner import _build_command, _ensure_sql_output, _prepare_run_directory, simulate
 
@@ -23,6 +23,24 @@ def mock_config(tmp_path: Path) -> EnergyPlusConfig:
     exe.chmod(0o755)
     idd = tmp_path / "Energy+.idd"
     idd.write_text("!IDD_Version 24.1.0\n")
+
+    # ExpandObjects
+    expand_exe = tmp_path / "ExpandObjects"
+    expand_exe.touch()
+    expand_exe.chmod(0o755)
+
+    # Slab & Basement preprocessors
+    preprocess = tmp_path / "PreProcess" / "GrndTempCalc"
+    preprocess.mkdir(parents=True)
+    slab_exe = preprocess / "Slab"
+    slab_exe.touch()
+    slab_exe.chmod(0o755)
+    (preprocess / "SlabGHT.idd").write_text("! Slab IDD\n")
+    basement_exe = preprocess / "Basement"
+    basement_exe.touch()
+    basement_exe.chmod(0o755)
+    (preprocess / "BasementGHT.idd").write_text("! Basement IDD\n")
+
     return EnergyPlusConfig(
         executable=exe,
         version=(24, 1, 0),
@@ -260,3 +278,130 @@ class TestSimulate:
         # Verify files were uploaded — at minimum in.idf and weather should be there
         uploaded = [k for k in fs._files if k.startswith("remote/output/")]
         assert len(uploaded) > 0
+
+
+# ---------------------------------------------------------------------------
+# simulate() automatic preprocessing
+# ---------------------------------------------------------------------------
+
+
+class TestSimulatePreprocessing:
+    """Tests for automatic ground heat-transfer preprocessing in simulate()."""
+
+    def test_auto_preprocesses_slab_model(self, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
+        """simulate() calls _run_preprocessing for models with slab objects."""
+        model = new_document(version=(24, 1, 0))
+        model.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        model.add("Zone", "Office", {"x_origin": 0.0})
+
+        preprocessed = new_document(version=(24, 1, 0))
+        preprocessed.add("Zone", "Office", {"x_origin": 0.0})
+
+        sim_proc = MagicMock(returncode=0, stdout="ok", stderr="")
+
+        with (
+            patch("idfkit.simulation.expand.run_preprocessing", return_value=preprocessed) as mock_preprocess,
+            patch("idfkit.simulation.runner.subprocess.run", return_value=sim_proc) as mock_sim_run,
+        ):
+            result = simulate(model, weather_file, energyplus=mock_config)
+
+        mock_preprocess.assert_called_once()
+        # EnergyPlus CLI was called without -x (already expanded)
+        sim_cmd = mock_sim_run.call_args[0][0]
+        assert "-x" not in sim_cmd
+        assert result.success
+
+    def test_auto_preprocesses_basement_model(self, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
+        """simulate() calls _run_preprocessing for models with basement objects."""
+        model = new_document(version=(24, 1, 0))
+        model.add("GroundHeatTransfer:Basement:SimParameters", "", {}, validate=False)
+        model.add("Zone", "Office", {"x_origin": 0.0})
+
+        preprocessed = new_document(version=(24, 1, 0))
+        preprocessed.add("Zone", "Office", {"x_origin": 0.0})
+
+        sim_proc = MagicMock(returncode=0, stdout="ok", stderr="")
+
+        with (
+            patch("idfkit.simulation.expand.run_preprocessing", return_value=preprocessed) as mock_preprocess,
+            patch("idfkit.simulation.runner.subprocess.run", return_value=sim_proc) as mock_sim_run,
+        ):
+            result = simulate(model, weather_file, energyplus=mock_config)
+
+        mock_preprocess.assert_called_once()
+        sim_cmd = mock_sim_run.call_args[0][0]
+        assert "-x" not in sim_cmd
+        assert result.success
+
+    @patch("idfkit.simulation.runner.subprocess.run")
+    def test_no_preprocessing_for_plain_model(
+        self, mock_run: MagicMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """simulate() does not run preprocessing for models without GHT objects."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
+        model = new_document(version=(24, 1, 0))
+        model.add("Zone", "Office", {"x_origin": 0.0})
+
+        with patch("idfkit.simulation.expand.run_preprocessing") as mock_preprocess:
+            result = simulate(model, weather_file, energyplus=mock_config)
+
+        mock_preprocess.assert_not_called()
+        # EnergyPlus CLI called with -x (normal expand)
+        sim_cmd = mock_run.call_args[0][0]
+        assert "-x" in sim_cmd
+        assert result.success
+
+    @patch("idfkit.simulation.runner.subprocess.run")
+    def test_no_preprocessing_when_expand_objects_false(
+        self, mock_run: MagicMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """simulate(expand_objects=False) skips preprocessing even with GHT objects."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
+        model = new_document(version=(24, 1, 0))
+        model.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        model.add("Zone", "Office", {"x_origin": 0.0})
+
+        with patch("idfkit.simulation.expand.run_preprocessing") as mock_preprocess:
+            result = simulate(model, weather_file, energyplus=mock_config, expand_objects=False)
+
+        mock_preprocess.assert_not_called()
+        sim_cmd = mock_run.call_args[0][0]
+        assert "-x" not in sim_cmd
+        assert result.success
+
+    def test_preprocessing_error_propagates(self, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
+        """ExpandObjectsError from preprocessing propagates through simulate()."""
+        model = new_document(version=(24, 1, 0))
+        model.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        model.add("Zone", "Office", {"x_origin": 0.0})
+
+        with (
+            patch(
+                "idfkit.simulation.expand.run_preprocessing",
+                side_effect=ExpandObjectsError("Slab failed", preprocessor="Slab", exit_code=0),
+            ),
+            pytest.raises(ExpandObjectsError, match="Slab failed"),
+        ):
+            simulate(model, weather_file, energyplus=mock_config)
+
+    def test_model_not_mutated_with_preprocessing(self, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
+        """Original model is not mutated when preprocessing runs."""
+        model = new_document(version=(24, 1, 0))
+        model.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
+        model.add("Zone", "Office", {"x_origin": 0.0})
+
+        original_types = set(model.keys())
+
+        preprocessed = new_document(version=(24, 1, 0))
+        preprocessed.add("Zone", "Office", {"x_origin": 0.0})
+
+        sim_proc = MagicMock(returncode=0, stdout="ok", stderr="")
+
+        with (
+            patch("idfkit.simulation.expand.run_preprocessing", return_value=preprocessed),
+            patch("idfkit.simulation.runner.subprocess.run", return_value=sim_proc),
+        ):
+            simulate(model, weather_file, energyplus=mock_config)
+
+        assert set(model.keys()) == original_types
+        assert "Output:SQLite" not in model

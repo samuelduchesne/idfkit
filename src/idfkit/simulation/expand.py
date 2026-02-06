@@ -68,6 +68,18 @@ order::
 ExpandObjects (C++) does not use the exit-code or empty-file checks because
 its error semantics differ from the Fortran preprocessors.
 
+**Automatic integration with ``simulate()``**
+
+The :func:`~idfkit.simulation.runner.simulate` function automatically
+detects ground heat-transfer objects and runs the preprocessing pipeline
+before simulation.  It invokes :func:`_run_preprocessing`, which runs
+ExpandObjects once, then checks which preprocessor input files were
+produced (``GHTIn.idf`` and/or ``BasementGHTIn.idf``) and runs the
+corresponding solver.  This means users do not need to call the
+preprocessors explicitly -- ``simulate()`` does the right thing.  The
+individual public functions are retained for cases where the user wants
+to inspect or modify the preprocessed model before simulation.
+
 **File handling mirrors the simulation runner**
 
 The same care taken in :func:`~idfkit.simulation.runner.simulate` --
@@ -323,8 +335,135 @@ def _parse_expanded(run_dir: Path) -> IDFDocument:
 
 
 # ---------------------------------------------------------------------------
+# In-directory preprocessor runners
+# ---------------------------------------------------------------------------
+
+
+def _run_slab_in_dir(config: EnergyPlusConfig, run_dir: Path, *, timeout: float) -> None:
+    """Run the Slab preprocessor in a directory where ExpandObjects has already run.
+
+    Assumes ``GHTIn.idf`` exists in *run_dir*.  Copies ``SlabGHT.idd``,
+    invokes the Slab solver, validates the output, and appends the
+    resulting ``SLABSurfaceTemps.TXT`` to ``expanded.idf``.
+    """
+    slab_exe = config.slab_exe
+    slab_idd = config.slab_idd
+    if slab_exe is None or slab_idd is None:
+        msg = (
+            f"Slab preprocessor not found in EnergyPlus installation at "
+            f"{config.install_dir}.  Expected at PreProcess/GrndTempCalc/Slab."
+        )
+        raise ExpandObjectsError(msg, preprocessor="Slab")
+
+    shutil.copy2(slab_idd, run_dir / "SlabGHT.idd")
+
+    proc = _run_subprocess(slab_exe, cwd=run_dir, timeout=timeout, label="Slab")
+    _check_process_exit_code(proc, label="Slab")
+    slab_output = run_dir / "SLABSurfaceTemps.TXT"
+    _require_file(slab_output, label="Slab", proc=proc)
+    _check_output_not_empty(slab_output, label="Slab", proc=proc)
+    _check_for_fatal_preprocessor_message(slab_output, label="Slab", proc=proc)
+
+    _append_file(run_dir / "expanded.idf", slab_output)
+
+
+def _run_basement_in_dir(config: EnergyPlusConfig, run_dir: Path, *, timeout: float) -> None:
+    """Run the Basement preprocessor in a directory where ExpandObjects has already run.
+
+    Assumes ``BasementGHTIn.idf`` exists in *run_dir*.  Copies
+    ``BasementGHT.idd``, invokes the Basement solver, validates the
+    output, and appends the resulting ``EPObjects.TXT`` to
+    ``expanded.idf``.
+    """
+    basement_exe = config.basement_exe
+    basement_idd = config.basement_idd
+    if basement_exe is None or basement_idd is None:
+        msg = (
+            f"Basement preprocessor not found in EnergyPlus installation at "
+            f"{config.install_dir}.  Expected at PreProcess/GrndTempCalc/Basement."
+        )
+        raise ExpandObjectsError(msg, preprocessor="Basement")
+
+    shutil.copy2(basement_idd, run_dir / "BasementGHT.idd")
+
+    proc = _run_subprocess(basement_exe, cwd=run_dir, timeout=timeout, label="Basement")
+    _check_process_exit_code(proc, label="Basement")
+    basement_output = run_dir / "EPObjects.TXT"
+    _require_file(basement_output, label="Basement", proc=proc)
+    _check_output_not_empty(basement_output, label="Basement", proc=proc)
+    _check_for_fatal_preprocessor_message(basement_output, label="Basement", proc=proc)
+
+    _append_file(run_dir / "expanded.idf", basement_output)
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def needs_ground_heat_preprocessing(model: IDFDocument) -> bool:
+    """Return ``True`` if *model* contains ground heat-transfer objects.
+
+    Checks for ``GroundHeatTransfer:Slab:*`` and
+    ``GroundHeatTransfer:Basement:*`` objects that require the Slab or
+    Basement preprocessor before simulation.
+
+    This is used by :func:`~idfkit.simulation.runner.simulate` to decide
+    whether to auto-run the preprocessing pipeline.
+    """
+    return _has_slab_objects(model) or _has_basement_objects(model)
+
+
+def run_preprocessing(
+    model: IDFDocument,
+    *,
+    energyplus: EnergyPlusConfig | None = None,
+    weather: str | Path | None = None,
+    timeout: float = 120.0,
+) -> IDFDocument:
+    """Run ExpandObjects and any required ground heat-transfer preprocessors.
+
+    This is a convenience function that runs all needed preprocessors in
+    a single call.  It runs ExpandObjects once, then checks which
+    preprocessor input files were produced (``GHTIn.idf`` and/or
+    ``BasementGHTIn.idf``) and runs the corresponding Fortran solvers.
+
+    :func:`~idfkit.simulation.runner.simulate` calls this automatically
+    when the model contains ground heat-transfer objects and
+    *expand_objects* is ``True``.  Call it directly only when you need to
+    inspect or modify the preprocessed model before simulation.
+
+    Args:
+        model: The EnergyPlus model to preprocess.
+        energyplus: Pre-configured EnergyPlus installation.  If ``None``,
+            auto-discovery is used.
+        weather: Path to a weather file (``.epw``).  Required by the
+            Slab and Basement solvers.
+        timeout: Maximum time in seconds for each subprocess invocation
+            (default 120).
+
+    Returns:
+        A new :class:`~idfkit.document.IDFDocument` with all
+        preprocessing applied.
+
+    Raises:
+        EnergyPlusNotFoundError: If no EnergyPlus installation is found.
+        ExpandObjectsError: If any preprocessor step fails.
+    """
+    config = energyplus if energyplus is not None else find_energyplus()
+    run_dir = _prepare_run_dir(model, weather=weather)
+    try:
+        _run_expand_objects(config, run_dir, timeout=timeout)
+
+        if (run_dir / "GHTIn.idf").is_file():
+            _run_slab_in_dir(config, run_dir, timeout=timeout)
+
+        if (run_dir / "BasementGHTIn.idf").is_file():
+            _run_basement_in_dir(config, run_dir, timeout=timeout)
+
+        return _parse_expanded(run_dir)
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
 
 
 def expand_objects(
@@ -419,7 +558,6 @@ def run_slab_preprocessor(
     config = energyplus if energyplus is not None else find_energyplus()
     run_dir = _prepare_run_dir(model, weather=weather)
     try:
-        # Step 1: ExpandObjects extracts GHTIn.idf
         _run_expand_objects(config, run_dir, timeout=timeout)
 
         ght_input = run_dir / "GHTIn.idf"
@@ -431,28 +569,7 @@ def run_slab_preprocessor(
             )
             raise ExpandObjectsError(msg, preprocessor="ExpandObjects")
 
-        # Step 2: Copy the Slab IDD so the preprocessor can read it
-        slab_exe = config.slab_exe
-        slab_idd = config.slab_idd
-        if slab_exe is None or slab_idd is None:
-            msg = (
-                f"Slab preprocessor not found in EnergyPlus installation at "
-                f"{config.install_dir}.  Expected at PreProcess/GrndTempCalc/Slab."
-            )
-            raise ExpandObjectsError(msg, preprocessor="Slab")
-
-        shutil.copy2(slab_idd, run_dir / "SlabGHT.idd")
-
-        # Step 3: Run the Slab preprocessor
-        proc = _run_subprocess(slab_exe, cwd=run_dir, timeout=timeout, label="Slab")
-        _check_process_exit_code(proc, label="Slab")
-        slab_output = run_dir / "SLABSurfaceTemps.TXT"
-        _require_file(slab_output, label="Slab", proc=proc)
-        _check_output_not_empty(slab_output, label="Slab", proc=proc)
-        _check_for_fatal_preprocessor_message(slab_output, label="Slab", proc=proc)
-
-        # Step 4: Append slab results to expanded.idf and parse
-        _append_file(run_dir / "expanded.idf", run_dir / "SLABSurfaceTemps.TXT")
+        _run_slab_in_dir(config, run_dir, timeout=timeout)
         return _parse_expanded(run_dir)
     finally:
         shutil.rmtree(run_dir, ignore_errors=True)
@@ -504,7 +621,6 @@ def run_basement_preprocessor(
     config = energyplus if energyplus is not None else find_energyplus()
     run_dir = _prepare_run_dir(model, weather=weather)
     try:
-        # Step 1: ExpandObjects extracts BasementGHTIn.idf
         _run_expand_objects(config, run_dir, timeout=timeout)
 
         ght_input = run_dir / "BasementGHTIn.idf"
@@ -516,28 +632,7 @@ def run_basement_preprocessor(
             )
             raise ExpandObjectsError(msg, preprocessor="ExpandObjects")
 
-        # Step 2: Copy the Basement IDD so the preprocessor can read it
-        basement_exe = config.basement_exe
-        basement_idd = config.basement_idd
-        if basement_exe is None or basement_idd is None:
-            msg = (
-                f"Basement preprocessor not found in EnergyPlus installation at "
-                f"{config.install_dir}.  Expected at PreProcess/GrndTempCalc/Basement."
-            )
-            raise ExpandObjectsError(msg, preprocessor="Basement")
-
-        shutil.copy2(basement_idd, run_dir / "BasementGHT.idd")
-
-        # Step 3: Run the Basement preprocessor
-        proc = _run_subprocess(basement_exe, cwd=run_dir, timeout=timeout, label="Basement")
-        _check_process_exit_code(proc, label="Basement")
-        basement_output = run_dir / "EPObjects.TXT"
-        _require_file(basement_output, label="Basement", proc=proc)
-        _check_output_not_empty(basement_output, label="Basement", proc=proc)
-        _check_for_fatal_preprocessor_message(basement_output, label="Basement", proc=proc)
-
-        # Step 4: Append basement results to expanded.idf and parse
-        _append_file(run_dir / "expanded.idf", run_dir / "EPObjects.TXT")
+        _run_basement_in_dir(config, run_dir, timeout=timeout)
         return _parse_expanded(run_dir)
     finally:
         shutil.rmtree(run_dir, ignore_errors=True)

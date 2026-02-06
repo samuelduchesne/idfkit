@@ -70,7 +70,15 @@ expanded = expand_objects(model)
 
 Models with `GroundHeatTransfer:Slab:*` or `GroundHeatTransfer:Basement:*`
 objects need the Slab or Basement preprocessor to compute ground temperatures.
-These solvers require a weather file:
+
+!!! note
+    `simulate()` **automatically** runs the Slab and/or Basement
+    preprocessors when `expand_objects=True` (the default) and the model
+    contains the corresponding ground heat-transfer objects.  In most
+    cases you do not need to call these functions yourself.
+
+For cases where you need to inspect or modify the preprocessed model
+before simulation, standalone functions are available:
 
 ```python
 from idfkit.simulation import run_slab_preprocessor, run_basement_preprocessor
@@ -131,7 +139,7 @@ def simulate(
 |-----------|---------|-------------|
 | `output_dir` | Auto temp | Directory for output files |
 | `energyplus` | Auto-detect | Pre-configured EnergyPlus installation |
-| `expand_objects` | `True` | Run ExpandObjects before simulation |
+| `expand_objects` | `True` | Run ExpandObjects (and Slab/Basement if needed) before simulation |
 | `annual` | `False` | Run annual simulation (`-a` flag) |
 | `design_day` | `False` | Run design-day-only (`-D` flag) |
 | `output_prefix` | `"eplus"` | Prefix for output files |
