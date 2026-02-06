@@ -40,6 +40,7 @@ from __future__ import annotations
 from .batch import BatchResult, SimulationJob, simulate_batch
 from .cache import CacheKey, SimulationCache
 from .config import EnergyPlusConfig, find_energyplus
+from .expand import expand_objects
 from .fs import FileSystem, LocalFileSystem, S3FileSystem
 from .outputs import OutputVariableIndex
 from .parsers.csv import CSVColumn, CSVResult
@@ -79,6 +80,7 @@ __all__ = [
     "TabularRow",
     "TimeSeriesResult",
     "VariableInfo",
+    "expand_objects",
     "find_energyplus",
     "get_default_backend",
     "plot_comfort_hours",

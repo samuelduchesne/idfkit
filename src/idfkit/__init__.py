@@ -34,6 +34,7 @@ from .epjson_parser import parse_epjson
 from .exceptions import (
     DuplicateObjectError,
     EnergyPlusNotFoundError,
+    ExpandObjectsError,
     IdfKitError,
     NoDesignDaysError,
     ParseError,
@@ -147,6 +148,7 @@ __all__ = [
     "DuplicateObjectError",
     "EnergyPlusNotFoundError",
     "EpJSONSchema",
+    "ExpandObjectsError",
     "FieldDescription",
     "IDFCollection",
     "IDFDocument",

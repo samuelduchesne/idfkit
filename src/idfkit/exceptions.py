@@ -116,6 +116,12 @@ class EnergyPlusNotFoundError(IdfKitError):
         super().__init__(msg)
 
 
+class ExpandObjectsError(IdfKitError):
+    """Raised when the ExpandObjects preprocessor fails."""
+
+    pass
+
+
 class SimulationError(IdfKitError):
     """Raised when an EnergyPlus simulation fails."""
 
