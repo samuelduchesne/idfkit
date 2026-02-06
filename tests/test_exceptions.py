@@ -5,10 +5,12 @@ from __future__ import annotations
 from idfkit.exceptions import (
     DanglingReferenceError,
     DuplicateObjectError,
+    ExpandObjectsError,
     IdfKitError,
     InvalidFieldError,
     ParseError,
     SchemaNotFoundError,
+    SimulationError,
     UnknownObjectTypeError,
     ValidationFailedError,
     VersionNotFoundError,
@@ -125,3 +127,57 @@ class TestValidationFailedError:
 
     def test_is_idfkit_error(self) -> None:
         assert isinstance(ValidationFailedError([]), IdfKitError)
+
+
+class TestExpandObjectsError:
+    def test_basic(self) -> None:
+        err = ExpandObjectsError("something failed")
+        assert str(err) == "something failed"
+        assert err.preprocessor is None
+        assert err.exit_code is None
+        assert err.stderr is None
+
+    def test_with_preprocessor(self) -> None:
+        err = ExpandObjectsError("failed", preprocessor="Slab")
+        assert err.preprocessor == "Slab"
+        assert str(err) == "failed"
+
+    def test_with_exit_code(self) -> None:
+        err = ExpandObjectsError("failed", exit_code=1)
+        assert err.exit_code == 1
+        assert "(exit code 1)" in str(err)
+
+    def test_with_stderr(self) -> None:
+        err = ExpandObjectsError("failed", stderr="  bad input  ")
+        assert err.stderr == "  bad input  "
+        assert "stderr: bad input" in str(err)
+
+    def test_with_all_fields(self) -> None:
+        err = ExpandObjectsError(
+            "ExpandObjects did not produce expanded.idf",
+            preprocessor="ExpandObjects",
+            exit_code=1,
+            stderr="some error",
+        )
+        assert err.preprocessor == "ExpandObjects"
+        assert err.exit_code == 1
+        assert err.stderr == "some error"
+        assert "(exit code 1)" in str(err)
+        assert "stderr: some error" in str(err)
+
+    def test_stderr_truncated(self) -> None:
+        long_stderr = "x" * 600
+        err = ExpandObjectsError("failed", stderr=long_stderr)
+        assert len(str(err)) < 700
+
+    def test_is_idfkit_error(self) -> None:
+        assert isinstance(ExpandObjectsError("x"), IdfKitError)
+
+    def test_interface_matches_simulation_error(self) -> None:
+        """ExpandObjectsError and SimulationError share the same exit_code/stderr interface."""
+        expand_err = ExpandObjectsError("expand failed", exit_code=1, stderr="err1")
+        sim_err = SimulationError("sim failed", exit_code=2, stderr="err2")
+        assert expand_err.exit_code == 1
+        assert sim_err.exit_code == 2
+        assert expand_err.stderr == "err1"
+        assert sim_err.stderr == "err2"

@@ -137,8 +137,9 @@ ZoneHVAC:IdealLoadsAirSystem,
         idd.write_text("!IDD_Version 24.1.0\n")
         config = EnergyPlusConfig(executable=exe, version=(24, 1, 0), install_dir=tmp_path, idd_path=idd)
 
-        with pytest.raises(ExpandObjectsError, match="ExpandObjects executable not found"):
+        with pytest.raises(ExpandObjectsError, match="ExpandObjects executable not found") as exc_info:
             expand_objects(model_with_hvac_template, energyplus=config)
+        assert exc_info.value.preprocessor == "ExpandObjects"
 
     def test_no_expanded_file_raises(
         self, model_with_hvac_template: IDFDocument, mock_config: EnergyPlusConfig
@@ -149,9 +150,12 @@ ZoneHVAC:IdealLoadsAirSystem,
 
         with (
             patch("idfkit.simulation.expand.subprocess.run", return_value=proc),
-            pytest.raises(ExpandObjectsError, match=r"did not produce expanded\.idf"),
+            pytest.raises(ExpandObjectsError, match=r"did not produce expanded\.idf") as exc_info,
         ):
             expand_objects(model_with_hvac_template, energyplus=mock_config)
+        assert exc_info.value.preprocessor == "ExpandObjects"
+        assert exc_info.value.exit_code == 1
+        assert exc_info.value.stderr == "some error"
 
     def test_timeout_raises(self, model_with_hvac_template: IDFDocument, mock_config: EnergyPlusConfig) -> None:
         import subprocess
@@ -161,16 +165,21 @@ ZoneHVAC:IdealLoadsAirSystem,
                 "idfkit.simulation.expand.subprocess.run",
                 side_effect=subprocess.TimeoutExpired(cmd="ExpandObjects", timeout=1),
             ),
-            pytest.raises(ExpandObjectsError, match="timed out"),
+            pytest.raises(ExpandObjectsError, match="timed out") as exc_info,
         ):
             expand_objects(model_with_hvac_template, energyplus=mock_config, timeout=1.0)
+        assert exc_info.value.preprocessor == "ExpandObjects"
+        assert exc_info.value.exit_code is None
 
     def test_os_error_raises(self, model_with_hvac_template: IDFDocument, mock_config: EnergyPlusConfig) -> None:
         with (
             patch("idfkit.simulation.expand.subprocess.run", side_effect=OSError("Permission denied")),
-            pytest.raises(ExpandObjectsError, match="Failed to start ExpandObjects"),
+            pytest.raises(ExpandObjectsError, match="Failed to start ExpandObjects") as exc_info,
         ):
             expand_objects(model_with_hvac_template, energyplus=mock_config)
+        assert exc_info.value.preprocessor == "ExpandObjects"
+        assert exc_info.value.exit_code is None
+        assert exc_info.value.stderr is None
 
     def test_auto_discovers_energyplus(
         self, model_with_hvac_template: IDFDocument, mock_config: EnergyPlusConfig
@@ -198,6 +207,25 @@ ZoneHVAC:IdealLoadsAirSystem,
 
         assert set(model_with_hvac_template.keys()) == original_types
         assert "HVACTemplate:Zone:IdealLoadsAirSystem" in model_with_hvac_template
+
+    def test_copies_idd_to_run_dir(self, model_with_hvac_template: IDFDocument, mock_config: EnergyPlusConfig) -> None:
+        run_dirs: list[Path] = []
+
+        def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+            cwd = Path(str(kwargs.get("cwd", "")))
+            run_dirs.append(cwd)
+            (cwd / "expanded.idf").write_text("Version, 24.1;\n\nZone,\n  Office;\n")
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            return result
+
+        with patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run):
+            expand_objects(model_with_hvac_template, energyplus=mock_config)
+
+        assert len(run_dirs) == 1
+        assert (run_dirs[0] / "Energy+.idd").is_file()
 
     def test_skips_subprocess_when_nothing_to_expand(self) -> None:
         doc = new_document(version=(24, 1, 0))
@@ -338,9 +366,10 @@ class TestRunSlabPreprocessor:
 
         with (
             patch("idfkit.simulation.expand.subprocess.run", side_effect=_fake_expand_run()),
-            pytest.raises(ExpandObjectsError, match=r"did not produce GHTIn\.idf"),
+            pytest.raises(ExpandObjectsError, match=r"did not produce GHTIn\.idf") as exc_info,
         ):
             run_slab_preprocessor(doc, energyplus=mock_config)
+        assert exc_info.value.preprocessor == "ExpandObjects"
 
     def test_raises_when_slab_exe_missing(self, tmp_path: Path) -> None:
         exe = tmp_path / "energyplus"
@@ -367,11 +396,12 @@ class TestRunSlabPreprocessor:
 
         with (
             patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run),
-            pytest.raises(ExpandObjectsError, match="Slab preprocessor not found"),
+            pytest.raises(ExpandObjectsError, match="Slab preprocessor not found") as exc_info,
         ):
             run_slab_preprocessor(doc, energyplus=config)
+        assert exc_info.value.preprocessor == "Slab"
 
-    def test_copies_idd_to_run_dir(self, mock_config: EnergyPlusConfig) -> None:
+    def test_copies_idds_to_run_dir(self, mock_config: EnergyPlusConfig) -> None:
         doc = new_document(version=(24, 1, 0))
         doc.add("GroundHeatTransfer:Slab:Materials", "", {}, validate=False)
 
@@ -403,8 +433,11 @@ class TestRunSlabPreprocessor:
         ):
             run_slab_preprocessor(doc, energyplus=mock_config)
 
-        assert len(idd_copied) == 1
-        assert idd_copied[0].endswith("SlabGHT.idd")
+        # Energy+.idd for ExpandObjects + SlabGHT.idd for Slab
+        assert len(idd_copied) == 2
+        idd_names = [Path(p).name for p in idd_copied]
+        assert "Energy+.idd" in idd_names
+        assert "SlabGHT.idd" in idd_names
 
     def test_weather_file_copied(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
         doc = new_document(version=(24, 1, 0))
@@ -493,9 +526,10 @@ class TestRunBasementPreprocessor:
 
         with (
             patch("idfkit.simulation.expand.subprocess.run", side_effect=_fake_expand_run()),
-            pytest.raises(ExpandObjectsError, match=r"did not produce BasementGHTIn\.idf"),
+            pytest.raises(ExpandObjectsError, match=r"did not produce BasementGHTIn\.idf") as exc_info,
         ):
             run_basement_preprocessor(doc, energyplus=mock_config)
+        assert exc_info.value.preprocessor == "ExpandObjects"
 
     def test_weather_file_copied(self, mock_config: EnergyPlusConfig, tmp_path: Path) -> None:
         doc = new_document(version=(24, 1, 0))
@@ -563,9 +597,10 @@ class TestRunBasementPreprocessor:
 
         with (
             patch("idfkit.simulation.expand.subprocess.run", side_effect=fake_run),
-            pytest.raises(ExpandObjectsError, match="Basement preprocessor not found"),
+            pytest.raises(ExpandObjectsError, match="Basement preprocessor not found") as exc_info,
         ):
             run_basement_preprocessor(doc, energyplus=config)
+        assert exc_info.value.preprocessor == "Basement"
 
 
 # ---------------------------------------------------------------------------

@@ -117,9 +117,33 @@ class EnergyPlusNotFoundError(IdfKitError):
 
 
 class ExpandObjectsError(IdfKitError):
-    """Raised when the ExpandObjects preprocessor fails."""
+    """Raised when an EnergyPlus preprocessor fails.
 
-    pass
+    Attributes:
+        preprocessor: Name of the preprocessor that failed (e.g.
+            ``"ExpandObjects"``, ``"Slab"``, ``"Basement"``).
+        exit_code: Process exit code (``None`` if timed out or not started).
+        stderr: Captured standard error output (truncated to 500 chars).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        preprocessor: str | None = None,
+        exit_code: int | None = None,
+        stderr: str | None = None,
+    ) -> None:
+        self.preprocessor = preprocessor
+        self.exit_code = exit_code
+        self.stderr = stderr
+        msg = message
+        if exit_code is not None:
+            msg += f" (exit code {exit_code})"
+        if stderr:
+            trimmed = stderr.strip()[:500]
+            msg += f"\nstderr: {trimmed}"
+        super().__init__(msg)
 
 
 class SimulationError(IdfKitError):

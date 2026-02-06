@@ -113,20 +113,32 @@ def _run_subprocess(
         )
     except subprocess.TimeoutExpired as exc:
         msg = f"{label} timed out after {timeout} seconds"
-        raise ExpandObjectsError(msg) from exc
+        raise ExpandObjectsError(
+            msg,
+            preprocessor=label,
+            exit_code=None,
+            stderr=str(exc.stderr) if exc.stderr else None,
+        ) from exc
     except OSError as exc:
         msg = f"Failed to start {label}: {exc}"
-        raise ExpandObjectsError(msg) from exc
+        raise ExpandObjectsError(
+            msg,
+            preprocessor=label,
+            exit_code=None,
+            stderr=None,
+        ) from exc
 
 
 def _require_file(path: Path, *, label: str, proc: subprocess.CompletedProcess[str]) -> None:
     """Raise :class:`ExpandObjectsError` if *path* does not exist."""
     if not path.is_file():
-        stderr = proc.stderr.strip() if proc.stderr else ""
-        msg = f"{label} did not produce {path.name} (exit code {proc.returncode})"
-        if stderr:
-            msg += f"\nstderr: {stderr[:500]}"
-        raise ExpandObjectsError(msg)
+        msg = f"{label} did not produce {path.name}"
+        raise ExpandObjectsError(
+            msg,
+            preprocessor=label,
+            exit_code=proc.returncode,
+            stderr=proc.stderr.strip() if proc.stderr else None,
+        )
 
 
 def _run_expand_objects(config: EnergyPlusConfig, run_dir: Path, *, timeout: float) -> None:
@@ -137,7 +149,10 @@ def _run_expand_objects(config: EnergyPlusConfig, run_dir: Path, *, timeout: flo
             f"ExpandObjects executable not found in EnergyPlus installation at "
             f"{config.install_dir}.  Ensure you have a complete installation."
         )
-        raise ExpandObjectsError(msg)
+        raise ExpandObjectsError(msg, preprocessor="ExpandObjects")
+
+    # Copy Energy+.idd so ExpandObjects can parse the model
+    shutil.copy2(config.idd_path, run_dir / "Energy+.idd")
 
     proc = _run_subprocess(exe, cwd=run_dir, timeout=timeout, label="ExpandObjects")
     _require_file(run_dir / "expanded.idf", label="ExpandObjects", proc=proc)
@@ -273,7 +288,7 @@ def run_slab_preprocessor(
             "Ensure the model contains GroundHeatTransfer:Slab:* objects and "
             "GroundHeatTransfer:Control has run_slab_preprocessor set to Yes."
         )
-        raise ExpandObjectsError(msg)
+        raise ExpandObjectsError(msg, preprocessor="ExpandObjects")
 
     # Step 2: Copy the Slab IDD so the preprocessor can read it
     slab_exe = config.slab_exe
@@ -283,7 +298,7 @@ def run_slab_preprocessor(
             f"Slab preprocessor not found in EnergyPlus installation at "
             f"{config.install_dir}.  Expected at PreProcess/GrndTempCalc/Slab."
         )
-        raise ExpandObjectsError(msg)
+        raise ExpandObjectsError(msg, preprocessor="Slab")
 
     shutil.copy2(slab_idd, run_dir / "SlabGHT.idd")
 
@@ -352,7 +367,7 @@ def run_basement_preprocessor(
             "Ensure the model contains GroundHeatTransfer:Basement:* objects and "
             "GroundHeatTransfer:Control has run_basement_preprocessor set to Yes."
         )
-        raise ExpandObjectsError(msg)
+        raise ExpandObjectsError(msg, preprocessor="ExpandObjects")
 
     # Step 2: Copy the Basement IDD so the preprocessor can read it
     basement_exe = config.basement_exe
@@ -362,7 +377,7 @@ def run_basement_preprocessor(
             f"Basement preprocessor not found in EnergyPlus installation at "
             f"{config.install_dir}.  Expected at PreProcess/GrndTempCalc/Basement."
         )
-        raise ExpandObjectsError(msg)
+        raise ExpandObjectsError(msg, preprocessor="Basement")
 
     shutil.copy2(basement_idd, run_dir / "BasementGHT.idd")
 
