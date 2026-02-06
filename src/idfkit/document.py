@@ -626,6 +626,9 @@ class IDFDocument:
         with their fully specified low-level equivalents and returns a **new**
         document.  The current document is not mutated.
 
+        If the document contains no expandable objects, a copy is returned
+        immediately without invoking the preprocessor.
+
         Args:
             energyplus: Pre-configured EnergyPlus installation.  If ``None``,
                 auto-discovery is used.

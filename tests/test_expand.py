@@ -128,7 +128,7 @@ def test_expand_objects_no_expanded_file_raises(
 
     with (
         patch("idfkit.simulation.expand.subprocess.run", return_value=proc),
-        pytest.raises(ExpandObjectsError, match="did not produce expanded.idf"),
+        pytest.raises(ExpandObjectsError, match=r"did not produce expanded\.idf"),
     ):
         expand_objects(model_with_hvac_template, energyplus=mock_config)
 
@@ -236,3 +236,20 @@ def test_expand_objects_does_not_mutate_original(
 
     assert set(model_with_hvac_template.keys()) == original_types
     assert "HVACTemplate:Zone:IdealLoadsAirSystem" in model_with_hvac_template
+
+
+def test_expand_objects_skips_subprocess_when_nothing_to_expand() -> None:
+    """When there are no expandable objects, return a copy without invoking ExpandObjects."""
+    doc = new_document(version=(24, 1, 0))
+    doc.add("Zone", "Office", {"x_origin": 0.0, "y_origin": 0.0, "z_origin": 0.0})
+
+    # No mock config needed — the function should never look for EnergyPlus
+    with patch("idfkit.simulation.expand.subprocess.run") as mock_run:
+        result = expand_objects(doc)
+
+    mock_run.assert_not_called()
+    assert isinstance(result, IDFDocument)
+    assert "Zone" in result
+    assert result["Zone"]["Office"].name == "Office"
+    # Verify it's a copy, not the same object
+    assert result is not doc

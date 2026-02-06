@@ -32,6 +32,18 @@ if TYPE_CHECKING:
     from ..document import IDFDocument
 
 
+_EXPANDABLE_PREFIXES = (
+    "HVACTemplate:",
+    "GroundHeatTransfer:",
+)
+"""Object-type prefixes that the ExpandObjects preprocessor acts on."""
+
+
+def _needs_expansion(model: IDFDocument) -> bool:
+    """Return ``True`` if *model* contains any object types handled by ExpandObjects."""
+    return any(obj_type.startswith(_EXPANDABLE_PREFIXES) for obj_type in model)
+
+
 def expand_objects(
     model: IDFDocument,
     *,
@@ -43,6 +55,10 @@ def expand_objects(
     ``ExpandObjects`` replaces high-level template objects
     (``HVACTemplate:*``, ``GroundHeatTransfer:*``, etc.) with their fully
     specified low-level equivalents.  The original *model* is **not** mutated.
+
+    If the document contains no expandable objects, a
+    :meth:`~idfkit.document.IDFDocument.copy` is returned immediately without
+    invoking the preprocessor (no EnergyPlus installation required).
 
     Args:
         model: The EnergyPlus model to expand.
@@ -62,6 +78,9 @@ def expand_objects(
         ExpandObjectsError: If the ``ExpandObjects`` executable is missing
             from the installation or the preprocessor exits with an error.
     """
+    if not _needs_expansion(model):
+        return model.copy()
+
     config = energyplus if energyplus is not None else find_energyplus()
 
     exe = config.expand_objects_exe
@@ -100,9 +119,7 @@ def expand_objects(
     expanded_path = run_dir / "expanded.idf"
     if not expanded_path.is_file():
         stderr = proc.stderr.strip() if proc.stderr else ""
-        msg = (
-            f"ExpandObjects did not produce expanded.idf (exit code {proc.returncode})"
-        )
+        msg = f"ExpandObjects did not produce expanded.idf (exit code {proc.returncode})"
         if stderr:
             msg += f"\nstderr: {stderr[:500]}"
         raise ExpandObjectsError(msg)
