@@ -235,11 +235,11 @@ def print_comparison(label: str, results: dict) -> None:
     baseline = results.get(baseline_key, {})
     baseline_mean = baseline.get("mean", 0)
 
-    print(f"\n{'='*72}")
+    print(f"\n{'=' * 72}")
     print(f"  {label}")
-    print(f"{'='*72}")
+    print(f"{'=' * 72}")
     print(f"  {'Scenario':<22} {'Mean':>8} {'Stdev':>8} {'Min':>8} {'Max':>8} {'Overhead':>10} {'Events':>8}")
-    print(f"  {'-'*22} {'-'*8} {'-'*8} {'-'*8} {'-'*8} {'-'*10} {'-'*8}")
+    print(f"  {'-' * 22} {'-' * 8} {'-' * 8} {'-' * 8} {'-' * 8} {'-' * 10} {'-' * 8}")
 
     for name, data in results.items():
         mean = data["mean"]
@@ -290,9 +290,7 @@ def main() -> None:
 
     # --- Design-day async ---
     print("\n--- Async Design-Day Simulations ---")
-    dd_async = asyncio.run(
-        run_async_benchmark(example_idf, weather, config, design_day=True)
-    )
+    dd_async = asyncio.run(run_async_benchmark(example_idf, weather, config, design_day=True))
     print_comparison("Async Design-Day", dd_async)
     all_results["async_design_day"] = dd_async
 
@@ -304,9 +302,7 @@ def main() -> None:
 
     # --- Annual async ---
     print("\n--- Async Annual Simulations ---")
-    annual_async = asyncio.run(
-        run_async_benchmark(example_idf, weather, config, annual=True)
-    )
+    annual_async = asyncio.run(run_async_benchmark(example_idf, weather, config, annual=True))
     print_comparison("Async Annual", annual_async)
     all_results["async_annual"] = annual_async
 
