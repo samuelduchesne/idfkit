@@ -247,7 +247,7 @@ def _run_with_progress(
     run_dir: Path,
     timeout: float,
     start: float,
-    on_progress: Callable[[SimulationProgress], None],
+    on_progress: Callable[[SimulationProgress], Any],
 ) -> tuple[str, str, int]:
     """Run EnergyPlus with line-by-line stdout streaming for progress callbacks."""
     try:
@@ -302,20 +302,25 @@ def _run_with_progress(
     except Exception as exc:
         proc.kill()
         proc.wait()
+        stderr_thread.join(timeout=5.0)
+        stderr = "".join(stderr_lines)
         msg = f"Failed during EnergyPlus execution: {exc}"
         raise SimulationError(
             msg,
             exit_code=None,
-            stderr=None,
+            stderr=stderr or None,
         ) from exc
+    finally:
+        # Always join the stderr thread so it doesn't leak.
+        stderr_thread.join(timeout=5.0)
+
+    stderr = "".join(stderr_lines)
 
     if timed_out:
         msg = f"Simulation timed out after {timeout} seconds"
-        raise SimulationError(msg, exit_code=None, stderr=None)
+        raise SimulationError(msg, exit_code=None, stderr=stderr or None)
 
-    stderr_thread.join(timeout=5.0)
     stdout = "".join(stdout_lines)
-    stderr = "".join(stderr_lines)
     returncode = proc.returncode if proc.returncode is not None else -1
 
     return stdout, stderr, returncode

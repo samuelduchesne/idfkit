@@ -188,7 +188,7 @@ async def async_simulate_batch_stream(
         on_progress: Optional callback invoked with
             :class:`~idfkit.simulation.progress.SimulationProgress` events
             during each individual simulation.  Events include
-            ``job_index`` and ``job_label``.  Pass ``"auto"`` to use a
+            ``job_index`` and ``job_label``.  Pass ``"tqdm"`` to use a
             built-in tqdm progress bar (requires ``pip install
             idfkit[progress]``).
 

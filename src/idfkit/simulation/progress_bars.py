@@ -12,7 +12,7 @@ to accept ``on_progress="tqdm"`` as a convenience shorthand.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -28,7 +28,7 @@ def tqdm_progress(
     position: int | None = None,
     file: Any = None,
     **tqdm_kwargs: Any,
-) -> Generator[Callable[[SimulationProgress], None]]:
+) -> Iterator[Callable[[SimulationProgress], None]]:
     """Context manager that yields a tqdm-based ``on_progress`` callback.
 
     The progress bar is automatically closed when the context exits,

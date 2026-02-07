@@ -345,6 +345,38 @@ class TestProgressParser:
         assert event.percent is not None
         assert event.percent <= 100.0
 
+    def test_sim_total_days_reset_on_new_environment(self) -> None:
+        """_sim_total_days must reset when a new environment starts."""
+        parser = ProgressParser()
+
+        # First environment: annual run with known date range
+        parser.parse_line("Initializing New Environment Parameters")
+        parser.parse_line("Warming up {1}")
+        parser.parse_line("Warmup Complete")
+        e1 = parser.parse_line("Starting Simulation at 01/01/2017 for AnnualRun from 01/01/2017 to 12/31/2017")
+        assert e1 is not None
+        assert e1.sim_total_days == 365
+        assert e1.percent is not None  # has a percentage
+
+        # Second environment: design day with NO date range
+        parser.parse_line("Initializing New Environment Parameters")
+        parser.parse_line("Warming up {1}")
+        parser.parse_line("Warmup Complete")
+        e2 = parser.parse_line("Starting Simulation at 07/21 for SummerDesignDay")
+        assert e2 is not None
+        # Must NOT inherit the previous 365-day total
+        assert e2.sim_total_days is None
+        assert e2.percent is None
+
+    def test_sim_total_days_none_without_date_range(self) -> None:
+        """Starting Simulation without from/to must set sim_total_days to None."""
+        parser = ProgressParser()
+        parser.parse_line("Initializing New Environment Parameters")
+        event = parser.parse_line("Starting Simulation at 01/01 for DesignDay")
+        assert event is not None
+        assert event.sim_total_days is None
+        assert event.percent is None
+
 
 # ---------------------------------------------------------------------------
 # SimulationProgress dataclass
@@ -634,3 +666,99 @@ class TestBatchWithProgress:
         # job-level progress fires after completion
         assert len(job_events) == 1
         assert job_events[0]["completed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Sync runner: stderr thread joined on timeout, stderr in error
+# ---------------------------------------------------------------------------
+
+
+class TestSyncRunnerStderrOnTimeout:
+    """Ensure the stderr thread is joined and stderr is included in timeout errors."""
+
+    @patch("idfkit.simulation.runner.subprocess.Popen")
+    def test_stderr_included_in_timeout_error(
+        self, mock_popen: MagicMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """Timeout error should contain partial stderr."""
+        from idfkit.exceptions import SimulationError
+
+        proc = MagicMock()
+        # stdout blocks indefinitely (simulating a hung process)
+        proc.stdout = iter(["Warming up {1}\n"])
+        proc.stderr = iter(["some stderr output\n"])
+        proc.wait.return_value = -9
+        proc.returncode = -9
+        proc.kill = MagicMock()
+        mock_popen.return_value = proc
+
+        model = new_document()
+        with pytest.raises(SimulationError, match="timed out") as exc_info:
+            simulate(
+                model,
+                weather_file,
+                energyplus=mock_config,
+                on_progress=lambda _: None,
+                timeout=0.0,  # Immediate timeout
+            )
+
+        # stderr should be captured despite the timeout
+        assert exc_info.value.stderr is not None
+        assert "some stderr output" in exc_info.value.stderr
+
+    @patch("idfkit.simulation.runner.subprocess.Popen")
+    def test_stderr_thread_joined_on_callback_error(
+        self, mock_popen: MagicMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """stderr is captured when callback raises."""
+        from idfkit.exceptions import SimulationError
+
+        proc = MagicMock()
+        proc.stdout = iter(["Warming up {1}\n"])
+        proc.stderr = iter(["warning: something\n"])
+        proc.wait.return_value = 0
+        proc.returncode = 0
+        proc.kill = MagicMock()
+        mock_popen.return_value = proc
+
+        def bad_callback(event: SimulationProgress) -> None:
+            raise RuntimeError("boom")
+
+        model = new_document()
+        with pytest.raises(SimulationError, match="boom") as exc_info:
+            simulate(model, weather_file, energyplus=mock_config, on_progress=bad_callback)
+
+        # stderr should be present despite the error
+        assert exc_info.value.stderr is not None
+        assert "warning: something" in exc_info.value.stderr
+
+
+# ---------------------------------------------------------------------------
+# Async runner: subprocess killed on callback error
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncRunnerSubprocessCleanup:
+    """Ensure EnergyPlus subprocess is killed when callback raises."""
+
+    @pytest.mark.asyncio
+    @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
+    async def test_process_killed_on_callback_error(
+        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """If on_progress raises, the subprocess must be killed."""
+        proc = _make_mock_process_with_stdout([
+            b"Warming up {1}\n",
+            b"EnergyPlus Completed Successfully.\n",
+        ])
+        mock_exec.return_value = proc
+
+        def bad_callback(event: SimulationProgress) -> None:
+            raise RuntimeError("boom")
+
+        model = new_document()
+        with pytest.raises(RuntimeError, match="boom"):
+            await async_simulate(model, weather_file, energyplus=mock_config, on_progress=bad_callback)
+
+        # Subprocess must have been killed
+        proc.kill.assert_called()

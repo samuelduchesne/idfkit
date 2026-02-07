@@ -120,6 +120,7 @@ class ProgressParser:
         if m:
             self._warmup_day = 0
             self._sim_start_day = None
+            self._sim_total_days = None
             return self._event("initializing", stripped)
 
         m = self._RE_START_SIM.search(stripped)
@@ -134,6 +135,8 @@ class ProgressParser:
                 start_d = _date_to_day_of_year(from_date)
                 end_d = _date_to_day_of_year(to_date)
                 self._sim_total_days = _day_span(start_d, end_d)
+            else:
+                self._sim_total_days = None
 
             current_day = self._sim_start_day
             percent = self._estimate_percent(current_day)

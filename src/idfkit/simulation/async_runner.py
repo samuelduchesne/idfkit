@@ -26,9 +26,10 @@ Example::
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -320,16 +321,20 @@ async def _start_process(
 
 async def _gather_with_timeout(
     proc: asyncio.subprocess.Process,
-    stdout_coro: object,
-    stderr_coro: object,
+    stdout_coro: Coroutine[Any, Any, None],
+    stderr_coro: Coroutine[Any, Any, bytes],
     timeout: float,
 ) -> bytes:
-    """Run stdout/stderr readers concurrently with a timeout."""
-    stderr_task = asyncio.create_task(stderr_coro)  # type: ignore[arg-type]
+    """Run stdout/stderr readers concurrently with a timeout.
+
+    Ensures the subprocess is always killed and awaited on error,
+    timeout, or cancellation to prevent leaked EnergyPlus processes.
+    """
+    stderr_task = asyncio.create_task(stderr_coro)
 
     try:
         await asyncio.wait_for(
-            asyncio.gather(stdout_coro, stderr_task),  # type: ignore[arg-type]
+            asyncio.gather(stdout_coro, stderr_task),
             timeout=timeout,
         )
     except asyncio.TimeoutError:
@@ -338,6 +343,26 @@ async def _gather_with_timeout(
         stderr_task.cancel()
         msg = f"Simulation timed out after {timeout} seconds"
         raise SimulationError(msg, exit_code=None, stderr=None) from None
+    except (asyncio.CancelledError, Exception):
+        # Callback error or external cancellation — ensure subprocess is
+        # killed, stderr task is cleaned up, then re-raise.
+        proc.kill()
+        await proc.wait()
+        stderr_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await stderr_task
+        raise
 
     await proc.wait()
-    return stderr_task.result()  # type: ignore[return-value]
+
+    return _get_stderr_result(stderr_task)
+
+
+def _get_stderr_result(stderr_task: asyncio.Task[bytes]) -> bytes:
+    """Safely extract stderr bytes from a completed task."""
+    if not stderr_task.done() or stderr_task.cancelled():
+        return b""
+    try:
+        return stderr_task.result()
+    except Exception:
+        return b""
