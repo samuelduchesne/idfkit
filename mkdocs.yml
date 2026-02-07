@@ -25,6 +25,7 @@ nav:
   - Simulation:
     - Overview: simulation/index.md
     - Running Simulations: simulation/running.md
+    - Async Simulation: simulation/async.md
     - Parsing Results: simulation/results.md
     - SQL Output Queries: simulation/sql-queries.md
     - Batch Processing: simulation/batch.md
@@ -64,6 +65,7 @@ nav:
     - Simulation:
       - Overview: api/simulation/index.md
       - Runner: api/simulation/runner.md
+      - Async: api/simulation/async.md
       - Preprocessing: api/simulation/expand.md
       - Results: api/simulation/results.md
       - SQL: api/simulation/sql.md

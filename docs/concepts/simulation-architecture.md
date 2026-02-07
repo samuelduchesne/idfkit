@@ -141,6 +141,56 @@ batch = simulate_batch(jobs, max_workers=4)
 Each simulation runs in its own subprocess and directory, so there are
 no conflicts between concurrent runs.
 
+## Async Execution
+
+The async simulation API (`async_simulate`, `async_simulate_batch`,
+`async_simulate_batch_stream`) provides non-blocking counterparts to the
+sync API using Python's `asyncio` module.
+
+### Why Async?
+
+The sync API blocks the calling thread during `subprocess.run()`.  This is
+fine for scripts but problematic when:
+
+- Running inside an async web server (FastAPI, aiohttp)
+- Mixing simulations with other async I/O (network, database)
+- Wanting streaming progress without callbacks
+
+### How It Works
+
+The async runner replaces `subprocess.run()` with
+`asyncio.create_subprocess_exec()`.  All preparation steps (model copy,
+directory setup, cache lookup) are synchronous and fast — only the
+EnergyPlus subprocess execution is truly async.
+
+Preprocessing (ExpandObjects, Slab, Basement) uses `subprocess.run()`
+internally.  Rather than rewriting the entire preprocessor stack, these
+are delegated to a thread via `asyncio.to_thread()` so they don't block
+the event loop.
+
+### Concurrency Model
+
+| API | Concurrency mechanism |
+|-----|----------------------|
+| `simulate_batch()` | `ThreadPoolExecutor` with `max_workers` |
+| `async_simulate_batch()` | `asyncio.Semaphore` with `max_concurrent` |
+
+Both achieve the same effect: limiting the number of concurrent EnergyPlus
+subprocesses to avoid overwhelming the system.
+
+### Streaming
+
+`async_simulate_batch_stream()` uses an `asyncio.Queue` to decouple
+producer tasks from the consumer's `async for` loop.  Events arrive in
+completion order.  Breaking out of the loop cancels remaining tasks.
+
+```python
+from idfkit.simulation import async_simulate_batch_stream
+
+async for event in async_simulate_batch_stream(jobs, max_concurrent=4):
+    print(f"[{event.completed}/{event.total}] {event.label}")
+```
+
 ## See Also
 
 - [Caching Strategy](caching.md) — Content-addressed result caching

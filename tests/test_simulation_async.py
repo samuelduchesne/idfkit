@@ -80,9 +80,7 @@ class TestAsyncSimulate:
 
     @pytest.mark.asyncio
     @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
-    async def test_success(
-        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    async def test_success(self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         mock_exec.return_value = _make_mock_process(returncode=0)
         model = new_document()
         result = await async_simulate(model, weather_file, energyplus=mock_config)
@@ -92,9 +90,7 @@ class TestAsyncSimulate:
 
     @pytest.mark.asyncio
     @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
-    async def test_failure(
-        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    async def test_failure(self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         mock_exec.return_value = _make_mock_process(returncode=1, stderr=b"error occurred")
         model = new_document()
         result = await async_simulate(model, weather_file, energyplus=mock_config)
@@ -103,9 +99,7 @@ class TestAsyncSimulate:
 
     @pytest.mark.asyncio
     @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
-    async def test_timeout(
-        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    async def test_timeout(self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         proc = _make_mock_process()
         proc.communicate = AsyncMock(side_effect=asyncio.TimeoutError)
         mock_exec.return_value = proc
@@ -166,9 +160,7 @@ class TestAsyncSimulate:
     async def test_stdout_stderr_captured(
         self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
     ) -> None:
-        mock_exec.return_value = _make_mock_process(
-            returncode=0, stdout=b"simulation output", stderr=b"some warnings"
-        )
+        mock_exec.return_value = _make_mock_process(returncode=0, stdout=b"simulation output", stderr=b"some warnings")
         model = new_document()
         result = await async_simulate(model, weather_file, energyplus=mock_config)
         assert result.stdout == "simulation output"
@@ -200,9 +192,7 @@ class TestAsyncSimulateBatch:
 
     @pytest.mark.asyncio
     @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
-    async def test_single_job(
-        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    async def test_single_job(self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         mock_exec.return_value = _make_mock_process()
         model = new_document()
         job = SimulationJob(model=model, weather=weather_file, label="single")
@@ -213,9 +203,7 @@ class TestAsyncSimulateBatch:
 
     @pytest.mark.asyncio
     @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
-    async def test_multiple_jobs(
-        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    async def test_multiple_jobs(self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         mock_exec.return_value = _make_mock_process()
         jobs = [SimulationJob(model=new_document(), weather=weather_file, label=f"job-{i}") for i in range(3)]
         result = await async_simulate_batch(jobs, energyplus=mock_config)

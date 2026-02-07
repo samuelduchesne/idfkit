@@ -47,6 +47,9 @@ print(f"Found EnergyPlus {config.version[0]}.{config.version[1]}")
 | [`SimulationResult`](results.md) | Access output files and parsed data |
 | [`SQLResult`](sql-queries.md) | Query time-series and tabular data |
 | [`simulate_batch()`](batch.md) | Run multiple simulations in parallel |
+| [`async_simulate()`](async.md) | Non-blocking single simulation |
+| [`async_simulate_batch()`](async.md#async-batch-processing) | Non-blocking parallel simulations |
+| [`async_simulate_batch_stream()`](async.md#streaming-progress) | Streaming progress via async generator |
 | [`SimulationCache`](caching.md) | Content-addressed result caching |
 | [`OutputVariableIndex`](output-discovery.md) | Discover available output variables |
 | [`ErrorReport`](errors.md) | Parse error and warning messages |
@@ -92,6 +95,21 @@ jobs = [
 batch = simulate_batch(jobs, max_workers=4)
 ```
 
+### Async Execution
+
+For async applications, non-blocking variants are available:
+
+```python
+from idfkit.simulation import async_simulate, async_simulate_batch_stream
+
+# Single simulation
+result = await async_simulate(model, "weather.epw")
+
+# Streaming progress
+async for event in async_simulate_batch_stream(jobs, max_concurrent=4):
+    print(f"[{event.completed}/{event.total}] {event.label}")
+```
+
 ## Installation
 
 The simulation module requires no extra dependencies for basic operation.
@@ -113,5 +131,6 @@ pip install idfkit[s3]
 ## Next Steps
 
 - [Running Simulations](running.md) — Detailed guide to `simulate()`
+- [Async Simulation](async.md) — Non-blocking execution with `asyncio`
 - [Parsing Results](results.md) — Working with `SimulationResult`
 - [Simulation Architecture](../concepts/simulation-architecture.md) — Design decisions
