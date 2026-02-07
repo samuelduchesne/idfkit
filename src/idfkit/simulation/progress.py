@@ -23,7 +23,7 @@ class SimulationProgress:
     Attributes:
         phase: Current simulation phase.
         message: Raw EnergyPlus stdout line (stripped).
-        percent: Estimated completion percentage (0.0–100.0), or ``None``
+        percent: Estimated completion percentage (0.0-100.0), or ``None``
             when progress is indeterminate (e.g. during warmup).
         environment: Name of the current simulation environment, if known.
         warmup_day: Current warmup iteration (1-based), only set during

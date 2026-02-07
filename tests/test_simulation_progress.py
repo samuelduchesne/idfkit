@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import textwrap
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -20,7 +19,6 @@ from idfkit.simulation.progress import (
     _day_span,
 )
 from idfkit.simulation.runner import simulate
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -317,8 +315,7 @@ class TestProgressParser:
         # Filter to "Warming up {1}" lines (exclude "Warmup Complete"
         # which also carries the last warmup_day from its env).
         warmup_start_events = [
-            e for e in events
-            if e.phase == "warmup" and e.warmup_day == 1 and "Warming up" in e.message
+            e for e in events if e.phase == "warmup" and e.warmup_day == 1 and "Warming up" in e.message
         ]
         assert len(warmup_start_events) == 2  # one per environment
 
@@ -401,9 +398,7 @@ class TestSimulateWithProgress:
     """Tests for simulate() on_progress callback wiring."""
 
     @patch("idfkit.simulation.runner.subprocess.Popen")
-    def test_on_progress_called(
-        self, mock_popen: MagicMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    def test_on_progress_called(self, mock_popen: MagicMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         """on_progress callback receives SimulationProgress events."""
         proc = MagicMock()
         proc.stdout = iter(["Warming up {1}\n", "EnergyPlus Completed Successfully.\n"])
@@ -498,7 +493,7 @@ def _make_mock_process_with_stdout(
     proc.communicate = AsyncMock(return_value=(full_stdout, stderr))
 
     # For the progress path: simulate readline behavior
-    line_iter = iter(stdout_lines + [b""])  # b"" signals EOF
+    line_iter = iter([*stdout_lines, b""])  # b"" signals EOF
 
     async def readline() -> bytes:
         return next(line_iter)
@@ -521,9 +516,7 @@ class TestAsyncSimulateWithProgress:
 
     @pytest.mark.asyncio
     @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
-    async def test_sync_callback(
-        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
-    ) -> None:
+    async def test_sync_callback(self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
         """Sync on_progress callback works with async_simulate."""
         proc = _make_mock_process_with_stdout([
             b"Warming up {1}\n",
