@@ -37,6 +37,8 @@ your use case.
 
 from __future__ import annotations
 
+from .async_batch import SimulationEvent, async_simulate_batch, async_simulate_batch_stream
+from .async_runner import async_simulate
 from .batch import BatchResult, SimulationJob, simulate_batch
 from .cache import CacheKey, SimulationCache
 from .config import EnergyPlusConfig, find_energyplus
@@ -81,11 +83,15 @@ __all__ = [
     "S3FileSystem",
     "SQLResult",
     "SimulationCache",
+    "SimulationEvent",
     "SimulationJob",
     "SimulationResult",
     "TabularRow",
     "TimeSeriesResult",
     "VariableInfo",
+    "async_simulate",
+    "async_simulate_batch",
+    "async_simulate_batch_stream",
     "expand_objects",
     "find_energyplus",
     "get_default_backend",

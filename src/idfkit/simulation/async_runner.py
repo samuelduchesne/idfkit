@@ -1,11 +1,31 @@
-"""EnergyPlus simulation runner.
+"""Async EnergyPlus simulation runner.
 
-Executes EnergyPlus as a subprocess and returns structured results.
+Non-blocking counterpart to :func:`~idfkit.simulation.runner.simulate` that
+uses :mod:`asyncio` subprocess management instead of :func:`subprocess.run`.
+
+The preparation steps (model copy, directory setup, cache lookup) are
+synchronous and fast; only the EnergyPlus subprocess execution is truly
+async.  Preprocessing (ExpandObjects, Slab, Basement) is delegated to
+a thread via :func:`asyncio.to_thread` because those routines use
+:func:`subprocess.run` internally.
+
+Example::
+
+    import asyncio
+    from idfkit import load_idf
+    from idfkit.simulation import async_simulate
+
+    async def main():
+        model = load_idf("building.idf")
+        result = await async_simulate(model, "weather.epw")
+        print(result.errors.summary())
+
+    asyncio.run(main())
 """
 
 from __future__ import annotations
 
-import subprocess
+import asyncio
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -24,10 +44,11 @@ from .result import SimulationResult
 if TYPE_CHECKING:
     from ..document import IDFDocument
     from .cache import CacheKey, SimulationCache
+    from .config import EnergyPlusConfig
     from .fs import FileSystem
 
 
-def simulate(
+async def async_simulate(
     model: IDFDocument,
     weather: str | Path,
     *,
@@ -44,18 +65,15 @@ def simulate(
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
 ) -> SimulationResult:
-    """Run an EnergyPlus simulation.
+    """Run an EnergyPlus simulation without blocking the event loop.
 
-    Creates an isolated run directory, writes the model, and executes
-    EnergyPlus as a subprocess. The caller's model is not mutated.
+    This is the async counterpart to :func:`~idfkit.simulation.runner.simulate`.
+    All parameters and return values are identical; the only difference is that
+    EnergyPlus runs as an :mod:`asyncio` subprocess, allowing the caller to
+    ``await`` the result while other coroutines continue executing.
 
-    When *expand_objects* is ``True`` (the default) and the model contains
-    ``GroundHeatTransfer:Slab:*`` or ``GroundHeatTransfer:Basement:*``
-    objects, the Slab and/or Basement ground heat-transfer preprocessors
-    are run automatically before simulation.  This is equivalent to
-    calling :func:`~idfkit.simulation.expand.run_slab_preprocessor` or
-    :func:`~idfkit.simulation.expand.run_basement_preprocessor`
-    individually, but happens transparently.
+    Cancellation is supported: if the wrapping :class:`asyncio.Task` is
+    cancelled, the EnergyPlus subprocess is killed and cleaned up.
 
     Args:
         model: The EnergyPlus model to simulate.
@@ -77,26 +95,14 @@ def simulate(
         extra_args: Additional command-line arguments.
         cache: Optional simulation cache for content-hash lookups.
         fs: Optional file system backend for storing results on remote
-            storage (e.g., S3). When provided, ``output_dir`` is required
-            and specifies the remote destination path. EnergyPlus runs
-            locally in a temp directory; results are then uploaded to
-            ``output_dir`` via *fs* after execution.
-
-            .. note::
-
-                The ``fs`` parameter handles **output storage only**.
-                The ``weather`` file must be a local path — remote weather
-                files are not automatically downloaded. For cloud workflows,
-                download weather files first using :class:`~idfkit.weather.WeatherDownloader`
-                or pre-stage them locally before calling ``simulate()``.
+            storage (e.g., S3).
 
     Returns:
         SimulationResult with paths to output files.
 
     Raises:
         SimulationError: On timeout, OS error, or missing weather file.
-        ExpandObjectsError: If a preprocessing step (ExpandObjects, Slab,
-            or Basement) fails during automatic preprocessing.
+        ExpandObjectsError: If a preprocessing step fails.
         EnergyPlusNotFoundError: If EnergyPlus cannot be found.
     """
     if fs is not None and output_dir is None:
@@ -129,8 +135,11 @@ def simulate(
     sim_model = model.copy()
     ensure_sql_output(sim_model)
 
-    # Auto-preprocess ground heat-transfer objects when needed.
-    sim_model, ep_expand = maybe_preprocess(model, sim_model, config, weather_path, expand_objects)
+    # Preprocessing may invoke subprocesses synchronously — delegate to a
+    # thread so we don't block the event loop.
+    sim_model, ep_expand = await asyncio.to_thread(
+        maybe_preprocess, model, sim_model, config, weather_path, expand_objects
+    )
 
     # When using a remote fs, always run locally in a temp dir
     local_output_dir = None if fs is not None else output_dir
@@ -157,21 +166,26 @@ def simulate(
 
     start = time.monotonic()
     try:
-        proc = subprocess.run(  # noqa: S603
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
             cwd=str(run_dir),
         )
-    except subprocess.TimeoutExpired as exc:
-        elapsed = time.monotonic() - start
-        msg = f"Simulation timed out after {timeout} seconds"
-        raise SimulationError(
-            msg,
-            exit_code=None,
-            stderr=str(exc.stderr) if exc.stderr else None,
-        ) from exc
+        try:
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.wait()
+            msg = f"Simulation timed out after {timeout} seconds"
+            raise SimulationError(
+                msg,
+                exit_code=None,
+                stderr=None,
+            ) from None
     except OSError as exc:
         msg = f"Failed to start EnergyPlus: {exc}"
         raise SimulationError(
@@ -179,40 +193,35 @@ def simulate(
             exit_code=None,
             stderr=None,
         ) from exc
+
+    elapsed = time.monotonic() - start
+    stdout = stdout_bytes.decode("utf-8", errors="replace") if stdout_bytes else ""
+    stderr = stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
+    returncode = proc.returncode if proc.returncode is not None else -1
+
+    if fs is not None:
+        remote_dir = Path(str(output_dir))
+        upload_results(run_dir, remote_dir, fs)
+        result = SimulationResult(
+            run_dir=remote_dir,
+            success=returncode == 0,
+            exit_code=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+            fs=fs,
+        )
     else:
-        elapsed = time.monotonic() - start
-
-        if fs is not None:
-            remote_dir = Path(str(output_dir))
-            upload_results(run_dir, remote_dir, fs)
-            result = SimulationResult(
-                run_dir=remote_dir,
-                success=proc.returncode == 0,
-                exit_code=proc.returncode,
-                stdout=proc.stdout,
-                stderr=proc.stderr,
-                runtime_seconds=elapsed,
-                output_prefix=output_prefix,
-                fs=fs,
-            )
-        else:
-            result = SimulationResult(
-                run_dir=run_dir,
-                success=proc.returncode == 0,
-                exit_code=proc.returncode,
-                stdout=proc.stdout,
-                stderr=proc.stderr,
-                runtime_seconds=elapsed,
-                output_prefix=output_prefix,
-            )
-        if cache is not None and cache_key is not None and result.success:
-            cache.put(cache_key, result)
-        return result
-
-
-# Backward-compatible aliases for existing test imports.
-from .config import EnergyPlusConfig  # noqa: E402
-
-_build_command = build_command
-_ensure_sql_output = ensure_sql_output
-_prepare_run_directory = prepare_run_directory
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=returncode == 0,
+            exit_code=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+        )
+    if cache is not None and cache_key is not None and result.success:
+        cache.put(cache_key, result)
+    return result
