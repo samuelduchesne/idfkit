@@ -40,14 +40,15 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import SimulationError
 from .async_runner import async_simulate
 from .batch import BatchResult, SimulationJob
+from .progress import SimulationProgress
 from .result import SimulationResult
 
 if TYPE_CHECKING:
@@ -85,6 +86,7 @@ async def async_simulate_batch(
     max_concurrent: int | None = None,
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
+    on_progress: Callable[[SimulationProgress], Any] | None = None,
 ) -> BatchResult:
     """Run multiple EnergyPlus simulations concurrently using asyncio.
 
@@ -105,6 +107,11 @@ async def async_simulate_batch(
         cache: Optional simulation cache for content-hash lookups.
         fs: Optional file system backend passed through to each
             :func:`~idfkit.simulation.async_runner.async_simulate` call.
+        on_progress: Optional callback invoked with
+            :class:`~idfkit.simulation.progress.SimulationProgress` events
+            during each individual simulation.  Events include
+            ``job_index`` and ``job_label`` to identify which batch job
+            they belong to.  Both sync and async callables are accepted.
 
     Returns:
         A :class:`~idfkit.simulation.batch.BatchResult` with results in the
@@ -126,7 +133,7 @@ async def async_simulate_batch(
 
     async def _run_one(idx: int, job: SimulationJob) -> None:
         async with semaphore:
-            results[idx] = await _async_run_job(job, energyplus, cache, fs)
+            results[idx] = await _async_run_job(idx, job, energyplus, cache, fs, on_progress)
 
     tasks = [asyncio.create_task(_run_one(i, job)) for i, job in enumerate(jobs)]
     await asyncio.gather(*tasks)
@@ -148,6 +155,7 @@ async def async_simulate_batch_stream(
     max_concurrent: int | None = None,
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
+    on_progress: Callable[[SimulationProgress], Any] | None = None,
 ) -> AsyncIterator[SimulationEvent]:
     """Run simulations concurrently, yielding events as each one completes.
 
@@ -168,6 +176,10 @@ async def async_simulate_batch_stream(
             to ``min(len(jobs), os.cpu_count() or 1)``.
         cache: Optional simulation cache for content-hash lookups.
         fs: Optional file system backend.
+        on_progress: Optional callback invoked with
+            :class:`~idfkit.simulation.progress.SimulationProgress` events
+            during each individual simulation.  Events include
+            ``job_index`` and ``job_label``.
 
     Yields:
         :class:`SimulationEvent` for each completed simulation, in the order
@@ -191,7 +203,7 @@ async def async_simulate_batch_stream(
     async def _run_one(idx: int, job: SimulationJob) -> None:
         nonlocal completed_count
         async with semaphore:
-            result = await _async_run_job(job, energyplus, cache, fs)
+            result = await _async_run_job(idx, job, energyplus, cache, fs, on_progress)
         completed_count += 1
         await queue.put(
             SimulationEvent(
@@ -217,12 +229,19 @@ async def async_simulate_batch_stream(
 
 
 async def _async_run_job(
+    idx: int,
     job: SimulationJob,
     energyplus: EnergyPlusConfig | None,
     cache: SimulationCache | None,
     fs: FileSystem | None,
+    on_progress: Callable[[SimulationProgress], Any] | None,
 ) -> SimulationResult:
     """Execute a single simulation job, catching SimulationError."""
+    # Wrap the user callback to inject batch job context
+    job_cb: Callable[[SimulationProgress], Any] | None = None
+    if on_progress is not None:
+        job_cb = _make_async_job_progress_callback(on_progress, idx, job.label)
+
     try:
         return await async_simulate(
             model=job.model,  # type: ignore[arg-type]
@@ -239,6 +258,7 @@ async def _async_run_job(
             extra_args=list(job.extra_args) if job.extra_args else None,
             cache=cache,
             fs=fs,
+            on_progress=job_cb,
         )
     except SimulationError as exc:
         failed_run_dir = Path(job.output_dir) if job.output_dir is not None else Path("/dev/null")
@@ -251,3 +271,51 @@ async def _async_run_job(
             runtime_seconds=0.0,
             output_prefix=job.output_prefix,
         )
+
+
+def _make_async_job_progress_callback(
+    user_cb: Callable[[SimulationProgress], Any],
+    job_index: int,
+    job_label: str,
+) -> Callable[[SimulationProgress], Any]:
+    """Create a wrapper that stamps each event with batch job context.
+
+    Preserves the sync/async nature of the user callback.
+    """
+    import inspect
+
+    is_async = inspect.iscoroutinefunction(user_cb)
+
+    if is_async:
+
+        async def _async_wrapper(event: SimulationProgress) -> None:
+            stamped = SimulationProgress(
+                phase=event.phase,
+                message=event.message,
+                percent=event.percent,
+                environment=event.environment,
+                warmup_day=event.warmup_day,
+                sim_day=event.sim_day,
+                sim_total_days=event.sim_total_days,
+                job_index=job_index,
+                job_label=job_label,
+            )
+            await user_cb(stamped)
+
+        return _async_wrapper
+
+    def _wrapper(event: SimulationProgress) -> None:
+        stamped = SimulationProgress(
+            phase=event.phase,
+            message=event.message,
+            percent=event.percent,
+            environment=event.environment,
+            warmup_day=event.warmup_day,
+            sim_day=event.sim_day,
+            sim_total_days=event.sim_total_days,
+            job_index=job_index,
+            job_label=job_label,
+        )
+        user_cb(stamped)
+
+    return _wrapper

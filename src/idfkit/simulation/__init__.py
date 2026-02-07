@@ -62,6 +62,7 @@ from .plotting import (
     plot_energy_balance,
     plot_temperature_profile,
 )
+from .progress import ProgressParser, SimulationProgress
 from .result import SimulationResult
 from .runner import simulate
 
@@ -80,11 +81,13 @@ __all__ = [
     "OutputVariable",
     "OutputVariableIndex",
     "PlotBackend",
+    "ProgressParser",
     "S3FileSystem",
     "SQLResult",
     "SimulationCache",
     "SimulationEvent",
     "SimulationJob",
+    "SimulationProgress",
     "SimulationResult",
     "TabularRow",
     "TimeSeriesResult",

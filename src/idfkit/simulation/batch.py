@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from ..exceptions import SimulationError
+from .progress import SimulationProgress
 from .result import SimulationResult
 from .runner import simulate
 
@@ -101,6 +102,7 @@ def simulate_batch(
     cache: SimulationCache | None = None,
     progress: Callable[..., None] | None = None,
     fs: FileSystem | None = None,
+    on_progress: Callable[[SimulationProgress], None] | None = None,
 ) -> BatchResult:
     """Run multiple EnergyPlus simulations in parallel.
 
@@ -121,6 +123,11 @@ def simulate_batch(
             success=bool)``.
         fs: Optional file system backend passed through to each
             :func:`simulate` call.
+        on_progress: Optional callback invoked with
+            :class:`~idfkit.simulation.progress.SimulationProgress` events
+            during each individual simulation.  Events include
+            ``job_index`` and ``job_label`` to identify which batch job
+            they belong to.
 
     Returns:
         A :class:`BatchResult` with results in the same order as *jobs*.
@@ -142,7 +149,9 @@ def simulate_batch(
     start = time.monotonic()
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_index = {executor.submit(_run_job, job, energyplus, cache, fs): idx for idx, job in enumerate(jobs)}
+        future_to_index = {
+            executor.submit(_run_job, idx, job, energyplus, cache, fs, on_progress): idx for idx, job in enumerate(jobs)
+        }
 
         for future in as_completed(future_to_index):
             idx = future_to_index[future]
@@ -171,12 +180,19 @@ def simulate_batch(
 
 
 def _run_job(
+    idx: int,
     job: SimulationJob,
     energyplus: EnergyPlusConfig | None,
     cache: SimulationCache | None,
     fs: FileSystem | None,
+    on_progress: Callable[[SimulationProgress], None] | None,
 ) -> SimulationResult:
     """Execute a single simulation job, catching SimulationError."""
+    # Wrap the user callback to inject batch job context
+    job_cb: Callable[[SimulationProgress], None] | None = None
+    if on_progress is not None:
+        job_cb = _make_job_progress_callback(on_progress, idx, job.label)
+
     try:
         return simulate(
             model=job.model,  # type: ignore[arg-type]
@@ -193,6 +209,7 @@ def _run_job(
             extra_args=list(job.extra_args) if job.extra_args else None,
             cache=cache,
             fs=fs,
+            on_progress=job_cb,
         )
     except SimulationError as exc:
         # Use the job's output_dir if specified, otherwise indicate failure with None-ish path
@@ -206,3 +223,27 @@ def _run_job(
             runtime_seconds=0.0,
             output_prefix=job.output_prefix,
         )
+
+
+def _make_job_progress_callback(
+    user_cb: Callable[[SimulationProgress], None],
+    job_index: int,
+    job_label: str,
+) -> Callable[[SimulationProgress], None]:
+    """Create a wrapper that stamps each event with batch job context."""
+
+    def _wrapper(event: SimulationProgress) -> None:
+        stamped = SimulationProgress(
+            phase=event.phase,
+            message=event.message,
+            percent=event.percent,
+            environment=event.environment,
+            warmup_day=event.warmup_day,
+            sim_day=event.sim_day,
+            sim_total_days=event.sim_total_days,
+            job_index=job_index,
+            job_label=job_label,
+        )
+        user_cb(stamped)
+
+    return _wrapper

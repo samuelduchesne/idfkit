@@ -6,7 +6,9 @@ Executes EnergyPlus as a subprocess and returns structured results.
 from __future__ import annotations
 
 import subprocess
+import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -19,6 +21,7 @@ from ._common import (
     resolve_config,
     upload_results,
 )
+from .progress import ProgressParser, SimulationProgress
 from .result import SimulationResult
 
 if TYPE_CHECKING:
@@ -43,6 +46,7 @@ def simulate(
     extra_args: list[str] | None = None,
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
+    on_progress: Callable[[SimulationProgress], None] | None = None,
 ) -> SimulationResult:
     """Run an EnergyPlus simulation.
 
@@ -89,6 +93,10 @@ def simulate(
                 files are not automatically downloaded. For cloud workflows,
                 download weather files first using :class:`~idfkit.weather.WeatherDownloader`
                 or pre-stage them locally before calling ``simulate()``.
+        on_progress: Optional callback invoked with a
+            :class:`~idfkit.simulation.progress.SimulationProgress` event
+            each time EnergyPlus emits a progress line (warmup iterations,
+            simulation day changes, post-processing steps, etc.).
 
     Returns:
         SimulationResult with paths to output files.
@@ -156,6 +164,49 @@ def simulate(
     )
 
     start = time.monotonic()
+
+    if on_progress is not None:
+        stdout, stderr, returncode = _run_with_progress(cmd, run_dir, timeout, start, on_progress)
+    else:
+        stdout, stderr, returncode = _run_simple(cmd, run_dir, timeout, start)
+
+    elapsed = time.monotonic() - start
+
+    if fs is not None:
+        remote_dir = Path(str(output_dir))
+        upload_results(run_dir, remote_dir, fs)
+        result = SimulationResult(
+            run_dir=remote_dir,
+            success=returncode == 0,
+            exit_code=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+            fs=fs,
+        )
+    else:
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=returncode == 0,
+            exit_code=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+        )
+    if cache is not None and cache_key is not None and result.success:
+        cache.put(cache_key, result)
+    return result
+
+
+def _run_simple(
+    cmd: list[str],
+    run_dir: Path,
+    timeout: float,
+    start: float,
+) -> tuple[str, str, int]:
+    """Run EnergyPlus without progress tracking (original code path)."""
     try:
         proc = subprocess.run(  # noqa: S603
             cmd,
@@ -165,7 +216,6 @@ def simulate(
             cwd=str(run_dir),
         )
     except subprocess.TimeoutExpired as exc:
-        elapsed = time.monotonic() - start
         msg = f"Simulation timed out after {timeout} seconds"
         raise SimulationError(
             msg,
@@ -179,35 +229,87 @@ def simulate(
             exit_code=None,
             stderr=None,
         ) from exc
-    else:
-        elapsed = time.monotonic() - start
 
-        if fs is not None:
-            remote_dir = Path(str(output_dir))
-            upload_results(run_dir, remote_dir, fs)
-            result = SimulationResult(
-                run_dir=remote_dir,
-                success=proc.returncode == 0,
-                exit_code=proc.returncode,
-                stdout=proc.stdout,
-                stderr=proc.stderr,
-                runtime_seconds=elapsed,
-                output_prefix=output_prefix,
-                fs=fs,
-            )
-        else:
-            result = SimulationResult(
-                run_dir=run_dir,
-                success=proc.returncode == 0,
-                exit_code=proc.returncode,
-                stdout=proc.stdout,
-                stderr=proc.stderr,
-                runtime_seconds=elapsed,
-                output_prefix=output_prefix,
-            )
-        if cache is not None and cache_key is not None and result.success:
-            cache.put(cache_key, result)
-        return result
+    return proc.stdout, proc.stderr, proc.returncode
+
+
+def _run_with_progress(
+    cmd: list[str],
+    run_dir: Path,
+    timeout: float,
+    start: float,
+    on_progress: Callable[[SimulationProgress], None],
+) -> tuple[str, str, int]:
+    """Run EnergyPlus with line-by-line stdout streaming for progress callbacks."""
+    try:
+        proc = subprocess.Popen(  # noqa: S603
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=str(run_dir),
+        )
+    except OSError as exc:
+        msg = f"Failed to start EnergyPlus: {exc}"
+        raise SimulationError(
+            msg,
+            exit_code=None,
+            stderr=None,
+        ) from exc
+
+    # Read stderr in a background thread to avoid deadlocks when both
+    # stdout and stderr pipes fill up.
+    stderr_lines: list[str] = []
+
+    def _read_stderr() -> None:
+        assert proc.stderr is not None  # noqa: S101
+        for line in proc.stderr:
+            stderr_lines.append(line)
+
+    stderr_thread = threading.Thread(target=_read_stderr, daemon=True)
+    stderr_thread.start()
+
+    stdout_lines: list[str] = []
+    parser = ProgressParser()
+    timed_out = False
+
+    try:
+        assert proc.stdout is not None  # noqa: S101
+        for line in proc.stdout:
+            stdout_lines.append(line)
+            event = parser.parse_line(line)
+            if event is not None:
+                on_progress(event)
+
+            # Check timeout
+            if time.monotonic() - start > timeout:
+                proc.kill()
+                proc.wait()
+                timed_out = True
+                break
+
+        if not timed_out:
+            proc.wait()
+    except Exception as exc:
+        proc.kill()
+        proc.wait()
+        msg = f"Failed during EnergyPlus execution: {exc}"
+        raise SimulationError(
+            msg,
+            exit_code=None,
+            stderr=None,
+        ) from exc
+
+    if timed_out:
+        msg = f"Simulation timed out after {timeout} seconds"
+        raise SimulationError(msg, exit_code=None, stderr=None)
+
+    stderr_thread.join(timeout=5.0)
+    stdout = "".join(stdout_lines)
+    stderr = "".join(stderr_lines)
+    returncode = proc.returncode if proc.returncode is not None else -1
+
+    return stdout, stderr, returncode
 
 
 # Backward-compatible aliases for existing test imports.

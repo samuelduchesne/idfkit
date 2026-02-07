@@ -26,9 +26,11 @@ Example::
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from ..exceptions import SimulationError
 from ._common import (
@@ -39,6 +41,7 @@ from ._common import (
     resolve_config,
     upload_results,
 )
+from .progress import ProgressParser, SimulationProgress
 from .result import SimulationResult
 
 if TYPE_CHECKING:
@@ -64,6 +67,7 @@ async def async_simulate(
     extra_args: list[str] | None = None,
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
+    on_progress: Callable[[SimulationProgress], Any] | None = None,
 ) -> SimulationResult:
     """Run an EnergyPlus simulation without blocking the event loop.
 
@@ -96,6 +100,10 @@ async def async_simulate(
         cache: Optional simulation cache for content-hash lookups.
         fs: Optional file system backend for storing results on remote
             storage (e.g., S3).
+        on_progress: Optional callback invoked with a
+            :class:`~idfkit.simulation.progress.SimulationProgress` event
+            each time EnergyPlus emits a progress line.  Both synchronous
+            and async callables are accepted — async callables are awaited.
 
     Returns:
         SimulationResult with paths to output files.
@@ -165,6 +173,48 @@ async def async_simulate(
     )
 
     start = time.monotonic()
+
+    if on_progress is not None:
+        stdout, stderr, returncode = await _run_with_progress(cmd, run_dir, timeout, on_progress)
+    else:
+        stdout, stderr, returncode = await _run_simple(cmd, run_dir, timeout)
+
+    elapsed = time.monotonic() - start
+
+    if fs is not None:
+        remote_dir = Path(str(output_dir))
+        upload_results(run_dir, remote_dir, fs)
+        result = SimulationResult(
+            run_dir=remote_dir,
+            success=returncode == 0,
+            exit_code=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+            fs=fs,
+        )
+    else:
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=returncode == 0,
+            exit_code=returncode,
+            stdout=stdout,
+            stderr=stderr,
+            runtime_seconds=elapsed,
+            output_prefix=output_prefix,
+        )
+    if cache is not None and cache_key is not None and result.success:
+        cache.put(cache_key, result)
+    return result
+
+
+async def _run_simple(
+    cmd: list[str],
+    run_dir: Path,
+    timeout: float,
+) -> tuple[str, str, int]:
+    """Run EnergyPlus without progress tracking."""
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -194,34 +244,91 @@ async def async_simulate(
             stderr=None,
         ) from exc
 
-    elapsed = time.monotonic() - start
     stdout = stdout_bytes.decode("utf-8", errors="replace") if stdout_bytes else ""
     stderr = stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
     returncode = proc.returncode if proc.returncode is not None else -1
 
-    if fs is not None:
-        remote_dir = Path(str(output_dir))
-        upload_results(run_dir, remote_dir, fs)
-        result = SimulationResult(
-            run_dir=remote_dir,
-            success=returncode == 0,
-            exit_code=returncode,
-            stdout=stdout,
-            stderr=stderr,
-            runtime_seconds=elapsed,
-            output_prefix=output_prefix,
-            fs=fs,
+    return stdout, stderr, returncode
+
+
+async def _run_with_progress(
+    cmd: list[str],
+    run_dir: Path,
+    timeout: float,
+    on_progress: Callable[[SimulationProgress], Any],
+) -> tuple[str, str, int]:
+    """Run EnergyPlus with async line-by-line stdout streaming for progress."""
+    proc = await _start_process(cmd, run_dir)
+
+    stdout_lines: list[str] = []
+    parser = ProgressParser()
+    is_async_cb = inspect.iscoroutinefunction(on_progress)
+
+    async def _read_stdout() -> None:
+        assert proc.stdout is not None  # noqa: S101
+        while True:
+            raw_line = await proc.stdout.readline()
+            if not raw_line:
+                break
+            line = raw_line.decode("utf-8", errors="replace")
+            stdout_lines.append(line)
+            event = parser.parse_line(line)
+            if event is not None:
+                if is_async_cb:
+                    await on_progress(event)
+                else:
+                    on_progress(event)
+
+    async def _read_stderr() -> bytes:
+        assert proc.stderr is not None  # noqa: S101
+        return await proc.stderr.read()
+
+    stderr_bytes = await _gather_with_timeout(proc, _read_stdout(), _read_stderr(), timeout)
+
+    stdout = "".join(stdout_lines)
+    stderr = stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
+    returncode = proc.returncode if proc.returncode is not None else -1
+
+    return stdout, stderr, returncode
+
+
+async def _start_process(
+    cmd: list[str],
+    run_dir: Path,
+) -> asyncio.subprocess.Process:
+    """Start an async subprocess, wrapping OSError."""
+    try:
+        return await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=str(run_dir),
         )
-    else:
-        result = SimulationResult(
-            run_dir=run_dir,
-            success=returncode == 0,
-            exit_code=returncode,
-            stdout=stdout,
-            stderr=stderr,
-            runtime_seconds=elapsed,
-            output_prefix=output_prefix,
+    except OSError as exc:
+        msg = f"Failed to start EnergyPlus: {exc}"
+        raise SimulationError(msg, exit_code=None, stderr=None) from exc
+
+
+async def _gather_with_timeout(
+    proc: asyncio.subprocess.Process,
+    stdout_coro: object,
+    stderr_coro: object,
+    timeout: float,
+) -> bytes:
+    """Run stdout/stderr readers concurrently with a timeout."""
+    stderr_task = asyncio.create_task(stderr_coro)  # type: ignore[arg-type]
+
+    try:
+        await asyncio.wait_for(
+            asyncio.gather(stdout_coro, stderr_task),  # type: ignore[arg-type]
+            timeout=timeout,
         )
-    if cache is not None and cache_key is not None and result.success:
-        cache.put(cache_key, result)
-    return result
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        stderr_task.cancel()
+        msg = f"Simulation timed out after {timeout} seconds"
+        raise SimulationError(msg, exit_code=None, stderr=None) from None
+
+    await proc.wait()
+    return stderr_task.result()  # type: ignore[return-value]
