@@ -103,7 +103,7 @@ def simulate_batch(
     cache: SimulationCache | None = None,
     progress: Callable[..., None] | None = None,
     fs: FileSystem | None = None,
-    on_progress: Callable[[SimulationProgress], None] | Literal["tqdm"] | None = None,
+    on_progress: Callable[[SimulationProgress], None] | None = None,
 ) -> BatchResult:
     """Run multiple EnergyPlus simulations in parallel.
 
@@ -128,8 +128,10 @@ def simulate_batch(
             :class:`~idfkit.simulation.progress.SimulationProgress` events
             during each individual simulation.  Events include
             ``job_index`` and ``job_label`` to identify which batch job
-            they belong to.  Pass ``"tqdm"`` to use a built-in tqdm
-            progress bar (requires ``pip install idfkit[progress]``).
+            they belong to.  The ``"tqdm"`` shorthand is not supported
+            for batch runners; use
+            :func:`~idfkit.simulation.progress_bars.tqdm_progress`
+            with a custom per-job callback instead.
 
     Returns:
         A :class:`BatchResult` with results in the same order as *jobs*.
@@ -141,18 +143,26 @@ def simulate_batch(
         msg = "jobs must not be empty"
         raise ValueError(msg)
 
+    if on_progress == "tqdm":
+        msg = (
+            'on_progress="tqdm" is not supported for batch simulations because a single '
+            "progress bar cannot represent multiple concurrent jobs. Use the tqdm_progress() "
+            "context manager with a custom callback instead."
+        )
+        raise ValueError(msg)
+
     progress_cb, progress_cleanup = resolve_on_progress(on_progress)
 
-    if max_workers is None:
-        max_workers = min(len(jobs), os.cpu_count() or 1)
-
-    results: list[SimulationResult | None] = [None] * len(jobs)
-    completed_count = 0
-    total = len(jobs)
-
-    start = time.monotonic()
-
     try:
+        if max_workers is None:
+            max_workers = min(len(jobs), os.cpu_count() or 1)
+
+        results: list[SimulationResult | None] = [None] * len(jobs)
+        completed_count = 0
+        total = len(jobs)
+
+        start = time.monotonic()
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_index = {
                 executor.submit(_run_job, idx, job, energyplus, cache, fs, progress_cb): idx

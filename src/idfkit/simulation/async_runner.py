@@ -123,64 +123,64 @@ async def async_simulate(
 
     progress_cb, progress_cleanup = resolve_on_progress(on_progress)
 
-    config = resolve_config(energyplus)
-    weather_path = Path(weather).resolve()
+    try:
+        config = resolve_config(energyplus)
+        weather_path = Path(weather).resolve()
 
-    if not weather_path.is_file():
-        msg = f"Weather file not found: {weather_path}"
-        raise SimulationError(msg)
+        if not weather_path.is_file():
+            msg = f"Weather file not found: {weather_path}"
+            raise SimulationError(msg)
 
-    cache_key: CacheKey | None = None
-    if cache is not None:
-        cache_key = cache.compute_key(
-            model,
-            weather_path,
-            expand_objects=expand_objects,
+        cache_key: CacheKey | None = None
+        if cache is not None:
+            cache_key = cache.compute_key(
+                model,
+                weather_path,
+                expand_objects=expand_objects,
+                annual=annual,
+                design_day=design_day,
+                output_suffix=output_suffix,
+                extra_args=extra_args,
+            )
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        # Copy model to avoid mutation
+        sim_model = model.copy()
+        ensure_sql_output(sim_model)
+
+        # Preprocessing may invoke subprocesses synchronously — delegate to a
+        # thread so we don't block the event loop.
+        sim_model, ep_expand = await asyncio.to_thread(
+            maybe_preprocess, model, sim_model, config, weather_path, expand_objects
+        )
+
+        # When using a remote fs, always run locally in a temp dir
+        local_output_dir = None if fs is not None else output_dir
+        run_dir = prepare_run_directory(local_output_dir, weather_path)
+        idf_path = run_dir / "in.idf"
+
+        from ..writers import write_idf
+
+        write_idf(sim_model, idf_path)
+
+        cmd = build_command(
+            config=config,
+            idf_path=idf_path,
+            weather_path=run_dir / weather_path.name,
+            output_dir=run_dir,
+            output_prefix=output_prefix,
+            output_suffix=output_suffix,
+            expand_objects=ep_expand,
             annual=annual,
             design_day=design_day,
-            output_suffix=output_suffix,
+            readvars=readvars,
             extra_args=extra_args,
         )
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return cached
 
-    # Copy model to avoid mutation
-    sim_model = model.copy()
-    ensure_sql_output(sim_model)
+        start = time.monotonic()
 
-    # Preprocessing may invoke subprocesses synchronously — delegate to a
-    # thread so we don't block the event loop.
-    sim_model, ep_expand = await asyncio.to_thread(
-        maybe_preprocess, model, sim_model, config, weather_path, expand_objects
-    )
-
-    # When using a remote fs, always run locally in a temp dir
-    local_output_dir = None if fs is not None else output_dir
-    run_dir = prepare_run_directory(local_output_dir, weather_path)
-    idf_path = run_dir / "in.idf"
-
-    from ..writers import write_idf
-
-    write_idf(sim_model, idf_path)
-
-    cmd = build_command(
-        config=config,
-        idf_path=idf_path,
-        weather_path=run_dir / weather_path.name,
-        output_dir=run_dir,
-        output_prefix=output_prefix,
-        output_suffix=output_suffix,
-        expand_objects=ep_expand,
-        annual=annual,
-        design_day=design_day,
-        readvars=readvars,
-        extra_args=extra_args,
-    )
-
-    start = time.monotonic()
-
-    try:
         if progress_cb is not None:
             stdout, stderr, returncode = await _run_with_progress(cmd, run_dir, timeout, progress_cb)
         else:
@@ -330,32 +330,49 @@ async def _gather_with_timeout(
     Ensures the subprocess is always killed and awaited on error,
     timeout, or cancellation to prevent leaked EnergyPlus processes.
     """
+    stdout_task = asyncio.create_task(stdout_coro)
     stderr_task = asyncio.create_task(stderr_coro)
 
     try:
         await asyncio.wait_for(
-            asyncio.gather(stdout_coro, stderr_task),
+            asyncio.gather(stdout_task, stderr_task),
             timeout=timeout,
         )
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
-        stderr_task.cancel()
+        await _cancel_tasks(stdout_task, stderr_task)
+        stderr_str = _decode_stderr(_get_stderr_result(stderr_task))
         msg = f"Simulation timed out after {timeout} seconds"
-        raise SimulationError(msg, exit_code=None, stderr=None) from None
-    except (asyncio.CancelledError, Exception):
-        # Callback error or external cancellation — ensure subprocess is
-        # killed, stderr task is cleaned up, then re-raise.
+        raise SimulationError(msg, exit_code=None, stderr=stderr_str) from None
+    except asyncio.CancelledError:
+        # External cancellation — kill, clean up, propagate.
         proc.kill()
         await proc.wait()
-        stderr_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError, Exception):
-            await stderr_task
+        await _cancel_tasks(stdout_task, stderr_task)
         raise
+    except Exception as exc:
+        # Callback error — kill, capture stderr, wrap in SimulationError
+        # to match sync runner behaviour.
+        proc.kill()
+        await proc.wait()
+        await _cancel_tasks(stdout_task, stderr_task)
+        stderr_str = _decode_stderr(_get_stderr_result(stderr_task))
+        msg = f"Failed during EnergyPlus execution: {exc}"
+        raise SimulationError(msg, exit_code=None, stderr=stderr_str) from exc
 
     await proc.wait()
 
     return _get_stderr_result(stderr_task)
+
+
+async def _cancel_tasks(*tasks: asyncio.Task[Any]) -> None:
+    """Cancel tasks and suppress their exceptions."""
+    for task in tasks:
+        task.cancel()
+    for task in tasks:
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
 
 
 def _get_stderr_result(stderr_task: asyncio.Task[bytes]) -> bytes:
@@ -366,3 +383,10 @@ def _get_stderr_result(stderr_task: asyncio.Task[bytes]) -> bytes:
         return stderr_task.result()
     except Exception:
         return b""
+
+
+def _decode_stderr(data: bytes) -> str | None:
+    """Decode stderr bytes, returning ``None`` when empty."""
+    if not data:
+        return None
+    return data.decode("utf-8", errors="replace")

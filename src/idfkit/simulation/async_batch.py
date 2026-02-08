@@ -43,7 +43,7 @@ import time
 from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import SimulationError
 from .async_runner import async_simulate
@@ -87,7 +87,7 @@ async def async_simulate_batch(
     max_concurrent: int | None = None,
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
-    on_progress: Callable[[SimulationProgress], Any] | Literal["tqdm"] | None = None,
+    on_progress: Callable[[SimulationProgress], Any] | None = None,
 ) -> BatchResult:
     """Run multiple EnergyPlus simulations concurrently using asyncio.
 
@@ -113,8 +113,9 @@ async def async_simulate_batch(
             during each individual simulation.  Events include
             ``job_index`` and ``job_label`` to identify which batch job
             they belong to.  Both sync and async callables are accepted.
-            Pass ``"tqdm"`` to use a built-in tqdm progress bar (requires
-            ``pip install idfkit[progress]``).
+            The ``"tqdm"`` shorthand is not supported for batch runners;
+            use :func:`~idfkit.simulation.progress_bars.tqdm_progress`
+            with a custom per-job callback instead.
 
     Returns:
         A :class:`~idfkit.simulation.batch.BatchResult` with results in the
@@ -127,20 +128,28 @@ async def async_simulate_batch(
         msg = "jobs must not be empty"
         raise ValueError(msg)
 
+    if on_progress == "tqdm":
+        msg = (
+            'on_progress="tqdm" is not supported for batch simulations because a single '
+            "progress bar cannot represent multiple concurrent jobs. Use the tqdm_progress() "
+            "context manager with a custom callback instead."
+        )
+        raise ValueError(msg)
+
     progress_cb, progress_cleanup = resolve_on_progress(on_progress)
 
-    if max_concurrent is None:
-        max_concurrent = min(len(jobs), os.cpu_count() or 1)
-
-    semaphore = asyncio.Semaphore(max_concurrent)
-    results: list[SimulationResult | None] = [None] * len(jobs)
-    start = time.monotonic()
-
-    async def _run_one(idx: int, job: SimulationJob) -> None:
-        async with semaphore:
-            results[idx] = await _async_run_job(idx, job, energyplus, cache, fs, progress_cb)
-
     try:
+        if max_concurrent is None:
+            max_concurrent = min(len(jobs), os.cpu_count() or 1)
+
+        semaphore = asyncio.Semaphore(max_concurrent)
+        results: list[SimulationResult | None] = [None] * len(jobs)
+        start = time.monotonic()
+
+        async def _run_one(idx: int, job: SimulationJob) -> None:
+            async with semaphore:
+                results[idx] = await _async_run_job(idx, job, energyplus, cache, fs, progress_cb)
+
         tasks = [asyncio.create_task(_run_one(i, job)) for i, job in enumerate(jobs)]
         await asyncio.gather(*tasks)
     finally:
@@ -164,7 +173,7 @@ async def async_simulate_batch_stream(
     max_concurrent: int | None = None,
     cache: SimulationCache | None = None,
     fs: FileSystem | None = None,
-    on_progress: Callable[[SimulationProgress], Any] | Literal["tqdm"] | None = None,
+    on_progress: Callable[[SimulationProgress], Any] | None = None,
 ) -> AsyncIterator[SimulationEvent]:
     """Run simulations concurrently, yielding events as each one completes.
 
@@ -188,9 +197,10 @@ async def async_simulate_batch_stream(
         on_progress: Optional callback invoked with
             :class:`~idfkit.simulation.progress.SimulationProgress` events
             during each individual simulation.  Events include
-            ``job_index`` and ``job_label``.  Pass ``"tqdm"`` to use a
-            built-in tqdm progress bar (requires ``pip install
-            idfkit[progress]``).
+            ``job_index`` and ``job_label``.  The ``"tqdm"`` shorthand
+            is not supported for batch runners; use
+            :func:`~idfkit.simulation.progress_bars.tqdm_progress`
+            with a custom per-job callback instead.
 
     Yields:
         :class:`SimulationEvent` for each completed simulation, in the order
@@ -201,6 +211,14 @@ async def async_simulate_batch_stream(
     """
     if not jobs:
         msg = "jobs must not be empty"
+        raise ValueError(msg)
+
+    if on_progress == "tqdm":
+        msg = (
+            'on_progress="tqdm" is not supported for batch simulations because a single '
+            "progress bar cannot represent multiple concurrent jobs. Use the tqdm_progress() "
+            "context manager with a custom callback instead."
+        )
         raise ValueError(msg)
 
     progress_cb, progress_cleanup = resolve_on_progress(on_progress)

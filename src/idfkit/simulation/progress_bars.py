@@ -75,11 +75,14 @@ def tqdm_progress(
         bar.set_postfix_str(event.phase, refresh=False)
         bar.refresh()
 
+    error = True
     try:
         yield _callback
+        error = False
     finally:
-        bar.n = 100
-        bar.refresh()
+        if not error:
+            bar.n = 100
+            bar.refresh()
         bar.close()
 
 

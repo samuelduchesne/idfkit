@@ -165,6 +165,7 @@ class TestTqdmProgress:
     def test_bar_closed_on_exception(self, mock_import: MagicMock) -> None:
         mock_tqdm_cls = MagicMock()
         mock_bar = MagicMock()
+        mock_bar.n = 42
         mock_tqdm_cls.return_value = mock_bar
         mock_import.return_value = mock_tqdm_cls
 
@@ -172,6 +173,8 @@ class TestTqdmProgress:
             raise RuntimeError("boom")
 
         mock_bar.close.assert_called_once()
+        # Bar should NOT be set to 100% on error
+        assert mock_bar.n == 42
 
     @patch("idfkit.simulation.progress_bars._import_tqdm")
     def test_custom_desc(self, mock_import: MagicMock) -> None:
@@ -256,5 +259,58 @@ class TestSimulateWithTqdm:
         model = new_document()
         with pytest.raises(SimulationError):
             simulate(model, weather_file, energyplus=mock_config, on_progress="tqdm")
+
+        mock_bar.close.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Batch runners reject on_progress="tqdm"
+# ---------------------------------------------------------------------------
+
+
+class TestBatchTqdmRejection:
+    """Batch runners must reject on_progress='tqdm' with a clear error."""
+
+    def test_sync_batch_rejects_tqdm(self, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
+        from idfkit.simulation.batch import SimulationJob, simulate_batch
+
+        model = new_document()
+        jobs = [SimulationJob(model=model, weather=weather_file, label="j0")]
+        with pytest.raises(ValueError, match="not supported for batch"):
+            simulate_batch(jobs, energyplus=mock_config, on_progress="tqdm")  # type: ignore[arg-type]
+
+    @pytest.mark.asyncio
+    async def test_async_batch_rejects_tqdm(self, mock_config: EnergyPlusConfig, weather_file: Path) -> None:
+        from idfkit.simulation.async_batch import async_simulate_batch
+        from idfkit.simulation.batch import SimulationJob
+
+        model = new_document()
+        jobs = [SimulationJob(model=model, weather=weather_file, label="j0")]
+        with pytest.raises(ValueError, match="not supported for batch"):
+            await async_simulate_batch(jobs, energyplus=mock_config, on_progress="tqdm")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# tqdm bar cleaned up on early errors (before simulation starts)
+# ---------------------------------------------------------------------------
+
+
+class TestTqdmCleanupOnEarlyError:
+    """tqdm bar is closed even when errors occur before the simulation subprocess starts."""
+
+    @patch("idfkit.simulation.progress_bars._import_tqdm")
+    def test_tqdm_cleaned_up_on_missing_weather(self, mock_import: MagicMock, mock_config: EnergyPlusConfig) -> None:
+        """Bar is closed when weather file doesn't exist (error before subprocess)."""
+        mock_tqdm_cls = MagicMock()
+        mock_bar = MagicMock()
+        mock_tqdm_cls.return_value = mock_bar
+        mock_import.return_value = mock_tqdm_cls
+
+        from idfkit.exceptions import SimulationError
+        from idfkit.simulation.runner import simulate
+
+        model = new_document()
+        with pytest.raises(SimulationError, match="Weather file not found"):
+            simulate(model, "/nonexistent/weather.epw", energyplus=mock_config, on_progress="tqdm")
 
         mock_bar.close.assert_called_once()

@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from idfkit import new_document
+from idfkit.exceptions import SimulationError
 from idfkit.simulation.async_runner import async_simulate
 from idfkit.simulation.batch import SimulationJob, simulate_batch
 from idfkit.simulation.config import EnergyPlusConfig
@@ -757,7 +758,7 @@ class TestAsyncRunnerSubprocessCleanup:
             raise RuntimeError("boom")
 
         model = new_document()
-        with pytest.raises(RuntimeError, match="boom"):
+        with pytest.raises(SimulationError, match="boom"):
             await async_simulate(model, weather_file, energyplus=mock_config, on_progress=bad_callback)
 
         # Subprocess must have been killed

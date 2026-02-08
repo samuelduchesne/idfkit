@@ -116,61 +116,61 @@ def simulate(
 
     progress_cb, progress_cleanup = resolve_on_progress(on_progress)
 
-    config = resolve_config(energyplus)
-    weather_path = Path(weather).resolve()
+    try:
+        config = resolve_config(energyplus)
+        weather_path = Path(weather).resolve()
 
-    if not weather_path.is_file():
-        msg = f"Weather file not found: {weather_path}"
-        raise SimulationError(msg)
+        if not weather_path.is_file():
+            msg = f"Weather file not found: {weather_path}"
+            raise SimulationError(msg)
 
-    cache_key: CacheKey | None = None
-    if cache is not None:
-        cache_key = cache.compute_key(
-            model,
-            weather_path,
-            expand_objects=expand_objects,
+        cache_key: CacheKey | None = None
+        if cache is not None:
+            cache_key = cache.compute_key(
+                model,
+                weather_path,
+                expand_objects=expand_objects,
+                annual=annual,
+                design_day=design_day,
+                output_suffix=output_suffix,
+                extra_args=extra_args,
+            )
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        # Copy model to avoid mutation
+        sim_model = model.copy()
+        ensure_sql_output(sim_model)
+
+        # Auto-preprocess ground heat-transfer objects when needed.
+        sim_model, ep_expand = maybe_preprocess(model, sim_model, config, weather_path, expand_objects)
+
+        # When using a remote fs, always run locally in a temp dir
+        local_output_dir = None if fs is not None else output_dir
+        run_dir = prepare_run_directory(local_output_dir, weather_path)
+        idf_path = run_dir / "in.idf"
+
+        from ..writers import write_idf
+
+        write_idf(sim_model, idf_path)
+
+        cmd = build_command(
+            config=config,
+            idf_path=idf_path,
+            weather_path=run_dir / weather_path.name,
+            output_dir=run_dir,
+            output_prefix=output_prefix,
+            output_suffix=output_suffix,
+            expand_objects=ep_expand,
             annual=annual,
             design_day=design_day,
-            output_suffix=output_suffix,
+            readvars=readvars,
             extra_args=extra_args,
         )
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return cached
 
-    # Copy model to avoid mutation
-    sim_model = model.copy()
-    ensure_sql_output(sim_model)
+        start = time.monotonic()
 
-    # Auto-preprocess ground heat-transfer objects when needed.
-    sim_model, ep_expand = maybe_preprocess(model, sim_model, config, weather_path, expand_objects)
-
-    # When using a remote fs, always run locally in a temp dir
-    local_output_dir = None if fs is not None else output_dir
-    run_dir = prepare_run_directory(local_output_dir, weather_path)
-    idf_path = run_dir / "in.idf"
-
-    from ..writers import write_idf
-
-    write_idf(sim_model, idf_path)
-
-    cmd = build_command(
-        config=config,
-        idf_path=idf_path,
-        weather_path=run_dir / weather_path.name,
-        output_dir=run_dir,
-        output_prefix=output_prefix,
-        output_suffix=output_suffix,
-        expand_objects=ep_expand,
-        annual=annual,
-        design_day=design_day,
-        readvars=readvars,
-        extra_args=extra_args,
-    )
-
-    start = time.monotonic()
-
-    try:
         if progress_cb is not None:
             stdout, stderr, returncode = _run_with_progress(cmd, run_dir, timeout, start, progress_cb)
         else:
