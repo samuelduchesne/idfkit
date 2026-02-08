@@ -70,6 +70,8 @@ class SimulationCache:
         annual: bool = False,
         design_day: bool = False,
         output_suffix: Literal["C", "L", "D"] = "C",
+        readvars: bool = False,
+        output_prefix: str = "eplus",
         extra_args: list[str] | tuple[str, ...] | None = None,
     ) -> CacheKey:
         """Compute a deterministic cache key for a simulation invocation.
@@ -85,6 +87,8 @@ class SimulationCache:
             annual: Whether annual simulation is used.
             design_day: Whether design-day-only simulation is used.
             output_suffix: Output file naming suffix (``"C"``, ``"L"``, or ``"D"``).
+            readvars: Whether ReadVarsESO will run.
+            output_prefix: Output file prefix.
             extra_args: Additional command-line arguments.
 
         Returns:
@@ -106,6 +110,8 @@ class SimulationCache:
                 "annual": annual,
                 "design_day": design_day,
                 "output_suffix": output_suffix,
+                "readvars": readvars,
+                "output_prefix": output_prefix,
                 "extra_args": list(extra_args) if extra_args else [],
             },
             sort_keys=True,

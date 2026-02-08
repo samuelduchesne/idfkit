@@ -33,12 +33,13 @@ class ScheduleFileCache:
     """Cache for Schedule:File CSV data.
 
     Caches parsed CSV data to avoid repeated file I/O when evaluating
-    the same schedule multiple times.
+    the same schedule multiple times.  Entries are automatically
+    invalidated when the underlying file's modification time changes.
     """
 
     def __init__(self) -> None:
         """Initialize an empty cache."""
-        self._cache: dict[str, list[float]] = {}
+        self._cache: dict[str, tuple[float, list[float]]] = {}
 
     def get_values(
         self,
@@ -58,11 +59,17 @@ class ScheduleFileCache:
         """
         file_path = self._resolve_path(obj, base_path)
         cache_key = str(file_path)
+        current_mtime = self._get_mtime(file_path)
 
-        if cache_key not in self._cache:
-            self._cache[cache_key] = _read_schedule_file(obj, fs, file_path)
+        entry = self._cache.get(cache_key)
+        if entry is not None:
+            cached_mtime, cached_values = entry
+            if cached_mtime == current_mtime:
+                return cached_values
 
-        return self._cache[cache_key]
+        values = _read_schedule_file(obj, fs, file_path)
+        self._cache[cache_key] = (current_mtime, values)
+        return values
 
     def _resolve_path(self, obj: IDFObject, base_path: Path | str | None) -> Path:
         """Resolve the file path from the Schedule:File object.
@@ -88,6 +95,14 @@ class ScheduleFileCache:
             file_path = Path(base_path) / file_path
 
         return file_path
+
+    @staticmethod
+    def _get_mtime(file_path: Path) -> float:
+        """Return the file modification time, or 0.0 if unavailable."""
+        try:
+            return file_path.stat().st_mtime
+        except OSError:
+            return 0.0
 
     def clear(self) -> None:
         """Clear the cache."""

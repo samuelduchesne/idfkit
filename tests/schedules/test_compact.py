@@ -347,6 +347,9 @@ class TestParseCompactCaching:
             "Field 4": "1.0",
         }
 
+        # Provide a stable .data dict so the cache snapshot comparison works.
+        obj.data = dict(fields)
+
         call_count = 0
 
         def get_field(name: str) -> str | None:
