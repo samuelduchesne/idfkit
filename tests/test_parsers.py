@@ -281,3 +281,56 @@ class TestParserEdgeCases:
         filepath.write_text(json.dumps(data))
         doc = parse_epjson(filepath)
         assert len(doc["Zone"]) == 0
+
+    def test_iter_idf_objects_strips_comments(self, tmp_path: Path) -> None:
+        """iter_idf_objects should not produce phantom objects from comments."""
+        content = "Version, 24.1;\n! Comment with X,Y,Z format:\n! X,\n!   value1;\nZone,\n  TestZone,\n  0, 0, 0, 0;\n"
+        filepath = tmp_path / "comments.idf"
+        filepath.write_text(content)
+        objects = list(iter_idf_objects(filepath))
+        obj_types = [t for t, _, _ in objects]
+        assert "Zone" in obj_types
+        # Comments should NOT produce phantom objects
+        assert all(t in ("Version", "Zone") for t in obj_types), (
+            f"Phantom objects found: {[t for t in obj_types if t not in ('Version', 'Zone')]}"
+        )
+
+    def test_coerce_value_preserves_autosize_casing(self, tmp_path: Path) -> None:
+        """Autosize/Autocalculate should not be lowercased by the parser."""
+        content = """\
+Version, 24.1;
+Sizing:Zone,
+  TestZone,
+  SupplyAirTemperature, 14, ,
+  SupplyAirTemperature, 40, ,
+  0.0085, 0.008, , , ,
+  DesignDay, 0, , , 0,
+  DesignDay, 0, , , 0, ,
+  No, NeutralSupplyAir,
+  Autosize,
+  Autosize;
+"""
+        filepath = tmp_path / "autosize.idf"
+        filepath.write_text(content)
+        doc = parse_idf(filepath)
+        sz = doc["Sizing:Zone"][0]
+        low_sp = sz.data.get("dedicated_outdoor_air_low_setpoint_temperature_for_design")
+        # Should preserve the original casing, not lowercase it
+        assert low_sp == "Autosize", f"Expected 'Autosize' but got {low_sp!r}"
+
+    def test_schema_not_mutated_by_extensible_parsing(self, tmp_path: Path) -> None:
+        """Parsing extensible nameless objects must not mutate the schema's field list."""
+        from idfkit.schema import get_schema
+
+        schema = get_schema((24, 1, 0))
+        original_fields = list(schema.get_all_field_names("Output:Table:SummaryReports"))
+
+        content = "Version, 24.1;\nOutput:Table:SummaryReports, AllSummary, ZoneComponentLoadSummary;\n"
+        filepath = tmp_path / "reports.idf"
+        filepath.write_text(content)
+        parse_idf(filepath, schema=schema)
+
+        after_fields = schema.get_all_field_names("Output:Table:SummaryReports")
+        assert after_fields == original_fields, (
+            f"Schema was mutated: started with {original_fields}, now {after_fields}"
+        )
