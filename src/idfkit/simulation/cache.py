@@ -150,7 +150,9 @@ class SimulationCache:
                 output_prefix=meta["output_prefix"],
             )
         except (json.JSONDecodeError, KeyError, OSError):
-            # Corrupted or incomplete cache entry — treat as a miss.
+            # Corrupted or incomplete cache entry — remove it so that
+            # a subsequent put() can write a fresh copy, then treat as miss.
+            shutil.rmtree(entry_dir, ignore_errors=True)
             return None
 
     def put(self, key: CacheKey, result: SimulationResult) -> None:
@@ -187,10 +189,13 @@ class SimulationCache:
             meta_path = tmp_dir / self._META_FILE
             meta_path.write_text(json.dumps(meta), encoding="utf-8")
 
-            # Atomic move — shutil.move handles cross-device moves safely
-            shutil.move(str(tmp_dir), str(target_dir))
+            # Atomic rename — os.rename fails if target_dir already exists
+            # (another process beat us), unlike shutil.move which would nest
+            # tmp_dir inside the existing target as a subdirectory.
+            os.rename(str(tmp_dir), str(target_dir))
         except OSError:
-            # Another thread/process beat us — clean up
+            # Another thread/process beat us, or a real filesystem error
+            # — clean up the temporary directory.
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
     def contains(self, key: CacheKey) -> bool:

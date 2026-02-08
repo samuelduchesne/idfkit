@@ -46,7 +46,7 @@ class SimulationResult:
     runtime_seconds: float
     output_prefix: str = "eplus"
     fs: FileSystem | None = field(default=None, repr=False)
-    _cached_errors: ErrorReport | None = field(default=None, init=False, repr=False)
+    _cached_errors: Any = field(default=_UNSET, init=False, repr=False)
     _cached_sql: Any = field(default=_UNSET, init=False, repr=False)
     _cached_variables: Any = field(default=_UNSET, init=False, repr=False)
     _cached_csv: Any = field(default=_UNSET, init=False, repr=False)
@@ -59,8 +59,8 @@ class SimulationResult:
             Parsed ErrorReport from the simulation's .err output.
         """
         cached = object.__getattribute__(self, "_cached_errors")
-        if cached is not None:
-            return cached
+        if cached is not _UNSET:
+            return cached  # type: ignore[no-any-return]
         err = self.err_path
         if err is None:
             report = ErrorReport.from_string("")
