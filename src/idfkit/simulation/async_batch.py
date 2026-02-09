@@ -39,13 +39,13 @@ from __future__ import annotations
 
 import asyncio
 import os
+import tempfile
 import time
 from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from ..exceptions import SimulationError
 from .async_runner import async_simulate
 from .batch import BatchResult, SimulationJob
 from .progress import SimulationProgress
@@ -293,14 +293,19 @@ async def _async_run_job(
             fs=fs,
             on_progress=job_cb,
         )
-    except SimulationError as exc:
-        failed_run_dir = Path(job.output_dir) if job.output_dir is not None else Path("/dev/null")
+    except Exception as exc:
+        # Catch all exceptions (SimulationError, ExpandObjectsError,
+        # EnergyPlusNotFoundError, etc.) so that a single job failure
+        # never crashes the entire batch.
+        failed_run_dir = Path(job.output_dir) if job.output_dir is not None else Path(tempfile.mkdtemp())
+        exit_code = getattr(exc, "exit_code", None)
+        stderr = getattr(exc, "stderr", None) or str(exc)
         return SimulationResult(
             run_dir=failed_run_dir,
             success=False,
-            exit_code=exc.exit_code,
+            exit_code=exit_code,
             stdout="",
-            stderr=exc.stderr or "",
+            stderr=stderr,
             runtime_seconds=0.0,
             output_prefix=job.output_prefix,
         )

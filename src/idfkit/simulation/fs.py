@@ -293,10 +293,17 @@ class S3FileSystem:
         )
 
     def glob(self, path: str | Path, pattern: str) -> list[str]:
-        """List objects matching a glob pattern under *path*."""
+        """List objects matching a glob pattern under *path*.
+
+        Returns logical paths (without the configured S3 prefix) so that
+        they can be passed back to other ``S3FileSystem`` methods which
+        prepend the prefix automatically via ``_key()``.
+        """
         prefix = self._key(path).rstrip("/") + "/"
         paginator = self._client.get_paginator("list_objects_v2")
         matches: list[str] = []
+        # Compute how much of the key is the S3 prefix, so we can strip it.
+        logical_base = str(path).strip("/")
         for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
             for obj in page.get("Contents", []):
                 key = obj.get("Key", "")
@@ -305,7 +312,8 @@ class S3FileSystem:
                 # Match only the filename portion against the pattern
                 name = key[len(prefix) :]
                 if fnmatch.fnmatch(name, pattern):
-                    matches.append(key)
+                    # Return logical path (base/name) that _key() can prefix
+                    matches.append(f"{logical_base}/{name}" if logical_base else name)
         return matches
 
     def remove(self, path: str | Path) -> None:

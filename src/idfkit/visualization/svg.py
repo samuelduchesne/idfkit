@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape, quoteattr
 
 if TYPE_CHECKING:
     from ..thermal.properties import ConstructionThermalProperties, LayerThermalProperties
@@ -542,7 +542,7 @@ def _generate_layer(
     color, pattern_id = _get_layer_fill(layer)
     fill = f"url(#{pattern_id})" if pattern_id else color
 
-    parts = [f'<g class="layer" data-index="{index}" data-name="{escape(layer.name)}">']
+    parts = [f'<g class="layer" data-index="{index}" data-name={quoteattr(layer.name)}>']
 
     # Main layer rectangle
     parts.append(
