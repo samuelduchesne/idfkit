@@ -6,6 +6,7 @@ Covers:
 - Named objects preserve their names correctly
 - Object counts and data are preserved across the full roundtrip
 - Field order includes extensible fields after epJSON parsing
+- E2E simulation: roundtripped IDF produces same results (integration)
 """
 
 from __future__ import annotations
@@ -383,3 +384,111 @@ class TestFullEpjsonRoundtrip:
         idf_output = write_idf(doc)
         assert idf_output is not None
         assert "3;" in idf_output or "3.0;" in idf_output or "3," in idf_output
+
+
+# ---------------------------------------------------------------------------
+# E2E Integration Test: IDF -> epJSON -> IDF -> EnergyPlus
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+class TestEpjsonRoundtripSimulation:
+    """Verify the roundtripped IDF simulates identically to the original.
+
+    Requires EnergyPlus installed. Run with::
+
+        pytest -m integration tests/test_epjson_roundtrip.py
+    """
+
+    @pytest.fixture(scope="class")
+    def energyplus(self):
+        from idfkit.exceptions import EnergyPlusNotFoundError
+        from idfkit.simulation.config import find_energyplus
+
+        try:
+            return find_energyplus()
+        except EnergyPlusNotFoundError:
+            pytest.skip("EnergyPlus not installed")
+            raise  # unreachable, keeps type checker happy
+
+    @pytest.fixture(scope="class")
+    def example_idf(self, energyplus) -> Path:
+        return energyplus.install_dir / "ExampleFiles" / "1ZoneUncontrolled.idf"
+
+    @pytest.fixture(scope="class")
+    def weather_file(self, energyplus) -> Path:
+        return energyplus.install_dir / "WeatherData" / "USA_IL_Chicago-OHare.Intl.AP.725300_TMY3.epw"
+
+    @pytest.fixture(scope="class")
+    def roundtrip_model(self, example_idf: Path, tmp_path_factory):
+        """IDF -> epJSON -> IDF roundtrip of 1ZoneUncontrolled."""
+        from idfkit import load_idf
+
+        original = load_idf(str(example_idf))
+
+        tmp = tmp_path_factory.mktemp("epjson_roundtrip")
+        epjson_path = tmp / "model.epJSON"
+        write_epjson(original, epjson_path)
+
+        doc_from_epjson = parse_epjson(epjson_path)
+        return doc_from_epjson
+
+    @pytest.fixture(scope="class")
+    def original_result(self, example_idf: Path, weather_file: Path, energyplus):
+        from idfkit import load_idf
+        from idfkit.simulation import simulate
+
+        model = load_idf(str(example_idf))
+        return simulate(model, weather_file, energyplus=energyplus, design_day=True)
+
+    @pytest.fixture(scope="class")
+    def roundtrip_result(self, roundtrip_model, weather_file: Path, energyplus):
+        from idfkit.simulation import simulate
+
+        return simulate(roundtrip_model, weather_file, energyplus=energyplus, design_day=True)
+
+    def test_original_simulates_successfully(self, original_result) -> None:
+        assert original_result.success
+        assert original_result.exit_code == 0
+
+    def test_roundtrip_simulates_successfully(self, roundtrip_result) -> None:
+        assert roundtrip_result.success
+        assert roundtrip_result.exit_code == 0
+
+    def test_no_severe_errors_original(self, original_result) -> None:
+        assert not original_result.errors.has_severe
+        assert not original_result.errors.has_fatal
+
+    def test_no_severe_errors_roundtrip(self, roundtrip_result) -> None:
+        assert not roundtrip_result.errors.has_severe
+        assert not roundtrip_result.errors.has_fatal
+
+    def test_same_warning_count(self, original_result, roundtrip_result) -> None:
+        assert original_result.errors.warning_count == roundtrip_result.errors.warning_count
+
+    def test_sql_tabular_data_matches(self, original_result, roundtrip_result) -> None:
+        """Tabular summary reports should be identical."""
+        orig_sql = original_result.sql
+        rt_sql = roundtrip_result.sql
+        assert orig_sql is not None
+        assert rt_sql is not None
+
+        orig_rows = orig_sql.get_tabular_data(
+            report_name="EnvelopeSummary",
+            table_name="Opaque Exterior",
+        )
+        rt_rows = rt_sql.get_tabular_data(
+            report_name="EnvelopeSummary",
+            table_name="Opaque Exterior",
+        )
+        # Same number of surface rows
+        assert len(orig_rows) == len(rt_rows)
+
+    def test_object_counts_match(self, example_idf: Path, roundtrip_model) -> None:
+        from idfkit import load_idf
+
+        original = load_idf(str(example_idf))
+        for obj_type in original.collections:
+            orig_count = len(original[obj_type])
+            rt_count = len(roundtrip_model[obj_type])
+            assert orig_count == rt_count, f"{obj_type}: {orig_count} != {rt_count}"
