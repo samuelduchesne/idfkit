@@ -28,4 +28,6 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dlat = lat2_r - lat1_r
     dlon = lon2_r - lon1_r
     a = math.sin(dlat / 2) ** 2 + math.cos(lat1_r) * math.cos(lat2_r) * math.sin(dlon / 2) ** 2
-    return 6371.0 * 2.0 * math.asin(math.sqrt(a))
+    # Clamp to 1.0 to avoid math domain error from floating-point
+    # imprecision when computing distances for near-antipodal points.
+    return 6371.0 * 2.0 * math.asin(math.sqrt(min(1.0, a)))

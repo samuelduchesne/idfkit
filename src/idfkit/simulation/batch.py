@@ -9,6 +9,7 @@ which releases the GIL.
 from __future__ import annotations
 
 import os
+import tempfile
 import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -16,7 +17,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from ..exceptions import SimulationError
 from .progress import SimulationProgress
 from .progress_bars import resolve_on_progress
 from .result import SimulationResult
@@ -230,15 +230,19 @@ def _run_job(
             fs=fs,
             on_progress=job_cb,
         )
-    except SimulationError as exc:
-        # Use the job's output_dir if specified, otherwise indicate failure with None-ish path
-        failed_run_dir = Path(job.output_dir) if job.output_dir is not None else Path("/dev/null")
+    except Exception as exc:
+        # Catch all exceptions (SimulationError, ExpandObjectsError,
+        # EnergyPlusNotFoundError, etc.) so that a single job failure
+        # never crashes the entire batch.
+        failed_run_dir = Path(job.output_dir) if job.output_dir is not None else Path(tempfile.mkdtemp())
+        exit_code = getattr(exc, "exit_code", None)
+        stderr = getattr(exc, "stderr", None) or str(exc)
         return SimulationResult(
             run_dir=failed_run_dir,
             success=False,
-            exit_code=exc.exit_code,
+            exit_code=exit_code,
             stdout="",
-            stderr=exc.stderr or "",
+            stderr=stderr,
             runtime_seconds=0.0,
             output_prefix=job.output_prefix,
         )

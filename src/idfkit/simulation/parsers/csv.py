@@ -86,12 +86,17 @@ class CSVResult:
             if not row or not row[0].strip():
                 continue
             timestamps.append(row[0].strip())
-            for i, val in enumerate(row[1:]):
-                if i < len(col_values):
+            data_cells = row[1:]
+            for i in range(len(col_values)):
+                if i < len(data_cells):
                     try:
-                        col_values[i].append(float(val.strip()))
+                        col_values[i].append(float(data_cells[i].strip()))
                     except ValueError:
                         col_values[i].append(0.0)
+                else:
+                    # Short row: pad missing columns with 0.0 to keep
+                    # all column value lists aligned with timestamps.
+                    col_values[i].append(0.0)
 
         columns: list[CSVColumn] = []
         for header, values in zip(data_headers, col_values, strict=False):

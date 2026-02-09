@@ -76,8 +76,10 @@ class WeatherStation:
 
         Dots in the city name are replaced with spaces for readability.
         """
-        name = self.city.replace(".", " ").replace("-", " ")
-        parts = [name]
+        name = self.city.replace(".", " ").replace("-", " ").strip()
+        parts: list[str] = []
+        if name:
+            parts.append(name)
         if self.state:
             parts.append(self.state)
         parts.append(self.country)

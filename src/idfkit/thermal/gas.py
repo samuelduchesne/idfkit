@@ -184,8 +184,18 @@ def gas_gap_resistance(
 
     Returns:
         Thermal resistance in m²·K/W
+
+    Raises:
+        ValueError: If thickness or emissivities are not positive.
     """
     import math
+
+    if thickness <= 0:
+        msg = f"Gap thickness must be positive, got {thickness}"
+        raise ValueError(msg)
+    if emissivity_1 <= 0 or emissivity_2 <= 0:
+        msg = f"Emissivities must be positive, got emissivity_1={emissivity_1}, emissivity_2={emissivity_2}"
+        raise ValueError(msg)
 
     props = get_gas_properties(gas_type)
 
