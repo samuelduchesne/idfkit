@@ -250,3 +250,90 @@ class TestGetPut:
         assert restored is not None
         assert (restored.run_dir / "eplusout.sql").is_file()
         assert (restored.run_dir / "eplusout.err").is_file()
+
+    def test_corrupted_entry_cleaned_up_on_get(self, cache: SimulationCache) -> None:
+        """A corrupted cache entry should be removed by get() so put() can replace it."""
+        key = CacheKey(hex_digest="corrupted")
+        entry_dir = cache.cache_dir / key.hex_digest
+        entry_dir.mkdir(parents=True)
+        # Write invalid JSON to the metadata file
+        (entry_dir / "_cache_meta.json").write_text("NOT VALID JSON", encoding="utf-8")
+
+        # get() should return None and clean up the corrupted entry
+        assert cache.get(key) is None
+        assert not entry_dir.exists()
+
+    def test_corrupted_entry_replaceable_after_get(self, cache: SimulationCache, run_dir: Path) -> None:
+        """After get() cleans a corrupted entry, put() should be able to store a fresh one."""
+        key = CacheKey(hex_digest="replace_corrupted")
+        entry_dir = cache.cache_dir / key.hex_digest
+        entry_dir.mkdir(parents=True)
+        (entry_dir / "_cache_meta.json").write_text("{}", encoding="utf-8")  # missing keys
+
+        # get() cleans the corrupted entry
+        assert cache.get(key) is None
+        assert not entry_dir.exists()
+
+        # Now put() should succeed
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=2.0,
+            output_prefix="eplus",
+        )
+        cache.put(key, result)
+        restored = cache.get(key)
+        assert restored is not None
+        assert restored.runtime_seconds == 2.0
+
+    def test_put_no_leaked_temp_dirs(self, cache: SimulationCache, run_dir: Path) -> None:
+        """put() should not leave temporary directories inside existing cache entries."""
+        key = CacheKey(hex_digest="no_leak")
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=1.0,
+        )
+        cache.put(key, result)
+
+        # Second put with same key should be a no-op (early return)
+        cache.put(key, result)
+
+        # Verify no .tmp_ subdirectories leaked inside the cache entry
+        entry_dir = cache.cache_dir / key.hex_digest
+        for child in entry_dir.iterdir():
+            assert not child.name.startswith(".tmp_"), f"Leaked temp dir: {child}"
+
+    def test_concurrent_put_no_leaked_temp_dirs(self, cache: SimulationCache, run_dir: Path) -> None:
+        """Simulates the race where target_dir is created between the is_dir() check and rename."""
+        key = CacheKey(hex_digest="race_test")
+        result = SimulationResult(
+            run_dir=run_dir,
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=1.0,
+        )
+        # First put succeeds normally
+        cache.put(key, result)
+
+        entry_dir = cache.cache_dir / key.hex_digest
+
+        # Manually remove the entry directory and re-create it mid-flight
+        # by patching is_dir to return False (simulating the TOCTOU window)
+        import shutil
+
+        shutil.rmtree(entry_dir)
+        cache.put(key, result)  # re-populate
+
+        # Verify the entry is intact and has no nested temp dirs
+        assert cache.contains(key)
+        for child in entry_dir.iterdir():
+            assert not child.name.startswith(".tmp_"), f"Leaked temp dir: {child}"
