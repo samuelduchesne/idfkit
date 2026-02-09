@@ -238,9 +238,16 @@ class EpJSONWriter:
                 continue
 
             result[obj_type] = {}
+            nameless_counter = 0
             for obj in collection:
                 obj_data = self._object_to_dict(obj)
-                result[obj_type][obj.name] = obj_data
+                if obj.name:
+                    key = obj.name
+                else:
+                    # Generate unique key for nameless objects (e.g. Output:Variable)
+                    nameless_counter += 1
+                    key = f"{obj_type} {nameless_counter}"
+                result[obj_type][key] = obj_data
 
         return result
 
@@ -249,7 +256,7 @@ class EpJSONWriter:
         result: dict[str, Any] = {}
 
         for field_name, value in obj.data.items():
-            if value is not None:
+            if value is not None and value != "":
                 result[field_name] = self._format_value(value)
 
         return result

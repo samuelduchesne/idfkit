@@ -326,8 +326,8 @@ class IDFParser:
                 # Handle scientific notation
                 return float(value)
             except ValueError:
-                # Might be "autocalculate", "autosize", etc.
-                return value.lower()
+                # Might be "Autocalculate", "Autosize", etc. — preserve original casing
+                return value
 
         elif field_type == "integer":
             try:
@@ -355,6 +355,9 @@ def iter_idf_objects(
 
     with open(filepath, "rb") as f:
         content = f.read()
+
+    # Strip comments before matching to prevent phantom objects
+    content = _COMMENT_PATTERN.sub(b"", content)
 
     for match in _OBJECT_PATTERN.finditer(content):
         obj_type = match.group(1).decode(encoding).strip()

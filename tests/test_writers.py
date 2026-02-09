@@ -213,3 +213,46 @@ class TestFormatConversion:
         content = idf_out.read_text(encoding="latin-1")
         assert "Zone," in content
         assert "TestZone" in content
+
+
+# ---------------------------------------------------------------------------
+# Bug-fix regression tests
+# ---------------------------------------------------------------------------
+
+
+class TestEpJSONWriterNamelessDuplicates:
+    """epJSON writer must preserve all nameless objects (e.g. Output:Variable)."""
+
+    def test_multiple_output_variables_preserved(self, tmp_path: Path) -> None:
+        from idfkit.idf_parser import parse_idf
+
+        content = (
+            "Version, 24.1;\n"
+            "Output:Variable,*,Site Outdoor Air Drybulb Temperature,Timestep;\n"
+            "Output:Variable,*,Zone Mean Air Temperature,Timestep;\n"
+            "Output:Variable,*,Zone Air System Sensible Heating Energy,Timestep;\n"
+        )
+        filepath = tmp_path / "output_vars.idf"
+        filepath.write_text(content)
+        doc = parse_idf(filepath)
+        assert len(doc["Output:Variable"]) == 3
+
+        epjson_str = write_epjson(doc)
+        assert epjson_str is not None
+        data = json.loads(epjson_str)
+        # All 3 Output:Variable objects must survive in epJSON
+        assert len(data.get("Output:Variable", {})) == 3
+
+
+class TestEpJSONWriterEmptyStrings:
+    """epJSON writer should omit empty string field values."""
+
+    def test_empty_strings_omitted(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "Z1", {"x_origin": 0.0, "type": ""}, validate=False)
+        epjson_str = write_epjson(doc)
+        assert epjson_str is not None
+        data = json.loads(epjson_str)
+        zone_data = data["Zone"]["Z1"]
+        # Empty string values should not appear in epJSON output
+        assert "" not in zone_data.values(), f"Empty strings found: {zone_data}"

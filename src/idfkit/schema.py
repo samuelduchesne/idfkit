@@ -118,7 +118,7 @@ class EpJSONSchema:
         if not obj_schema:
             return []
         legacy = obj_schema.get("legacy_idd", {})
-        return legacy.get("fields", [])
+        return list(legacy.get("fields", []))
 
     def get_required_fields(self, obj_type: str) -> list[str]:
         """Get list of required field names for an object type."""
