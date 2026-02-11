@@ -44,7 +44,14 @@ Results are returned in the same order as the input jobs, identical to
 Control how many simulations run at once:
 
 ```python
---8<-- "docs/snippets/simulation/async/concurrency.py"
+# Use all CPUs (default)
+batch = await async_simulate_batch(jobs)
+
+# Limit to 4 concurrent simulations
+batch = await async_simulate_batch(jobs, max_concurrent=4)
+
+# Sequential (useful for debugging)
+batch = await async_simulate_batch(jobs, max_concurrent=1)
 ```
 
 Default: `min(len(jobs), os.cpu_count())`
@@ -124,7 +131,17 @@ All async functions accept the same `cache` and `fs` parameters as their
 sync counterparts:
 
 ```python
---8<-- "docs/snippets/simulation/async/caching_and_cloud_storage.py"
+from idfkit.simulation import SimulationCache, S3FileSystem
+
+cache = SimulationCache()
+fs = S3FileSystem(bucket="my-bucket", prefix="study/")
+
+result = await async_simulate(
+    model, "weather.epw",
+    cache=cache,
+    output_dir="run-001",
+    fs=fs,
+)
 ```
 
 ## FastAPI Integration
@@ -149,7 +166,15 @@ don't block the event loop.  This is transparent — no user action required.
 Error handling is identical to the sync API:
 
 ```python
---8<-- "docs/snippets/simulation/async/error_handling.py"
+from idfkit.exceptions import SimulationError
+
+try:
+    result = await async_simulate(model, weather, timeout=60)
+except SimulationError as e:
+    if e.exit_code is None:
+        print("Simulation timed out")
+    else:
+        print(f"Failed: {e}")
 ```
 
 In batch mode, individual failures are captured in the results — the batch

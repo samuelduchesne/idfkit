@@ -105,7 +105,13 @@ Failed simulations don't stop the batch:
 ### Partial Failures
 
 ```python
---8<-- "docs/snippets/simulation/batch/partial_failures.py"
+if not batch.all_succeeded:
+    failed_count = len(batch.failed)
+    print(f"{failed_count} jobs failed")
+
+    # Process only successful results
+    for result in batch.succeeded:
+        # ... analyze results
 ```
 
 ## Caching

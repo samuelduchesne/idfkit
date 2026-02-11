@@ -88,7 +88,24 @@ details.
 ## Function Signature
 
 ```python
---8<-- "docs/snippets/simulation/running/function_signature.py"
+def simulate(
+    model: IDFDocument,
+    weather: str | Path,
+    *,
+    output_dir: str | Path | None = None,
+    energyplus: EnergyPlusConfig | None = None,
+    expand_objects: bool = True,
+    annual: bool = False,
+    design_day: bool = False,
+    output_prefix: str = "eplus",
+    output_suffix: Literal["C", "L", "D"] = "C",
+    readvars: bool = False,
+    timeout: float = 3600.0,
+    extra_args: list[str] | None = None,
+    cache: SimulationCache | None = None,
+    fs: FileSystem | None = None,
+    on_progress: Callable[[SimulationProgress], Any] | Literal["tqdm"] | None = None,
+) -> SimulationResult:
 ```
 
 ## Parameters

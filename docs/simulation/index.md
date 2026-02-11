@@ -73,7 +73,14 @@ Run parametric studies efficiently with batch processing:
 For async applications, non-blocking variants are available:
 
 ```python
---8<-- "docs/snippets/simulation/index/async_execution.py"
+from idfkit.simulation import async_simulate, async_simulate_batch_stream
+
+# Single simulation
+result = await async_simulate(model, "weather.epw")
+
+# Streaming progress
+async for event in async_simulate_batch_stream(jobs, max_concurrent=4):
+    print(f"[{event.completed}/{event.total}] {event.label}")
 ```
 
 ## Installation

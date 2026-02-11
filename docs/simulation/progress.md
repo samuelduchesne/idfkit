@@ -229,7 +229,8 @@ Synchronous callbacks also work in the async runner and are called directly
 without awaiting:
 
 ```python
---8<-- "docs/snippets/simulation/progress/async_callbacks_2.py"
+# This works too -- no need to make it async for simple logging
+result = await async_simulate(model, "weather.epw", on_progress=lambda e: print(e.phase))
 ```
 
 ## Batch Progress

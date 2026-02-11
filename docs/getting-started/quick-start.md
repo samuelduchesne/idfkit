@@ -36,7 +36,8 @@ Not sure what fields an object type has? Use `describe()` to see all available f
 In REPL/Jupyter, use tab completion to explore object fields:
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/discover_available_fields_2.py"
+zone = model["Zone"]["Office"]
+zone.<TAB>  # Shows: x_origin, y_origin, z_origin, multiplier, ...
 ```
 
 Validation is enabled by default, so typos are caught immediately:

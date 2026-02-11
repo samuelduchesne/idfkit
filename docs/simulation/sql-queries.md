@@ -6,7 +6,13 @@ output database, containing time-series data, tabular reports, and metadata.
 ## Opening the Database
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/opening_the_database.py"
+from idfkit.simulation import simulate
+
+result = simulate(model, weather)
+
+sql = result.sql
+if sql is not None:
+    # Query data...
 ```
 
 Or open directly:

@@ -41,7 +41,15 @@ Find stations nearest to a location using great-circle distance:
 ### Function Signature
 
 ```python
---8<-- "docs/snippets/weather/station-search/function_signature.py"
+def nearest(
+    self,
+    latitude: float,
+    longitude: float,
+    *,
+    limit: int = 5,
+    max_distance_km: float | None = None,
+    country: str | None = None,
+) -> list[SpatialResult]:
 ```
 
 ### SpatialResult Attributes
