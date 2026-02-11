@@ -31,6 +31,60 @@ Anything tagged with "enhancement" and "help wanted" is open to whoever wants to
 
 idfkit could always use more documentation, whether as part of the official docs, in docstrings, or even on the web in blog posts, articles, and such.
 
+### Documentation Code Snippets
+
+Python code blocks in the MkDocs documentation are stored as standalone `.py` files under `docs/snippets/`.
+This lets ruff and pyright lint them alongside the rest of the codebase.
+
+Each snippet file has two parts separated by section markers:
+
+```python
+from __future__ import annotations
+
+from idfkit import IDFDocument
+
+model: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
+for zone in model["Zone"]:
+    print(zone.name)
+# --8<-- [end:example]
+```
+
+- **Preamble** (above `[start:example]`): imports and type stubs that satisfy pyright.
+  Hidden from the rendered docs.
+- **Example body** (between the markers): the code readers see in the documentation.
+
+The corresponding markdown file includes only the example section:
+
+````markdown
+```python
+--8<-- "docs/snippets/getting-started/quick-start/query_objects.py:example"
+```
+````
+
+#### Adding a new snippet
+
+1. Create a `.py` file under `docs/snippets/`, mirroring the docs directory structure
+   (e.g., `docs/simulation/running.md` → `docs/snippets/simulation/running/<name>.py`).
+2. Write the example code between `# --8<-- [start:example]` and `# --8<-- [end:example]` markers.
+3. Above the start marker, add `from __future__ import annotations`, any imports needed
+   by the example, and type stubs for variables the snippet uses but doesn't define:
+   ```python
+   model: IDFDocument = ...  # type: ignore[assignment]
+   ```
+4. In the markdown file, reference the snippet with the `:example` suffix:
+   ````markdown
+   ```python
+   --8<-- "docs/snippets/path/to/snippet.py:example"
+   ```
+   ````
+5. Run `make check` to verify ruff and pyright pass, and `uv run mkdocs build --strict`
+   to verify the docs render correctly.
+
+If a code block is intentionally invalid Python (e.g., bare `await`, pseudo-code,
+or an incomplete function signature), leave it as an inline markdown code block
+instead of extracting it into a snippet file.
+
 ## Submit Feedback
 
 The best way to send feedback is to file an issue at https://github.com/samuelduchesne/idfkit/issues.

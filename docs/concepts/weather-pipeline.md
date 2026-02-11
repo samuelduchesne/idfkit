@@ -26,10 +26,7 @@ The `StationIndex` provides two modes of operation:
 `StationIndex.load()` loads a **pre-compiled index** bundled with the package:
 
 ```python
-from idfkit.weather import StationIndex
-
-index = StationIndex.load()  # Instant, no network
-print(f"{len(index)} entries, {len(index.countries)} countries")
+--8<-- "docs/snippets/concepts/weather-pipeline/bundled_index_no_dependencies.py:example"
 ```
 
 This works without any extra dependencies or network access.
@@ -40,9 +37,7 @@ This works without any extra dependencies or network access.
 climate.onebuilding.org and rebuilds the index:
 
 ```python
-# Check if upstream data has changed
-if index.check_for_updates():
-    index = StationIndex.refresh()  # Downloads ~10 Excel files
+--8<-- "docs/snippets/concepts/weather-pipeline/live_refresh_requires_openpyxl.py:example"
 ```
 
 This requires the `openpyxl` package (`pip install idfkit[weather]`).
@@ -70,10 +65,7 @@ internationally. Important notes:
 - Use `url` for the exact dataset you want to download
 
 ```python
-# Multiple entries can have the same WMO
-results = index.search("725300")  # Chicago O'Hare WMO
-for r in results:
-    print(f"{r.station.source_data}: {r.station.url}")
+--8<-- "docs/snippets/concepts/weather-pipeline/wmo_numbers.py:example"
 ```
 
 ## Spatial Search
@@ -82,20 +74,13 @@ The `nearest()` method uses the **Haversine formula** for great-circle
 distance calculations:
 
 ```python
-# Find nearest stations to a coordinate
-results = index.nearest(41.88, -87.63, limit=5)
-
-for r in results:
-    print(f"{r.station.display_name}: {r.distance_km:.1f} km")
+--8<-- "docs/snippets/concepts/weather-pipeline/spatial_search.py:example"
 ```
 
 Combine with `geocode()` for address-based lookups:
 
 ```python
-from idfkit.weather import geocode
-
-lat, lon = geocode("350 Fifth Avenue, New York, NY")
-results = index.nearest(lat, lon)
+--8<-- "docs/snippets/concepts/weather-pipeline/spatial_search_2.py:example"
 ```
 
 ## Design Day Classification
@@ -130,16 +115,7 @@ Use `apply_to_model()` or `apply_ashrae_sizing()` with the appropriate
 percentiles:
 
 ```python
-from idfkit.weather import DesignDayManager
-
-ddm = DesignDayManager("chicago.ddy")
-
-# ASHRAE 90.1 (stricter heating condition)
-ddm.apply_to_model(model, heating="99.6%", cooling="1%")
-
-# Or use the convenience function with standard presets
-from idfkit.weather import apply_ashrae_sizing
-apply_ashrae_sizing(model, station, standard="90.1")
+--8<-- "docs/snippets/concepts/weather-pipeline/ashrae_standards.py:example"
 ```
 
 ## Caching

@@ -6,21 +6,7 @@ conditions to your EnergyPlus models for HVAC sizing.
 ## Basic Usage
 
 ```python
-from idfkit.weather import DesignDayManager
-
-# Parse a DDY file
-ddm = DesignDayManager("chicago.ddy")
-
-# Print summary
-print(ddm.summary())
-
-# Apply design days to model
-added = ddm.apply_to_model(
-    model,
-    heating="99.6%",
-    cooling="1%",
-)
-print(f"Added {len(added)} design days")
+--8<-- "docs/snippets/weather/design-days/basic_usage.py:example"
 ```
 
 ## Quick Apply
@@ -28,14 +14,7 @@ print(f"Added {len(added)} design days")
 Use `apply_ashrae_sizing()` for a streamlined workflow:
 
 ```python
-from idfkit.weather import apply_ashrae_sizing
-
-# Apply standard design conditions (downloads DDY from station automatically)
-added = apply_ashrae_sizing(
-    model,
-    station,
-    standard="90.1",  # ASHRAE 90.1 criteria
-)
+--8<-- "docs/snippets/weather/design-days/quick_apply.py:example"
 ```
 
 ## Design Day Types
@@ -76,30 +55,13 @@ DDY files contain multiple design day types classified by ASHRAE criteria:
 ### By Type
 
 ```python
-from idfkit.weather import DesignDayManager, DesignDayType
-
-ddm = DesignDayManager("chicago.ddy")
-
-# Get specific design day
-htg = ddm.get(DesignDayType.HEATING_99_6)
-if htg:
-    print(f"Heating 99.6% DB: {htg.maximum_dry_bulb_temperature}°C")
-
-clg = ddm.get(DesignDayType.COOLING_DB_1)
-if clg:
-    print(f"Cooling 1% DB: {clg.maximum_dry_bulb_temperature}°C")
+--8<-- "docs/snippets/weather/design-days/by_type.py:example"
 ```
 
 ### All Design Days
 
 ```python
-# All classified annual design days (returns a list of IDFObject)
-for dd_obj in ddm.annual:
-    print(dd_obj.name)
-
-# Monthly design days
-for dd_obj in ddm.monthly:
-    print(dd_obj.name)
+--8<-- "docs/snippets/weather/design-days/all_design_days.py:example"
 ```
 
 ## Applying to Models
@@ -107,22 +69,13 @@ for dd_obj in ddm.monthly:
 ### Basic Application
 
 ```python
-added = ddm.apply_to_model(
-    model,
-    heating="99.6%",  # Use 99.6% heating conditions
-    cooling="1%",     # Use 1% cooling conditions
-)
+--8<-- "docs/snippets/weather/design-days/basic_application.py:example"
 ```
 
 ### With Wet-Bulb Design Day
 
 ```python
-added = ddm.apply_to_model(
-    model,
-    heating="99.6%",
-    cooling="1%",
-    include_wet_bulb=True,  # Also add WB=>MDB cooling design day
-)
+--8<-- "docs/snippets/weather/design-days/with_wet_bulb_design_day.py:example"
 ```
 
 ### Skip Site Location Update
@@ -131,12 +84,7 @@ By default, `apply_to_model` also updates the `Site:Location` object.
 To skip this, set `update_location=False`:
 
 ```python
-added = ddm.apply_to_model(
-    model,
-    heating="99.6%",
-    cooling="1%",
-    update_location=False,  # Keep existing Site:Location
-)
+--8<-- "docs/snippets/weather/design-days/skip_site_location_update.py:example"
 ```
 
 ## ASHRAE Standards
@@ -146,24 +94,13 @@ Different standards recommend different percentiles:
 ### ASHRAE 90.1 (Energy Standard)
 
 ```python
-added = ddm.apply_to_model(
-    model,
-    heating="99.6%",
-    cooling="1%",
-)
-
-# Or use the convenience function (takes a WeatherStation, not a path)
-added = apply_ashrae_sizing(model, station, standard="90.1")
+--8<-- "docs/snippets/weather/design-days/ashrae_901_energy_standard.py:example"
 ```
 
 ### ASHRAE 62.1 (Ventilation)
 
 ```python
-added = ddm.apply_to_model(
-    model,
-    heating="99%",  # Less extreme
-    cooling="1%",
-)
+--8<-- "docs/snippets/weather/design-days/ashrae_621_ventilation.py:example"
 ```
 
 ## Design Day Object Fields
@@ -186,8 +123,7 @@ When you access a design day, it's an `IDFObject` with these fields:
 ## Summary Output
 
 ```python
-ddm = DesignDayManager("chicago.ddy")
-print(ddm.summary())
+--8<-- "docs/snippets/weather/design-days/summary_output.py:example"
 ```
 
 Output:
@@ -210,62 +146,19 @@ Design days from: chicago.ddy
 DDY files also contain `Site:Location` data:
 
 ```python
-location = ddm.location
-if location:
-    print(f"Site: {location.name}")
-    print(f"Latitude: {location.latitude}")
-    print(f"Longitude: {location.longitude}")
-    print(f"Time Zone: {location.time_zone}")
-    print(f"Elevation: {location.elevation} m")
+--8<-- "docs/snippets/weather/design-days/location_object.py:example"
 ```
 
 ## Complete Workflow
 
 ```python
-from idfkit import load_idf
-from idfkit.weather import (
-    StationIndex,
-    WeatherDownloader,
-    DesignDayManager,
-    geocode,
-)
-
-# Load model
-model = load_idf("building.idf")
-
-# Find nearest station
-index = StationIndex.load()
-lat, lon = geocode("123 Main St, Chicago, IL")
-station = index.nearest(lat, lon)[0].station
-
-# Download weather files
-downloader = WeatherDownloader()
-files = downloader.download(station)
-
-# Apply design days
-ddm = DesignDayManager(files.ddy)
-added = ddm.apply_to_model(
-    model,
-    heating="99.6%",
-    cooling="1%",
-    include_wet_bulb=True,
-    update_location=True,
-)
-
-print(f"Added {len(added)} design days")
-print(f"Location: {model['Site:Location'].values()[0].name}")
+--8<-- "docs/snippets/weather/design-days/complete_workflow.py:example"
 ```
 
 ## Error Handling
 
 ```python
-from idfkit.exceptions import NoDesignDaysError
-
-try:
-    ddm = DesignDayManager("incomplete.ddy")
-    ddm.apply_to_model(model, heating="99.6%", cooling="1%")
-except NoDesignDaysError as e:
-    print(f"Missing design days: {e}")
+--8<-- "docs/snippets/weather/design-days/error_handling.py:example"
 ```
 
 ## See Also

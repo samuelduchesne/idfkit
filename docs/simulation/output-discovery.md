@@ -6,16 +6,7 @@ and meters from EnergyPlus, then add them to your model for future simulations.
 ## Basic Usage
 
 ```python
-from idfkit.simulation import simulate
-
-result = simulate(model, weather)
-
-variables = result.variables
-if variables is not None:
-    # Search for temperature-related outputs
-    matches = variables.search("Temperature")
-    for var in matches[:10]:
-        print(f"{var.name} [{var.units}]")
+--8<-- "docs/snippets/simulation/output-discovery/basic_usage.py:example"
 ```
 
 ## Understanding RDD and MDD Files
@@ -37,53 +28,31 @@ what outputs **could be** requested, not what was actually recorded.
 From simulation results:
 
 ```python
-variables = result.variables
+--8<-- "docs/snippets/simulation/output-discovery/creating_an_index.py:example"
 ```
 
 From files directly:
 
 ```python
-from idfkit.simulation import OutputVariableIndex
-
-index = OutputVariableIndex.from_files(
-    rdd_path="/path/to/eplusout.rdd",
-    mdd_path="/path/to/eplusout.mdd",
-)
+--8<-- "docs/snippets/simulation/output-discovery/creating_an_index_2.py:example"
 ```
 
 ### Search Variables
 
 ```python
-# Search by name pattern
-matches = variables.search("Zone Mean Air Temperature")
-
-# Search with regex
-matches = variables.search(r"Zone.*Temperature")
-
-# Case-insensitive
-matches = variables.search("temperature")  # Finds all temperature vars
+--8<-- "docs/snippets/simulation/output-discovery/search_variables.py:example"
 ```
 
 ### Filter by Units
 
 ```python
-# Get all temperature variables (°C)
-temp_vars = variables.filter_by_units("C")
-
-# Get all energy variables
-energy_vars = variables.filter_by_units("J")
+--8<-- "docs/snippets/simulation/output-discovery/filter_by_units.py:example"
 ```
 
 ### List All Variables
 
 ```python
-# All output variables
-for var in variables.variables:
-    print(f"Variable: {var.name} [{var.units}]")
-
-# All meters
-for meter in variables.meters:
-    print(f"Meter: {meter.name} [{meter.units}]")
+--8<-- "docs/snippets/simulation/output-discovery/list_all_variables.py:example"
 ```
 
 ## OutputVariable and OutputMeter
@@ -110,31 +79,13 @@ for meter in variables.meters:
 ### Add All Matching
 
 ```python
-# Add all temperature outputs
-count = variables.add_all_to_model(
-    model,
-    filter_pattern="Zone.*Temperature",
-)
-print(f"Added {count} output requests")
+--8<-- "docs/snippets/simulation/output-discovery/add_all_matching.py:example"
 ```
 
 ### Selective Addition
 
 ```python
-# Search first, review, then add selectively
-matches = variables.search("Heating")
-
-# Filter to specific ones
-selected = [v for v in matches if "Coil" in v.name]
-
-# Add to model (name is optional for Output:Variable)
-for var in selected:
-    model.add(
-        "Output:Variable",
-        key_value="*",
-        variable_name=var.name,
-        reporting_frequency="Timestep",
-    )
+--8<-- "docs/snippets/simulation/output-discovery/selective_addition.py:example"
 ```
 
 ### Reporting Frequencies
@@ -150,11 +101,7 @@ for var in selected:
 | `"Environment"` | Once per environment |
 
 ```python
-variables.add_all_to_model(
-    model,
-    filter_pattern="Temperature",
-    reporting_frequency="Hourly",
-)
+--8<-- "docs/snippets/simulation/output-discovery/reporting_frequencies.py:example"
 ```
 
 ## Workflow: Discover Then Request
@@ -163,32 +110,7 @@ A common pattern is to run a "discovery" simulation to find available
 outputs, then run a second simulation with those outputs requested:
 
 ```python
-from idfkit.simulation import simulate
-
-# Step 1: Discovery run
-result = simulate(model, weather, design_day=True)
-
-# Step 2: Find interesting outputs
-matches = result.variables.search("Zone Mean Air Temperature")
-print(f"Found {len(matches)} matching variables")
-
-# Step 3: Add outputs to model
-result.variables.add_all_to_model(
-    model,
-    filter_pattern="Zone Mean Air Temperature",
-    reporting_frequency="Hourly",
-)
-
-# Step 4: Full run with outputs
-result = simulate(model, weather, annual=True)
-
-# Step 5: Query the data
-for zone in ["ZONE 1", "ZONE 2"]:
-    ts = result.sql.get_timeseries(
-        "Zone Mean Air Temperature",
-        zone,
-    )
-    print(f"{zone}: avg {sum(ts.values)/len(ts.values):.1f}°C")
+--8<-- "docs/snippets/simulation/output-discovery/workflow_discover_then_request.py:example"
 ```
 
 ## Common Output Variables

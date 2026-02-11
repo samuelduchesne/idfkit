@@ -6,22 +6,7 @@ weather files, and applying ASHRAE design day conditions to your models.
 ## Quick Start
 
 ```python
-from idfkit.weather import StationIndex, WeatherDownloader
-
-# Load station index (instant, no network needed)
-index = StationIndex.load()
-print(f"{len(index)} stations from {len(index.countries)} countries")
-
-# Search by name
-results = index.search("chicago ohare")
-station = results[0].station
-print(f"Found: {station.display_name}")
-
-# Download weather files
-downloader = WeatherDownloader()
-files = downloader.download(station)
-print(f"EPW: {files.epw}")
-print(f"DDY: {files.ddy}")
+--8<-- "docs/snippets/weather/index/quick_start.py:example"
 ```
 
 ## Key Features
@@ -44,13 +29,7 @@ is pre-compiled and bundled with the package.
 Find the nearest weather station to any address:
 
 ```python
-from idfkit.weather import StationIndex, geocode
-
-index = StationIndex.load()
-results = index.nearest(*geocode("350 Fifth Avenue, New York, NY"))
-
-for r in results[:3]:
-    print(f"{r.station.display_name}: {r.distance_km:.0f} km")
+--8<-- "docs/snippets/weather/index/address_based_search.py:example"
 ```
 
 ### ASHRAE Design Days
@@ -58,11 +37,7 @@ for r in results[:3]:
 Apply standard design day conditions to your model:
 
 ```python
-from idfkit.weather import apply_ashrae_sizing
-
-# Apply ASHRAE 90.1 design conditions
-added = apply_ashrae_sizing(model, station, standard="90.1")
-print(f"Added {len(added)} design days")
+--8<-- "docs/snippets/weather/index/ashrae_design_days.py:example"
 ```
 
 ## Module Components
@@ -79,9 +54,7 @@ print(f"Added {len(added)} design days")
 The core weather module requires no extra dependencies:
 
 ```python
-from idfkit.weather import StationIndex
-
-index = StationIndex.load()  # Works out of the box
+--8<-- "docs/snippets/weather/index/installation.py:example"
 ```
 
 To refresh the index from upstream:
@@ -91,8 +64,7 @@ pip install idfkit[weather]  # Adds openpyxl
 ```
 
 ```python
-if index.check_for_updates():
-    index = StationIndex.refresh()  # Downloads latest data
+--8<-- "docs/snippets/weather/index/installation_2.py:example"
 ```
 
 ## Workflow Example
@@ -100,38 +72,7 @@ if index.check_for_updates():
 Complete workflow from address to simulation-ready model:
 
 ```python
-from idfkit import load_idf
-from idfkit.weather import (
-    StationIndex,
-    WeatherDownloader,
-    DesignDayManager,
-    geocode,
-)
-
-# Load your model
-model = load_idf("building.idf")
-
-# Find nearest station to project location
-index = StationIndex.load()
-lat, lon = geocode("123 Main St, Chicago, IL")
-station = index.nearest(lat, lon)[0].station
-
-# Download weather files
-downloader = WeatherDownloader()
-files = downloader.download(station)
-
-# Apply design days
-ddm = DesignDayManager(files.ddy)
-ddm.apply_to_model(
-    model,
-    heating="99.6%",
-    cooling="1%",
-    update_location=True,
-)
-
-# Now ready for simulation
-from idfkit.simulation import simulate
-result = simulate(model, files.epw)
+--8<-- "docs/snippets/weather/index/workflow_example.py:example"
 ```
 
 ## Data Source

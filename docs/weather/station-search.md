@@ -6,13 +6,7 @@ station entries from climate.onebuilding.org.
 ## Loading the Index
 
 ```python
-from idfkit.weather import StationIndex
-
-# Instant load from bundled data (no network needed)
-index = StationIndex.load()
-
-print(f"Stations: {len(index)}")
-print(f"Countries: {len(index.countries)}")
+--8<-- "docs/snippets/weather/station-search/loading_the_index.py:example"
 ```
 
 ## Search by Name
@@ -20,11 +14,7 @@ print(f"Countries: {len(index.countries)}")
 Fuzzy text search across station names, cities, and WMO numbers:
 
 ```python
-# Search by name
-results = index.search("chicago ohare")
-
-for r in results[:5]:
-    print(f"{r.station.display_name} (score={r.score:.2f})")
+--8<-- "docs/snippets/weather/station-search/search_by_name.py:example"
 ```
 
 ### SearchResult Attributes
@@ -37,17 +27,7 @@ for r in results[:5]:
 ### Search Tips
 
 ```python
-# City name
-results = index.search("New York")
-
-# Airport code pattern
-results = index.search("JFK")
-
-# WMO number
-results = index.search("725300")
-
-# Country + city
-results = index.search("London UK")
+--8<-- "docs/snippets/weather/station-search/search_tips.py:example"
 ```
 
 ## Search by Coordinates
@@ -55,11 +35,7 @@ results = index.search("London UK")
 Find stations nearest to a location using great-circle distance:
 
 ```python
-# Nearest to downtown Chicago
-results = index.nearest(41.88, -87.63)
-
-for r in results[:5]:
-    print(f"{r.station.display_name}: {r.distance_km:.1f} km")
+--8<-- "docs/snippets/weather/station-search/search_by_coordinates.py:example"
 ```
 
 ### Function Signature
@@ -88,27 +64,13 @@ def nearest(
 Combine `geocode()` with `nearest()` for address-based search:
 
 ```python
-from idfkit.weather import StationIndex, geocode
-
-index = StationIndex.load()
-
-# One-liner using splat operator
-results = index.nearest(*geocode("Willis Tower, Chicago, IL"))
-
-# Or step by step
-lat, lon = geocode("350 Fifth Avenue, New York, NY")
-results = index.nearest(lat, lon)
+--8<-- "docs/snippets/weather/station-search/search_by_address.py:example"
 ```
 
 ## Filter by Country
 
 ```python
-# Get all stations in a country
-us_stations = index.filter(country="USA")
-print(f"US stations: {len(us_stations)}")
-
-# Get all stations in a state/region
-california = [s for s in us_stations if s.state == "CA"]
+--8<-- "docs/snippets/weather/station-search/filter_by_country.py:example"
 ```
 
 ## Filter by Coordinates
@@ -116,22 +78,13 @@ california = [s for s in us_stations if s.state == "CA"]
 Use `nearest()` with `max_distance_km` to find stations within a geographic area:
 
 ```python
-# Find all stations within 100 km of a point
-stations = index.nearest(
-    41.0, -88.5,
-    max_distance_km=100.0,
-    limit=50,
-)
+--8<-- "docs/snippets/weather/station-search/filter_by_coordinates.py:example"
 ```
 
 ## Get by WMO Number
 
 ```python
-# Get specific station by WMO
-results = index.get_by_wmo("725300")
-
-for station in results:
-    print(f"{station.display_name}: {station.source}")
+--8<-- "docs/snippets/weather/station-search/get_by_wmo_number.py:example"
 ```
 
 Note: WMO numbers are **not unique** — multiple entries can share a WMO
@@ -156,12 +109,7 @@ Note: WMO numbers are **not unique** — multiple entries can share a WMO
 ## Listing Countries
 
 ```python
-# Get all available countries
-countries = index.countries
-
-for country in sorted(countries)[:10]:
-    count = len(index.filter(country=country))
-    print(f"{country}: {count} stations")
+--8<-- "docs/snippets/weather/station-search/listing_countries.py:example"
 ```
 
 ## Refreshing the Index
@@ -169,12 +117,7 @@ for country in sorted(countries)[:10]:
 The bundled index works without network access. To get the latest data:
 
 ```python
-# Check if upstream has updates
-if index.check_for_updates():
-    print("Updates available")
-
-    # Refresh from climate.onebuilding.org (requires openpyxl)
-    index = StationIndex.refresh()
+--8<-- "docs/snippets/weather/station-search/refreshing_the_index.py:example"
 ```
 
 Refresh requires: `pip install idfkit[weather]`

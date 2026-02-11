@@ -7,17 +7,7 @@ simulation flags.
 ## Basic Usage
 
 ```python
-from idfkit.simulation import simulate, SimulationCache
-
-cache = SimulationCache()
-
-# First run: executes EnergyPlus
-result1 = simulate(model, "weather.epw", cache=cache)
-print(f"Runtime: {result1.runtime_seconds:.1f}s")
-
-# Second run: instant cache hit
-result2 = simulate(model, "weather.epw", cache=cache)
-print(f"Runtime: {result2.runtime_seconds:.1f}s")  # Near zero
+--8<-- "docs/snippets/simulation/caching/basic_usage.py:example"
 ```
 
 ## How It Works
@@ -31,13 +21,7 @@ The cache key is a SHA-256 digest of:
 3. **Simulation flags** — `annual`, `design_day`, `expand_objects`, etc.
 
 ```python
-key = cache.compute_key(
-    model,
-    "weather.epw",
-    design_day=True,
-    annual=False,
-)
-print(f"Cache key: {key.hex_digest[:16]}...")
+--8<-- "docs/snippets/simulation/caching/cache_key_computation.py:example"
 ```
 
 ### What Gets Cached
@@ -64,9 +48,7 @@ Default locations by platform:
 ### Custom Location
 
 ```python
-from pathlib import Path
-
-cache = SimulationCache(cache_dir=Path("/data/sim_cache"))
+--8<-- "docs/snippets/simulation/caching/custom_location.py:example"
 ```
 
 ## Cache Operations
@@ -74,37 +56,19 @@ cache = SimulationCache(cache_dir=Path("/data/sim_cache"))
 ### Check for Hit
 
 ```python
-key = cache.compute_key(model, weather, design_day=True)
-
-if cache.contains(key):
-    print("Would be a cache hit")
-else:
-    print("Would be a cache miss")
+--8<-- "docs/snippets/simulation/caching/check_for_hit.py:example"
 ```
 
 ### Manual Get/Put
 
 ```python
-# Compute key
-key = cache.compute_key(model, weather)
-
-# Check cache
-cached_result = cache.get(key)
-if cached_result is not None:
-    print("Cache hit!")
-else:
-    # Run simulation
-    result = simulate(model, weather)
-
-    # Store in cache (only successful results)
-    cache.put(key, result)
+--8<-- "docs/snippets/simulation/caching/manual_getput.py:example"
 ```
 
 ### Clear Cache
 
 ```python
-# Remove all cached entries
-cache.clear()
+--8<-- "docs/snippets/simulation/caching/clear_cache.py:example"
 ```
 
 ## Batch Processing
@@ -112,15 +76,7 @@ cache.clear()
 Share a cache across batch simulations:
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationJob, SimulationCache
-
-cache = SimulationCache()
-
-# All jobs share the same cache
-batch1 = simulate_batch(jobs, cache=cache)
-
-# Re-running unchanged jobs hits cache
-batch2 = simulate_batch(jobs, cache=cache)  # Instant for unchanged
+--8<-- "docs/snippets/simulation/caching/batch_processing.py:example"
 ```
 
 ## Cache Invalidation
@@ -173,8 +129,7 @@ The cache is safe for concurrent access:
 - **Process-safe** — Multiple Python processes can share the cache
 
 ```python
-# Safe: concurrent access from multiple workers
-batch = simulate_batch(jobs, max_workers=8, cache=cache)
+--8<-- "docs/snippets/simulation/caching/thread_and_process_safety.py:example"
 ```
 
 ## Storage Considerations
@@ -190,12 +145,7 @@ du -sh ~/.cache/idfkit/simulation/
 ### Cleanup
 
 ```python
-# Clear everything
-cache.clear()
-
-# Or manually delete specific entries
-import shutil
-shutil.rmtree(cache.cache_dir / "abc123...")
+--8<-- "docs/snippets/simulation/caching/cleanup.py:example"
 ```
 
 ## Disabling Caching
@@ -203,11 +153,7 @@ shutil.rmtree(cache.cache_dir / "abc123...")
 Pass `cache=None` (the default) to skip caching:
 
 ```python
-# No caching
-result = simulate(model, weather)
-
-# With caching
-result = simulate(model, weather, cache=SimulationCache())
+--8<-- "docs/snippets/simulation/caching/disabling_caching.py:example"
 ```
 
 ## Best Practices

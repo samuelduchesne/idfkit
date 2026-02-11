@@ -161,11 +161,7 @@ Download from the official EnergyPlus website:
 ### Verify Installation
 
 ```python
-from idfkit.simulation import find_energyplus
-
-config = find_energyplus()
-print(f"EnergyPlus {config.version[0]}.{config.version[1]}.{config.version[2]}")
-print(f"Executable: {config.executable}")
+--8<-- "docs/snippets/getting-started/installation/verify_installation.py:example"
 ```
 
 ## Development Installation

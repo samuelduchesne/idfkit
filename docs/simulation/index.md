@@ -6,23 +6,7 @@ structured result parsing, batch processing, and content-addressed caching.
 ## Quick Start
 
 ```python
-from idfkit import load_idf
-from idfkit.simulation import simulate
-
-# Load a model and run a simulation
-model = load_idf("building.idf")
-result = simulate(model, "weather.epw", design_day=True)
-
-# Check results
-print(f"Success: {result.success}")
-print(f"Runtime: {result.runtime_seconds:.1f}s")
-
-# Query time-series data
-ts = result.sql.get_timeseries(
-    variable_name="Zone Mean Air Temperature",
-    key_value="THERMAL ZONE 1",
-)
-print(f"Max temp: {max(ts.values):.1f}°C")
+--8<-- "docs/snippets/simulation/index/quick_start.py:example"
 ```
 
 ## Requirements
@@ -33,10 +17,7 @@ print(f"Max temp: {max(ts.values):.1f}°C")
 Check your installation:
 
 ```python
-from idfkit.simulation import find_energyplus
-
-config = find_energyplus()
-print(f"Found EnergyPlus {config.version[0]}.{config.version[1]}")
+--8<-- "docs/snippets/simulation/index/requirements.py:example"
 ```
 
 ## Module Components
@@ -68,9 +49,7 @@ reliable access to all simulation data through a single queryable file.
 Output files are only parsed when accessed, keeping memory usage low:
 
 ```python
-result = simulate(model, weather)  # Just runs EnergyPlus
-result.errors    # Parses ERR file on first access
-result.sql       # Opens SQLite database on first access
+--8<-- "docs/snippets/simulation/index/lazy_loading.py:example"
 ```
 
 ### Model Safety
@@ -78,8 +57,7 @@ result.sql       # Opens SQLite database on first access
 Your original model is never mutated — simulations work on a copy:
 
 ```python
-result = simulate(model, weather)
-assert "Output:SQLite" not in model  # Original unchanged
+--8<-- "docs/snippets/simulation/index/model_safety.py:example"
 ```
 
 ### Parallel Execution
@@ -87,13 +65,7 @@ assert "Output:SQLite" not in model  # Original unchanged
 Run parametric studies efficiently with batch processing:
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationJob
-
-jobs = [
-    SimulationJob(model=variant, weather="weather.epw", label=f"case-{i}")
-    for i, variant in enumerate(variants)
-]
-batch = simulate_batch(jobs, max_workers=4)
+--8<-- "docs/snippets/simulation/index/parallel_execution.py:example"
 ```
 
 ### Async Execution

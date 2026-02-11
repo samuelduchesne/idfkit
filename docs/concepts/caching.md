@@ -22,15 +22,7 @@ digest of:
 3. **Simulation flags** — `annual`, `design_day`, `expand_objects`, etc.
 
 ```python
-from idfkit.simulation import simulate, SimulationCache
-
-cache = SimulationCache()
-
-# First run: executes EnergyPlus
-result1 = simulate(model, weather, cache=cache)
-
-# Second run: instant cache hit
-result2 = simulate(model, weather, cache=cache)
+--8<-- "docs/snippets/concepts/caching/simulation_cache.py:example"
 ```
 
 ### How It Works
@@ -65,19 +57,13 @@ The cache uses platform-appropriate directories:
 Override with a custom path:
 
 ```python
-cache = SimulationCache(cache_dir=Path("/path/to/cache"))
+--8<-- "docs/snippets/concepts/caching/cache_location.py:example"
 ```
 
 ### Cache Management
 
 ```python
-# Check if a result would hit cache
-key = cache.compute_key(model, weather, design_day=True)
-if cache.contains(key):
-    print("Would be a cache hit")
-
-# Clear all cached results
-cache.clear()
+--8<-- "docs/snippets/concepts/caching/cache_management.py:example"
 ```
 
 ## Weather Cache
@@ -116,10 +102,7 @@ Downloaded weather files are cached by URL:
 Files are never automatically deleted. Manual cleanup:
 
 ```python
-import shutil
-from idfkit.weather.download import default_cache_dir
-
-shutil.rmtree(default_cache_dir())
+--8<-- "docs/snippets/concepts/caching/weather_file_cache.py:example"
 ```
 
 ## Cache Invalidation
@@ -141,12 +124,7 @@ Both caches are **thread-safe** and **process-safe**:
 - Multiple processes can share the same cache directory
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationCache
-
-cache = SimulationCache()
-
-# Safe: all workers share the cache
-batch = simulate_batch(jobs, max_workers=8, cache=cache)
+--8<-- "docs/snippets/concepts/caching/parallel_safety.py:example"
 ```
 
 ## Memory vs Disk
@@ -163,12 +141,7 @@ idfkit uses **disk-based caching** rather than in-memory caching because:
 Pass `cache=None` (the default) to skip caching:
 
 ```python
-# No caching — always runs EnergyPlus
-result = simulate(model, weather)
-
-# With caching
-cache = SimulationCache()
-result = simulate(model, weather, cache=cache)
+--8<-- "docs/snippets/concepts/caching/disabling_caching.py:example"
 ```
 
 ## See Also

@@ -7,20 +7,7 @@ analyses.
 ## Basic Usage
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationJob
-
-# Create jobs
-jobs = [
-    SimulationJob(model=model1, weather="weather.epw", label="baseline"),
-    SimulationJob(model=model2, weather="weather.epw", label="improved"),
-]
-
-# Run in parallel
-batch = simulate_batch(jobs, max_workers=4)
-
-print(f"Completed: {len(batch.succeeded)}/{len(batch)}")
-for i, result in enumerate(batch):
-    print(f"  Job {i}: {'Success' if result.success else 'Failed'}")
+--8<-- "docs/snippets/simulation/batch/basic_usage.py:example"
 ```
 
 ## SimulationJob
@@ -28,17 +15,7 @@ for i, result in enumerate(batch):
 Define individual simulations with `SimulationJob`:
 
 ```python
-from idfkit.simulation import SimulationJob
-
-job = SimulationJob(
-    model=my_model,              # Required: IDFDocument
-    weather="weather.epw",       # Required: Path to weather file
-    label="case-001",            # Optional: Label for progress reporting
-    output_dir="./output/case1", # Optional: Output directory
-    design_day=True,             # Optional: Design-day-only
-    annual=False,                # Optional: Annual simulation
-    timeout=3600.0,              # Optional: Max runtime in seconds
-)
+--8<-- "docs/snippets/simulation/batch/simulationjob.py:example"
 ```
 
 ### SimulationJob Attributes
@@ -63,31 +40,7 @@ job = SimulationJob(
 Create model variants for parametric analysis:
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationJob
-
-# Create variants
-jobs = []
-for insulation in [0.05, 0.10, 0.15, 0.20]:
-    variant = model.copy()
-    variant["Material"]["Insulation"].thickness = insulation
-    jobs.append(SimulationJob(
-        model=variant,
-        weather="weather.epw",
-        label=f"insulation-{insulation}m",
-        design_day=True,
-    ))
-
-# Run all variants
-batch = simulate_batch(jobs, max_workers=4)
-
-# Analyze results
-for job, result in zip(jobs, batch):
-    if result.success:
-        ts = result.sql.get_timeseries(
-            "Zone Mean Air Temperature",
-            "ZONE 1",
-        )
-        print(f"{job.label}: Max temp {max(ts.values):.1f}°C")
+--8<-- "docs/snippets/simulation/batch/parametric_studies.py:example"
 ```
 
 ## BatchResult
@@ -95,20 +48,7 @@ for job, result in zip(jobs, batch):
 The `BatchResult` class aggregates results:
 
 ```python
-batch = simulate_batch(jobs)
-
-# Access results
-batch.results          # All results as tuple
-batch[0]               # First result (by index)
-len(batch)             # Number of jobs
-
-# Filter by success
-batch.succeeded        # Only successful results
-batch.failed           # Only failed results
-batch.all_succeeded    # True if all succeeded
-
-# Timing
-print(f"Total time: {batch.total_runtime_seconds:.1f}s")
+--8<-- "docs/snippets/simulation/batch/batchresult.py:example"
 ```
 
 ## Progress Callbacks
@@ -116,11 +56,7 @@ print(f"Total time: {batch.total_runtime_seconds:.1f}s")
 Monitor progress with a callback function:
 
 ```python
-def on_progress(completed, total, label, success):
-    status = "OK" if success else "FAIL"
-    print(f"[{completed}/{total}] {label}: {status}")
-
-batch = simulate_batch(jobs, progress=on_progress)
+--8<-- "docs/snippets/simulation/batch/progress_callbacks.py:example"
 ```
 
 The callback receives:
@@ -135,15 +71,7 @@ The callback receives:
 ### Rich Progress Bar
 
 ```python
-from rich.progress import Progress
-
-with Progress() as progress:
-    task = progress.add_task("Simulating...", total=len(jobs))
-
-    def callback(completed, total, label, success):
-        progress.update(task, completed=completed)
-
-    batch = simulate_batch(jobs, progress=callback)
+--8<-- "docs/snippets/simulation/batch/rich_progress_bar.py:example"
 ```
 
 ## Parallelism
@@ -153,14 +81,7 @@ with Progress() as progress:
 Control concurrency with `max_workers`:
 
 ```python
-# Use all CPUs
-batch = simulate_batch(jobs, max_workers=None)  # Default
-
-# Limit to 4 concurrent simulations
-batch = simulate_batch(jobs, max_workers=4)
-
-# Sequential (useful for debugging)
-batch = simulate_batch(jobs, max_workers=1)
+--8<-- "docs/snippets/simulation/batch/worker_count.py:example"
 ```
 
 Default: `min(len(jobs), os.cpu_count())`
@@ -178,15 +99,7 @@ Default: `min(len(jobs), os.cpu_count())`
 Failed simulations don't stop the batch:
 
 ```python
-batch = simulate_batch(jobs)
-
-for i, result in enumerate(batch):
-    if not result.success:
-        print(f"Job {i} failed:")
-        print(f"  Exit code: {result.exit_code}")
-        print(f"  Stderr: {result.stderr}")
-        for err in result.errors.fatal:
-            print(f"  Error: {err.message}")
+--8<-- "docs/snippets/simulation/batch/error_handling.py:example"
 ```
 
 ### Partial Failures
@@ -206,15 +119,7 @@ if not batch.all_succeeded:
 Share a cache across batch jobs:
 
 ```python
-from idfkit.simulation import SimulationCache
-
-cache = SimulationCache()
-
-# All jobs share the same cache
-batch = simulate_batch(jobs, cache=cache)
-
-# Re-running is instant for unchanged models
-batch2 = simulate_batch(jobs, cache=cache)  # Cache hits
+--8<-- "docs/snippets/simulation/batch/caching.py:example"
 ```
 
 ## Cloud Storage
@@ -222,22 +127,7 @@ batch2 = simulate_batch(jobs, cache=cache)  # Cache hits
 Store results in S3:
 
 ```python
-from idfkit.simulation import S3FileSystem
-
-fs = S3FileSystem(bucket="my-bucket", prefix="study-001/")
-
-# Each job needs an explicit output_dir
-jobs = [
-    SimulationJob(
-        model=variant,
-        weather="weather.epw",
-        label=f"case-{i}",
-        output_dir=f"case-{i}",  # Required with fs
-    )
-    for i, variant in enumerate(variants)
-]
-
-batch = simulate_batch(jobs, fs=fs)
+--8<-- "docs/snippets/simulation/batch/cloud_storage.py:example"
 ```
 
 ## Best Practices
