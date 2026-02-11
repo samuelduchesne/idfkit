@@ -96,6 +96,7 @@ plugins:
   - mkdocs-jupyter:
       include_source: true
       execute: false
+      include: ["*.ipynb"]
 
 theme:
   name: material

@@ -14,11 +14,7 @@ pip install idfkit[progress]    # installs tqdm
 ```
 
 ```python
-from idfkit import load_idf
-from idfkit.simulation import simulate
-
-model = load_idf("building.idf")
-result = simulate(model, "weather.epw", annual=True, on_progress="tqdm")
+--8<-- "docs/snippets/simulation/progress/quick_start.py"
 ```
 
 That's it.  A tqdm progress bar appears in your terminal (or Jupyter notebook)
@@ -27,15 +23,7 @@ and is automatically closed when the simulation finishes -- even on error.
 For full control, pass any callable instead:
 
 ```python
-from idfkit.simulation import simulate, SimulationProgress
-
-def on_progress(event: SimulationProgress) -> None:
-    if event.percent is not None:
-        print(f"[{event.percent:5.1f}%] {event.phase}: {event.message}")
-    else:
-        print(f"[  ?  ] {event.phase}: {event.message}")
-
-result = simulate(model, "weather.epw", annual=True, on_progress=on_progress)
+--8<-- "docs/snippets/simulation/progress/quick_start_2.py"
 ```
 
 Output:
@@ -106,7 +94,7 @@ with a spinner or indeterminate bar.
 ### One-liner
 
 ```python
-result = simulate(model, "weather.epw", annual=True, on_progress="tqdm")
+--8<-- "docs/snippets/simulation/progress/one_liner.py"
 ```
 
 The `"tqdm"` shorthand:
@@ -122,16 +110,7 @@ For more control over the bar appearance, use the `tqdm_progress()` context
 manager directly:
 
 ```python
-from idfkit.simulation import simulate
-from idfkit.simulation.progress_bars import tqdm_progress
-
-with tqdm_progress(
-    desc="Annual run",
-    bar_format="{l_bar}{bar:30}| {n:.0f}% [{elapsed}<{remaining}]",
-    leave=False,           # Remove bar after completion
-    position=1,            # For nested bars
-) as cb:
-    result = simulate(model, "weather.epw", annual=True, on_progress=cb)
+--8<-- "docs/snippets/simulation/progress/customising_the_tqdm_bar.py"
 ```
 
 `tqdm_progress()` is a context manager that yields a callback.  The bar is
@@ -150,73 +129,19 @@ different use cases.  Each example is a self-contained recipe you can adapt.
 spinners, colours, and multi-column layouts.
 
 ```python
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
-from idfkit.simulation import simulate, SimulationProgress
-
-with Progress(
-    SpinnerColumn(),
-    TextColumn("[bold blue]{task.description}"),
-    BarColumn(),
-    TextColumn("{task.percentage:>3.0f}%"),
-    TextColumn("[dim]{task.fields[phase]}"),
-) as progress:
-    task = progress.add_task("Simulating", total=100, phase="starting")
-
-    def on_progress(event: SimulationProgress) -> None:
-        if event.percent is not None:
-            progress.update(task, completed=event.percent, phase=event.phase)
-        else:
-            progress.update(task, phase=event.phase)
-
-    result = simulate(model, "weather.epw", annual=True, on_progress=on_progress)
+--8<-- "docs/snippets/simulation/progress/rich_console.py"
 ```
 
 **Batch with rich** -- multiple bars, one per concurrent job:
 
 ```python
-from rich.progress import Progress
-from idfkit.simulation import simulate_batch, SimulationJob, SimulationProgress
-import threading
-
-lock = threading.Lock()
-
-with Progress() as progress:
-    tasks = {}  # job_index -> task_id
-
-    def on_progress(event: SimulationProgress) -> None:
-        with lock:
-            if event.job_index not in tasks:
-                tasks[event.job_index] = progress.add_task(
-                    event.job_label or f"Job {event.job_index}",
-                    total=100,
-                )
-            task_id = tasks[event.job_index]
-        if event.percent is not None:
-            progress.update(task_id, completed=event.percent)
-        progress.update(task_id, description=f"{event.job_label}: {event.phase}")
-
-    batch = simulate_batch(jobs, on_progress=on_progress, max_workers=4)
+--8<-- "docs/snippets/simulation/progress/rich_console_2.py"
 ```
 
 ### Jupyter (ipywidgets)
 
 ```python
-import ipywidgets as widgets
-from IPython.display import display
-from idfkit.simulation import simulate, SimulationProgress
-
-bar = widgets.FloatProgress(min=0, max=100, description="Simulating:")
-label = widgets.Label(value="Starting...")
-display(widgets.HBox([bar, label]))
-
-def on_progress(event: SimulationProgress) -> None:
-    if event.percent is not None:
-        bar.value = event.percent
-    label.value = f"{event.phase}: {event.message[:60]}"
-
-result = simulate(model, "weather.epw", annual=True, on_progress=on_progress)
-bar.value = 100
-label.value = "Done!"
+--8<-- "docs/snippets/simulation/progress/jupyter_ipywidgets.py"
 ```
 
 !!! tip
@@ -228,42 +153,13 @@ label.value = "Done!"
 Emit structured log entries for observability platforms (Datadog, ELK, etc.):
 
 ```python
-import logging
-import json
-from idfkit.simulation import simulate, SimulationProgress
-
-logger = logging.getLogger("simulation")
-
-def on_progress(event: SimulationProgress) -> None:
-    logger.info(
-        "simulation_progress",
-        extra={
-            "phase": event.phase,
-            "percent": event.percent,
-            "environment": event.environment,
-            "message": event.message,
-        },
-    )
-
-result = simulate(model, "weather.epw", on_progress=on_progress)
+--8<-- "docs/snippets/simulation/progress/structured_logging.py"
 ```
 
 ### Simple Console Log
 
 ```python
-from idfkit.simulation import simulate, SimulationProgress
-
-def on_progress(event: SimulationProgress) -> None:
-    match event.phase:
-        case "warmup":
-            print(f"  Warmup iteration {event.warmup_day}")
-        case "simulating":
-            pct = f"{event.percent:.0f}%" if event.percent else "?"
-            print(f"  [{pct}] Simulating {event.environment}")
-        case "complete":
-            print("  Simulation complete!")
-
-result = simulate(model, "weather.epw", on_progress=on_progress)
+--8<-- "docs/snippets/simulation/progress/simple_console_log.py"
 ```
 
 ### WebSocket Forwarding
@@ -272,27 +168,7 @@ Forward progress events to a web client for real-time dashboards.
 Use an async callback so WebSocket sends don't block the event loop:
 
 ```python
-import json
-from idfkit.simulation import async_simulate, SimulationProgress
-
-async def run_with_websocket(model, weather, websocket):
-    """Run a simulation and forward progress over WebSocket."""
-    async def on_progress(event: SimulationProgress) -> None:
-        await websocket.send_text(json.dumps({
-            "type": "simulation_progress",
-            "phase": event.phase,
-            "percent": event.percent,
-            "message": event.message,
-            "environment": event.environment,
-        }))
-
-    result = await async_simulate(model, weather, on_progress=on_progress)
-    await websocket.send_text(json.dumps({
-        "type": "simulation_complete",
-        "success": result.success,
-        "runtime": result.runtime_seconds,
-    }))
-    return result
+--8<-- "docs/snippets/simulation/progress/websocket_forwarding.py"
 ```
 
 ### FastAPI + WebSocket
@@ -300,38 +176,7 @@ async def run_with_websocket(model, weather, websocket):
 A complete FastAPI endpoint that streams progress to a browser:
 
 ```python
-from fastapi import FastAPI, WebSocket
-from idfkit import load_idf
-from idfkit.simulation import async_simulate, SimulationProgress
-
-app = FastAPI()
-
-@app.websocket("/ws/simulate")
-async def simulate_ws(websocket: WebSocket):
-    await websocket.accept()
-    data = await websocket.receive_json()
-
-    model = load_idf(data["idf_path"])
-
-    async def on_progress(event: SimulationProgress) -> None:
-        await websocket.send_json({
-            "phase": event.phase,
-            "percent": event.percent,
-            "message": event.message,
-        })
-
-    result = await async_simulate(
-        model,
-        data["weather_path"],
-        on_progress=on_progress,
-    )
-
-    await websocket.send_json({
-        "phase": "done",
-        "success": result.success,
-        "runtime": result.runtime_seconds,
-    })
-    await websocket.close()
+--8<-- "docs/snippets/simulation/progress/fastapi_websocket.py"
 ```
 
 **JavaScript client:**
@@ -355,42 +200,7 @@ ws.send(JSON.stringify({ idf_path: "building.idf", weather_path: "weather.epw" }
 For one-way streaming without WebSocket overhead (ideal for dashboards):
 
 ```python
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from idfkit import load_idf
-from idfkit.simulation import async_simulate, SimulationProgress
-import asyncio
-import json
-
-app = FastAPI()
-
-@app.get("/api/simulate/stream")
-async def simulate_stream(idf_path: str, weather_path: str):
-    queue: asyncio.Queue[str] = asyncio.Queue()
-
-    async def on_progress(event: SimulationProgress) -> None:
-        data = json.dumps({
-            "phase": event.phase,
-            "percent": event.percent,
-            "message": event.message,
-        })
-        await queue.put(f"data: {data}\n\n")
-
-    async def generate():
-        model = load_idf(idf_path)
-        task = asyncio.create_task(
-            async_simulate(model, weather_path, on_progress=on_progress)
-        )
-        while not task.done():
-            try:
-                chunk = await asyncio.wait_for(queue.get(), timeout=0.5)
-                yield chunk
-            except asyncio.TimeoutError:
-                yield ": keepalive\n\n"
-        result = await task
-        yield f"data: {json.dumps({'phase': 'done', 'success': result.success})}\n\n"
-
-    return StreamingResponse(generate(), media_type="text/event-stream")
+--8<-- "docs/snippets/simulation/progress/server_sent_events_sse.py"
 ```
 
 ### Cloud Logging (AWS CloudWatch / GCP Cloud Logging)
@@ -398,36 +208,13 @@ async def simulate_stream(idf_path: str, weather_path: str):
 For cloud-deployed simulations, forward events to your cloud logging service:
 
 ```python
-import json
-import logging
-from dataclasses import asdict
-from idfkit.simulation import simulate, SimulationProgress
-
-# Configure for JSON-structured cloud logging
-logger = logging.getLogger("energyplus.progress")
-
-def on_progress(event: SimulationProgress) -> None:
-    # asdict() makes SimulationProgress JSON-serializable
-    logger.info(json.dumps(asdict(event)))
-
-result = simulate(model, "weather.epw", on_progress=on_progress)
+--8<-- "docs/snippets/simulation/progress/cloud_logging_aws_cloudwatch_gcp_cloud_logging.py"
 ```
 
 **With a message queue (Redis, RabbitMQ, SQS):**
 
 ```python
-from dataclasses import asdict
-import json
-from idfkit.simulation import simulate, SimulationProgress
-
-def make_queue_callback(queue_client, channel: str):
-    """Create a callback that publishes events to a message queue."""
-    def on_progress(event: SimulationProgress) -> None:
-        queue_client.publish(channel, json.dumps(asdict(event)))
-    return on_progress
-
-cb = make_queue_callback(redis_client, "sim:progress:run-001")
-result = simulate(model, "weather.epw", on_progress=cb)
+--8<-- "docs/snippets/simulation/progress/cloud_logging_aws_cloudwatch_gcp_cloud_logging_2.py"
 ```
 
 ## Async Callbacks
@@ -435,27 +222,14 @@ result = simulate(model, "weather.epw", on_progress=cb)
 `async_simulate()` accepts both sync and async callables:
 
 ```python
-import asyncio
-from idfkit.simulation import async_simulate, SimulationProgress
-
-async def on_progress(event: SimulationProgress) -> None:
-    """Async callback -- awaited by the runner."""
-    await websocket.send_json({
-        "phase": event.phase,
-        "percent": event.percent,
-        "message": event.message,
-    })
-
-async def main():
-    result = await async_simulate(model, "weather.epw", on_progress=on_progress)
+--8<-- "docs/snippets/simulation/progress/async_callbacks.py"
 ```
 
 Synchronous callbacks also work in the async runner and are called directly
 without awaiting:
 
 ```python
-# This works too -- no need to make it async for simple logging
-result = await async_simulate(model, "weather.epw", on_progress=lambda e: print(e.phase))
+--8<-- "docs/snippets/simulation/progress/async_callbacks_2.py"
 ```
 
 ## Batch Progress
@@ -470,29 +244,7 @@ Use `on_progress` for intra-simulation progress and `progress` for
 job-level completion -- they are independent and complementary:
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationJob, SimulationProgress
-
-jobs = [
-    SimulationJob(model=variant, weather="weather.epw", label=f"case-{i}")
-    for i, variant in enumerate(variants)
-]
-
-def on_sim_progress(event: SimulationProgress) -> None:
-    """Fires during each simulation (warmup, simulating, etc.)."""
-    if event.percent is not None:
-        print(f"  Job {event.job_index} ({event.job_label}): {event.percent:.0f}%")
-
-def on_job_complete(completed, total, label, success):
-    """Fires when each job finishes."""
-    status = "OK" if success else "FAIL"
-    print(f"[{completed}/{total}] {label}: {status}")
-
-batch = simulate_batch(
-    jobs,
-    on_progress=on_sim_progress,
-    progress=on_job_complete,
-    max_workers=4,
-)
+--8<-- "docs/snippets/simulation/progress/dual_progress_tracking.py"
 ```
 
 ### Batch Progress Bar with tqdm
@@ -502,37 +254,7 @@ single progress bar cannot meaningfully represent multiple concurrent jobs.
 Instead, build per-job bars manually:
 
 ```python
-from tqdm import tqdm
-from idfkit.simulation import simulate_batch, SimulationJob, SimulationProgress
-
-jobs = [...]
-
-# Job-level progress bar
-overall = tqdm(total=len(jobs), desc="Batch", position=0)
-
-# Sim-level progress bar (resets per job)
-current = tqdm(total=100, desc="Current", position=1, leave=False)
-
-def on_progress(event: SimulationProgress) -> None:
-    if event.percent is not None:
-        current.n = event.percent
-        current.refresh()
-    current.set_postfix_str(event.job_label or "")
-
-def on_job_complete(completed, total, label, success):
-    overall.update(1)
-    current.n = 0
-    current.refresh()
-
-batch = simulate_batch(
-    jobs,
-    on_progress=on_progress,
-    progress=on_job_complete,
-    max_workers=4,
-)
-
-overall.close()
-current.close()
+--8<-- "docs/snippets/simulation/progress/batch_progress_bar_with_tqdm.py"
 ```
 
 ### Async Batch with Stream + Progress
@@ -541,32 +263,7 @@ Combine `async_simulate_batch_stream` (job-level events) with
 `on_progress` (intra-simulation events):
 
 ```python
-import asyncio
-from idfkit.simulation import (
-    async_simulate_batch_stream,
-    SimulationJob,
-    SimulationProgress,
-)
-
-async def main():
-    jobs = [
-        SimulationJob(model=variant, weather="weather.epw", label=f"case-{i}")
-        for i, variant in enumerate(variants)
-    ]
-
-    def on_sim_progress(event: SimulationProgress) -> None:
-        if event.percent is not None:
-            print(f"  [{event.job_label}] {event.percent:.0f}%")
-
-    async for event in async_simulate_batch_stream(
-        jobs,
-        max_concurrent=4,
-        on_progress=on_sim_progress,
-    ):
-        status = "OK" if event.result.success else "FAIL"
-        print(f"[{event.completed}/{event.total}] {event.label}: {status}")
-
-asyncio.run(main())
+--8<-- "docs/snippets/simulation/progress/async_batch_with_stream_progress.py"
 ```
 
 ## Using ProgressParser Directly
@@ -576,16 +273,7 @@ stdout output -- useful for custom integrations or when processing log files
 from previous simulation runs:
 
 ```python
-from idfkit.simulation import ProgressParser
-
-parser = ProgressParser()
-
-# Parse a log file
-with open("energyplus_stdout.log") as f:
-    for line in f:
-        event = parser.parse_line(line)
-        if event is not None:
-            print(f"{event.phase}: {event.message}")
+--8<-- "docs/snippets/simulation/progress/using_progressparser_directly.py"
 ```
 
 The parser is stateful (it tracks environment transitions and warmup
@@ -599,20 +287,7 @@ during the local EnergyPlus execution -- before results are uploaded.  This
 works identically to local execution:
 
 ```python
-from idfkit.simulation import simulate, S3FileSystem, SimulationProgress
-
-fs = S3FileSystem(bucket="my-bucket", prefix="runs/")
-
-def on_progress(event: SimulationProgress) -> None:
-    # This fires during local execution, before upload
-    print(f"{event.phase}: {event.percent}")
-
-result = simulate(
-    model, "weather.epw",
-    output_dir="run-001",
-    fs=fs,
-    on_progress=on_progress,
-)
+--8<-- "docs/snippets/simulation/progress/cloud_execution.py"
 ```
 
 For remote execution scenarios (where EnergyPlus runs on a different machine),
@@ -621,11 +296,7 @@ use the async callback to forward events over a transport layer
 JSON-serializable via `dataclasses.asdict()`:
 
 ```python
-from dataclasses import asdict
-import json
-
-def on_progress(event: SimulationProgress) -> None:
-    message_queue.publish(json.dumps(asdict(event)))
+--8<-- "docs/snippets/simulation/progress/cloud_execution_2.py"
 ```
 
 ## Behavior Notes

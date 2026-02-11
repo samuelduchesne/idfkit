@@ -6,18 +6,7 @@ climate.onebuilding.org with automatic caching.
 ## Basic Usage
 
 ```python
-from idfkit.weather import StationIndex, WeatherDownloader
-
-# Find a station
-index = StationIndex.load()
-station = index.search("chicago ohare")[0].station
-
-# Download weather files
-downloader = WeatherDownloader()
-files = downloader.download(station)
-
-print(f"EPW: {files.epw}")
-print(f"DDY: {files.ddy}")
+--8<-- "docs/snippets/weather/downloads/basic_usage.py"
 ```
 
 ## WeatherFiles
@@ -33,15 +22,7 @@ The `download()` method returns a `WeatherFiles` object:
 | `station` | `WeatherStation` | The station this download corresponds to |
 
 ```python
-files = downloader.download(station)
-
-# Use for simulation
-from idfkit.simulation import simulate
-result = simulate(model, files.epw)
-
-# Use for design days
-from idfkit.weather import DesignDayManager
-ddm = DesignDayManager(files.ddy)
+--8<-- "docs/snippets/weather/downloads/weatherfiles.py"
 ```
 
 ## Caching
@@ -49,13 +30,7 @@ ddm = DesignDayManager(files.ddy)
 Downloaded files are cached locally to avoid redundant downloads:
 
 ```python
-# First download: fetches from internet
-files1 = downloader.download(station)
-
-# Second download: instant from cache
-files2 = downloader.download(station)
-
-assert files1.epw == files2.epw  # Same cached file
+--8<-- "docs/snippets/weather/downloads/caching.py"
 ```
 
 ### Cache Location
@@ -71,17 +46,13 @@ Default locations by platform:
 ### Custom Cache Directory
 
 ```python
-from pathlib import Path
-
-downloader = WeatherDownloader(cache_dir=Path("/data/weather_cache"))
+--8<-- "docs/snippets/weather/downloads/custom_cache_directory.py"
 ```
 
 ### Clear Cache
 
 ```python
-import shutil
-
-shutil.rmtree(downloader.cache_dir)
+--8<-- "docs/snippets/weather/downloads/clear_cache.py"
 ```
 
 ## Download Process
@@ -97,14 +68,7 @@ The downloader:
 ## Error Handling
 
 ```python
-from idfkit.weather import WeatherDownloader
-
-downloader = WeatherDownloader()
-
-try:
-    files = downloader.download(station)
-except Exception as e:
-    print(f"Download failed: {e}")
+--8<-- "docs/snippets/weather/downloads/error_handling.py"
 ```
 
 Common errors:
@@ -118,13 +82,7 @@ Common errors:
 Once files are cached, no network is needed:
 
 ```python
-# Pre-download files while online
-downloader = WeatherDownloader()
-for station in my_stations:
-    downloader.download(station)
-
-# Later, offline usage works
-files = downloader.download(station)  # From cache
+--8<-- "docs/snippets/weather/downloads/offline_usage.py"
 ```
 
 ## Batch Downloads
@@ -132,20 +90,7 @@ files = downloader.download(station)  # From cache
 Download files for multiple stations:
 
 ```python
-from idfkit.weather import StationIndex, WeatherDownloader
-
-index = StationIndex.load()
-downloader = WeatherDownloader()
-
-# Download for multiple cities
-cities = ["chicago", "new york", "los angeles", "houston"]
-weather_files = {}
-
-for city in cities:
-    station = index.search(city)[0].station
-    files = downloader.download(station)
-    weather_files[city] = files
-    print(f"Downloaded: {station.display_name}")
+--8<-- "docs/snippets/weather/downloads/batch_downloads.py"
 ```
 
 ## File Format Details
@@ -167,34 +112,7 @@ for city in cities:
 Complete workflow:
 
 ```python
-from idfkit import load_idf
-from idfkit.weather import (
-    StationIndex,
-    WeatherDownloader,
-    DesignDayManager,
-    geocode,
-)
-from idfkit.simulation import simulate
-
-# Load model
-model = load_idf("building.idf")
-
-# Find station near project site
-index = StationIndex.load()
-lat, lon = geocode("123 Main St, Chicago, IL")
-station = index.nearest(lat, lon)[0].station
-
-# Download weather files
-downloader = WeatherDownloader()
-files = downloader.download(station)
-
-# Apply design days
-ddm = DesignDayManager(files.ddy)
-ddm.apply_to_model(model, heating="99.6%", cooling="1%")
-
-# Run simulation
-result = simulate(model, files.epw, design_day=True)
-print(f"Success: {result.success}")
+--8<-- "docs/snippets/weather/downloads/integration_example.py"
 ```
 
 ## See Also

@@ -22,10 +22,7 @@ The `simulate()` function:
 5. Returns a `SimulationResult` with access to all outputs
 
 ```python
-from idfkit.simulation import simulate
-
-result = simulate(model, "weather.epw", design_day=True)
-print(f"Outputs in: {result.run_dir}")
+--8<-- "docs/snippets/concepts/simulation-architecture/subprocess_execution.py"
 ```
 
 ## SQLite Over ESO
@@ -42,14 +39,7 @@ The module automatically ensures `Output:SQLite` is present in your model,
 so you don't need to add it manually.
 
 ```python
-# All time-series data is accessible via SQL queries
-ts = result.sql.get_timeseries(
-    variable_name="Zone Mean Air Temperature",
-    key_value="ZONE 1",
-)
-
-# Tabular reports (normally in HTML) are also in SQLite
-tables = result.sql.get_tabular_data("AnnualBuildingUtilityPerformanceSummary")
+--8<-- "docs/snippets/concepts/simulation-architecture/sqlite_over_eso.py"
 ```
 
 ### What About ESO/HTML?
@@ -71,12 +61,7 @@ If you have a specific need for these formats, please open an issue.
 you access them:
 
 ```python
-result = simulate(model, weather)  # Fast: just runs EnergyPlus
-
-# These are lazy — parsed on first access:
-result.errors    # Parses ERR file
-result.sql       # Opens SQLite database
-result.variables # Parses RDD file
+--8<-- "docs/snippets/concepts/simulation-architecture/lazy_loading.py"
 ```
 
 This keeps memory usage low and startup fast, especially for batch
@@ -87,10 +72,7 @@ simulations where you might only need specific outputs.
 The `simulate()` function **copies** your model before simulation:
 
 ```python
-result = simulate(model, weather)
-
-# model is unchanged — Output:SQLite was added to a copy
-assert "Output:SQLite" not in model
+--8<-- "docs/snippets/concepts/simulation-architecture/model_immutability.py"
 ```
 
 This ensures:
@@ -115,11 +97,7 @@ When multiple versions are found in the default directories, the most
 recent version is selected.
 
 ```python
-from idfkit.simulation import find_energyplus
-
-config = find_energyplus()
-print(f"Version: {config.version}")
-print(f"Path: {config.executable}")
+--8<-- "docs/snippets/concepts/simulation-architecture/energyplus_discovery.py"
 ```
 
 ## Concurrent Execution
@@ -128,14 +106,7 @@ For parametric studies, `simulate_batch()` runs simulations in parallel
 using a thread pool:
 
 ```python
-from idfkit.simulation import simulate_batch, SimulationJob
-
-jobs = [
-    SimulationJob(model=variant1, weather="weather.epw", label="case-1"),
-    SimulationJob(model=variant2, weather="weather.epw", label="case-2"),
-]
-
-batch = simulate_batch(jobs, max_workers=4)
+--8<-- "docs/snippets/concepts/simulation-architecture/concurrent_execution.py"
 ```
 
 Each simulation runs in its own subprocess and directory, so there are
@@ -185,10 +156,7 @@ producer tasks from the consumer's `async for` loop.  Events arrive in
 completion order.  Breaking out of the loop cancels remaining tasks.
 
 ```python
-from idfkit.simulation import async_simulate_batch_stream
-
-async for event in async_simulate_batch_stream(jobs, max_concurrent=4):
-    print(f"[{event.completed}/{event.total}] {event.label}")
+--8<-- "docs/snippets/concepts/simulation-architecture/streaming.py"
 ```
 
 ## See Also

@@ -6,21 +6,13 @@ output database, containing time-series data, tabular reports, and metadata.
 ## Opening the Database
 
 ```python
-from idfkit.simulation import simulate
-
-result = simulate(model, weather)
-
-sql = result.sql
-if sql is not None:
-    # Query data...
+--8<-- "docs/snippets/simulation/sql-queries/opening_the_database.py"
 ```
 
 Or open directly:
 
 ```python
-from idfkit.simulation import SQLResult
-
-sql = SQLResult("/path/to/eplusout.sql")
+--8<-- "docs/snippets/simulation/sql-queries/opening_the_database_2.py"
 ```
 
 ## Time-Series Data
@@ -28,17 +20,7 @@ sql = SQLResult("/path/to/eplusout.sql")
 ### Basic Query
 
 ```python
-ts = sql.get_timeseries(
-    variable_name="Zone Mean Air Temperature",
-    key_value="THERMAL ZONE 1",
-)
-
-print(f"Variable: {ts.variable_name}")
-print(f"Key: {ts.key_value}")
-print(f"Units: {ts.units}")
-print(f"Frequency: {ts.frequency}")
-print(f"Data points: {len(ts.values)}")
-print(f"Min: {min(ts.values):.1f}, Max: {max(ts.values):.1f}")
+--8<-- "docs/snippets/simulation/sql-queries/basic_query.py"
 ```
 
 ### TimeSeriesResult Attributes
@@ -57,26 +39,7 @@ print(f"Min: {min(ts.values):.1f}, Max: {max(ts.values):.1f}")
 Specify which simulation environment to query:
 
 ```python
-# Design day results only (use for design_day=True simulations)
-ts = sql.get_timeseries(
-    "Zone Mean Air Temperature",
-    "ZONE 1",
-    environment="sizing",
-)
-
-# Annual/run period results only (default)
-ts = sql.get_timeseries(
-    "Zone Mean Air Temperature",
-    "ZONE 1",
-    environment="annual",
-)
-
-# All environments (design days + run periods)
-ts = sql.get_timeseries(
-    "Zone Mean Air Temperature",
-    "ZONE 1",
-    environment=None,
-)
+--8<-- "docs/snippets/simulation/sql-queries/filtering_by_environment.py"
 ```
 
 The `environment` parameter accepts:
@@ -90,13 +53,7 @@ The `environment` parameter accepts:
 ### Converting to DataFrame
 
 ```python
-df = ts.to_dataframe()
-print(df.head())
-#                              Zone Mean Air Temperature
-# timestamp
-# 2017-01-01 01:00:00                               21.2
-# 2017-01-01 02:00:00                               21.1
-# ...
+--8<-- "docs/snippets/simulation/sql-queries/converting_to_dataframe.py"
 ```
 
 Requires pandas: `pip install idfkit[dataframes]`
@@ -104,7 +61,7 @@ Requires pandas: `pip install idfkit[dataframes]`
 ### Plotting Time Series
 
 ```python
-fig = ts.plot()  # Auto-detects matplotlib/plotly
+--8<-- "docs/snippets/simulation/sql-queries/plotting_time_series.py"
 ```
 
 Requires matplotlib or plotly: `pip install idfkit[plot]`
@@ -114,12 +71,7 @@ Requires matplotlib or plotly: `pip install idfkit[plot]`
 ### Query Tabular Reports
 
 ```python
-rows = sql.get_tabular_data(
-    report_name="AnnualBuildingUtilityPerformanceSummary"
-)
-
-for row in rows[:5]:
-    print(f"{row.table_name} | {row.row_name} | {row.column_name}: {row.value}")
+--8<-- "docs/snippets/simulation/sql-queries/query_tabular_reports.py"
 ```
 
 ### TabularRow Attributes
@@ -137,10 +89,7 @@ for row in rows[:5]:
 ### Filter by Table
 
 ```python
-rows = sql.get_tabular_data(
-    report_name="AnnualBuildingUtilityPerformanceSummary",
-    table_name="Site and Source Energy",
-)
+--8<-- "docs/snippets/simulation/sql-queries/filter_by_table.py"
 ```
 
 ### Common Reports
@@ -160,10 +109,7 @@ rows = sql.get_tabular_data(
 ### List Available Variables
 
 ```python
-variables = sql.list_variables()
-
-for var in variables[:10]:
-    print(f"{var.name} ({var.key_value}) [{var.units}] - {var.frequency}")
+--8<-- "docs/snippets/simulation/sql-queries/list_available_variables.py"
 ```
 
 ### VariableInfo Attributes
@@ -180,11 +126,7 @@ for var in variables[:10]:
 ### Search Variables
 
 ```python
-# By name pattern
-temp_vars = [v for v in variables if "Temperature" in v.name]
-
-# By key
-zone1_vars = [v for v in variables if v.key_value == "ZONE 1"]
+--8<-- "docs/snippets/simulation/sql-queries/search_variables.py"
 ```
 
 ## Environment Metadata
@@ -192,10 +134,7 @@ zone1_vars = [v for v in variables if v.key_value == "ZONE 1"]
 ### List Environments
 
 ```python
-environments = sql.get_environments()
-
-for env in environments:
-    print(f"{env.index}: {env.name} (type={env.environment_type})")
+--8<-- "docs/snippets/simulation/sql-queries/list_environments.py"
 ```
 
 ### Environment Types
@@ -225,14 +164,7 @@ automatically converts database timestamps to Python `datetime` objects.
 - Warmup days are filtered out automatically
 
 ```python
-ts = sql.get_timeseries("Zone Mean Air Temperature", "ZONE 1")
-
-# Timestamps are proper Python datetime objects
-first = ts.timestamps[0]
-print(f"Year: {first.year}")   # 2017 (reference year)
-print(f"Month: {first.month}")
-print(f"Day: {first.day}")
-print(f"Hour: {first.hour}")
+--8<-- "docs/snippets/simulation/sql-queries/energyplus_time_convention.py"
 ```
 
 ## Context Manager
@@ -240,24 +172,13 @@ print(f"Hour: {first.hour}")
 `SQLResult` is a context manager for clean database cleanup:
 
 ```python
-with SQLResult("/path/to/eplusout.sql") as sql:
-    ts = sql.get_timeseries("Zone Mean Air Temperature", "ZONE 1")
-    # Connection automatically closed on exit
+--8<-- "docs/snippets/simulation/sql-queries/context_manager.py"
 ```
 
 ## Error Handling
 
 ```python
-sql = result.sql
-if sql is None:
-    print("No SQL output - was Output:SQLite in the model?")
-    return
-
-# Get time series (raises KeyError if not found)
-try:
-    ts = sql.get_timeseries("Nonexistent Variable", "ZONE 1")
-except KeyError as e:
-    print(f"Variable not found: {e}")
+--8<-- "docs/snippets/simulation/sql-queries/error_handling.py"
 ```
 
 ## Performance Tips

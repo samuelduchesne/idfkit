@@ -8,20 +8,7 @@ parsing EnergyPlus error reports and handling simulation failures.
 The `ErrorReport` class parses the `.err` file produced by EnergyPlus:
 
 ```python
-from idfkit.simulation import simulate
-
-result = simulate(model, weather)
-
-# Access the error report
-errors = result.errors
-
-# Check for problems
-if errors.has_fatal:
-    print("Simulation had fatal errors")
-if errors.has_severe:
-    print("Simulation had severe errors")
-if errors.warning_count > 0:
-    print(f"Simulation had {errors.warning_count} warnings")
+--8<-- "docs/snippets/simulation/errors/error_report.py"
 ```
 
 ## Error Severity Levels
@@ -40,35 +27,19 @@ EnergyPlus uses several error severity levels:
 ### By Severity
 
 ```python
-errors = result.errors
-
-# Fatal errors (simulation stopped)
-for err in errors.fatal:
-    print(f"FATAL: {err.message}")
-
-# Severe errors (may cause incorrect results)
-for err in errors.severe:
-    print(f"SEVERE: {err.message}")
-
-# Warnings
-for warn in errors.warnings:
-    print(f"Warning: {warn.message}")
+--8<-- "docs/snippets/simulation/errors/by_severity.py"
 ```
 
 ### Error Counts
 
 ```python
-print(f"Fatal: {errors.fatal_count}")
-print(f"Severe: {errors.severe_count}")
-print(f"Warnings: {errors.warning_count}")
+--8<-- "docs/snippets/simulation/errors/error_counts.py"
 ```
 
 ### Summary
 
 ```python
-# Get a formatted summary string
-print(errors.summary())
-# Output: "0 Fatal, 2 Severe, 15 Warnings"
+--8<-- "docs/snippets/simulation/errors/summary.py"
 ```
 
 ## ErrorMessage Attributes
@@ -85,14 +56,7 @@ Each error/warning is an `ErrorMessage` object:
 The `simulate()` function raises `SimulationError` for certain failures:
 
 ```python
-from idfkit.exceptions import SimulationError
-
-try:
-    result = simulate(model, weather)
-except SimulationError as e:
-    print(f"Simulation failed: {e}")
-    print(f"Exit code: {e.exit_code}")
-    print(f"Stderr: {e.stderr}")
+--8<-- "docs/snippets/simulation/errors/simulation_exceptions.py"
 ```
 
 ### Exception Cases
@@ -107,13 +71,7 @@ except SimulationError as e:
 ### Timeout Handling
 
 ```python
-try:
-    result = simulate(model, weather, timeout=60.0)
-except SimulationError as e:
-    if e.exit_code is None:
-        print("Simulation timed out")
-    else:
-        print(f"Simulation failed with exit code {e.exit_code}")
+--8<-- "docs/snippets/simulation/errors/timeout_handling.py"
 ```
 
 ## Non-Exception Failures
@@ -122,15 +80,7 @@ Some simulation failures don't raise exceptions but return a result
 with `success=False`:
 
 ```python
-result = simulate(model, weather)
-
-if not result.success:
-    print(f"Exit code: {result.exit_code}")
-
-    # Check errors
-    if result.errors.has_fatal:
-        for err in result.errors.fatal:
-            print(f"Fatal: {err.message}")
+--8<-- "docs/snippets/simulation/errors/non_exception_failures.py"
 ```
 
 ## Batch Error Handling
@@ -138,20 +88,7 @@ if not result.success:
 In batch processing, individual failures don't stop the batch:
 
 ```python
-from idfkit.simulation import simulate_batch
-
-batch = simulate_batch(jobs)
-
-# Check overall success
-if not batch.all_succeeded:
-    print(f"{len(batch.failed)} jobs failed")
-
-# Handle failures individually
-for i, result in enumerate(batch):
-    if not result.success:
-        print(f"Job {i} failed:")
-        for err in result.errors.fatal:
-            print(f"  {err.message}")
+--8<-- "docs/snippets/simulation/errors/batch_error_handling.py"
 ```
 
 ## Common EnergyPlus Errors
@@ -201,20 +138,13 @@ for i, result in enumerate(batch):
 ### 1. Check the Error Report First
 
 ```python
-if not result.success:
-    print(errors.summary())
-    for err in errors.fatal + errors.severe:
-        print(err.message)
+--8<-- "docs/snippets/simulation/errors/1_check_the_error_report_first.py"
 ```
 
 ### 2. Examine Raw Output
 
 ```python
-# Check stderr
-print(result.stderr)
-
-# Check the run directory
-print(f"Outputs in: {result.run_dir}")
+--8<-- "docs/snippets/simulation/errors/2_examine_raw_output.py"
 ```
 
 ### 3. Run Design-Day First
@@ -222,22 +152,13 @@ print(f"Outputs in: {result.run_dir}")
 Design-day simulations are faster and catch most errors:
 
 ```python
-# Quick validation
-result = simulate(model, weather, design_day=True)
-if result.success:
-    # Then run full annual
-    result = simulate(model, weather, annual=True)
+--8<-- "docs/snippets/simulation/errors/3_run_design_day_first.py"
 ```
 
 ### 4. Validate Before Simulation
 
 ```python
-from idfkit import validate_document
-
-validation = validate_document(model)
-if not validation.is_valid:
-    for err in validation.errors:
-        print(err)
+--8<-- "docs/snippets/simulation/errors/4_validate_before_simulation.py"
 ```
 
 ## Error Report from File
@@ -245,17 +166,13 @@ if not validation.is_valid:
 Parse an error file directly:
 
 ```python
-from idfkit.simulation import ErrorReport
-
-errors = ErrorReport.from_file("/path/to/eplusout.err")
-print(errors.summary())
+--8<-- "docs/snippets/simulation/errors/error_report_from_file.py"
 ```
 
 Or from string:
 
 ```python
-err_text = Path("eplusout.err").read_text()
-errors = ErrorReport.from_string(err_text)
+--8<-- "docs/snippets/simulation/errors/error_report_from_file_2.py"
 ```
 
 ## See Also

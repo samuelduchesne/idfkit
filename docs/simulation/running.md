@@ -6,15 +6,7 @@ a structured `SimulationResult` with access to all output files.
 ## Basic Usage
 
 ```python
-from idfkit import load_idf
-from idfkit.simulation import simulate
-
-model = load_idf("building.idf")
-result = simulate(model, "weather.epw")
-
-print(f"Success: {result.success}")
-print(f"Runtime: {result.runtime_seconds:.1f}s")
-print(f"Output directory: {result.run_dir}")
+--8<-- "docs/snippets/simulation/running/basic_usage.py"
 ```
 
 ## Simulation Modes
@@ -24,7 +16,7 @@ print(f"Output directory: {result.run_dir}")
 Fast simulation using only design day conditions:
 
 ```python
-result = simulate(model, weather, design_day=True)
+--8<-- "docs/snippets/simulation/running/design_day_only.py"
 ```
 
 ### Annual Simulation
@@ -32,7 +24,7 @@ result = simulate(model, weather, design_day=True)
 Full-year simulation:
 
 ```python
-result = simulate(model, weather, annual=True)
+--8<-- "docs/snippets/simulation/running/annual_simulation.py"
 ```
 
 ### Default Mode
@@ -40,7 +32,7 @@ result = simulate(model, weather, annual=True)
 Without flags, EnergyPlus uses whatever run periods are defined in the model:
 
 ```python
-result = simulate(model, weather)  # Uses model's RunPeriod objects
+--8<-- "docs/snippets/simulation/running/default_mode.py"
 ```
 
 ## Preprocessing
@@ -55,10 +47,7 @@ standalone preprocessing functions for this.
 `expand_objects()` converts them into their fully specified equivalents:
 
 ```python
-from idfkit.simulation import expand_objects
-
-expanded = expand_objects(model)
-# HVACTemplate:Zone:IdealLoadsAirSystem → ZoneHVAC:IdealLoadsAirSystem + ...
+--8<-- "docs/snippets/simulation/running/expanding_hvac_templates.py"
 ```
 
 !!! note
@@ -81,13 +70,7 @@ For cases where you need to inspect or modify the preprocessed model
 before simulation, standalone functions are available:
 
 ```python
-from idfkit.simulation import run_slab_preprocessor, run_basement_preprocessor
-
-# Slab-on-grade foundation
-expanded = run_slab_preprocessor(model, weather="weather.epw")
-
-# Basement walls and floors
-expanded = run_basement_preprocessor(model, weather="weather.epw")
+--8<-- "docs/snippets/simulation/running/ground_heat_transfer_slab_basement.py"
 ```
 
 Each function runs ExpandObjects first (to extract the ground heat-transfer
@@ -105,24 +88,7 @@ details.
 ## Function Signature
 
 ```python
-def simulate(
-    model: IDFDocument,
-    weather: str | Path,
-    *,
-    output_dir: str | Path | None = None,
-    energyplus: EnergyPlusConfig | None = None,
-    expand_objects: bool = True,
-    annual: bool = False,
-    design_day: bool = False,
-    output_prefix: str = "eplus",
-    output_suffix: Literal["C", "L", "D"] = "C",
-    readvars: bool = False,
-    timeout: float = 3600.0,
-    extra_args: list[str] | None = None,
-    cache: SimulationCache | None = None,
-    fs: FileSystem | None = None,
-    on_progress: Callable[[SimulationProgress], Any] | Literal["tqdm"] | None = None,
-) -> SimulationResult:
+--8<-- "docs/snippets/simulation/running/function_signature.py"
 ```
 
 ## Parameters
@@ -157,17 +123,7 @@ def simulate(
 By default, `simulate()` auto-discovers EnergyPlus:
 
 ```python
-# Auto-discovery
-result = simulate(model, weather)
-
-# Explicit path
-from idfkit.simulation import find_energyplus
-config = find_energyplus("/custom/path/EnergyPlus-24-1-0")
-result = simulate(model, weather, energyplus=config)
-
-# Environment variable
-# Set ENERGYPLUS_DIR=/path/to/EnergyPlus before running
-result = simulate(model, weather)
+--8<-- "docs/snippets/simulation/running/energyplus_discovery.py"
 ```
 
 Discovery priority:
@@ -184,8 +140,7 @@ Discovery priority:
 By default, outputs go to an auto-generated temp directory:
 
 ```python
-result = simulate(model, weather)
-print(result.run_dir)  # e.g., /tmp/idfkit_sim_abc123/
+--8<-- "docs/snippets/simulation/running/automatic_temporary_directory.py"
 ```
 
 ### Explicit Directory
@@ -193,7 +148,7 @@ print(result.run_dir)  # e.g., /tmp/idfkit_sim_abc123/
 Specify where to store outputs:
 
 ```python
-result = simulate(model, weather, output_dir="./sim_output")
+--8<-- "docs/snippets/simulation/running/explicit_directory.py"
 ```
 
 The directory is created if it doesn't exist.
@@ -203,36 +158,19 @@ The directory is created if it doesn't exist.
 ### Simulation Errors
 
 ```python
-from idfkit.exceptions import SimulationError
-
-try:
-    result = simulate(model, weather)
-except SimulationError as e:
-    print(f"Simulation failed: {e}")
-    print(f"Exit code: {e.exit_code}")
-    print(f"Stderr: {e.stderr}")
+--8<-- "docs/snippets/simulation/running/simulation_errors.py"
 ```
 
 ### Timeout
 
 ```python
-try:
-    result = simulate(model, weather, timeout=60.0)  # 1 minute max
-except SimulationError as e:
-    if e.exit_code is None:
-        print("Simulation timed out")
+--8<-- "docs/snippets/simulation/running/timeout.py"
 ```
 
 ### Checking Success
 
 ```python
-result = simulate(model, weather)
-
-if not result.success:
-    print(f"Exit code: {result.exit_code}")
-    print(f"Stderr: {result.stderr}")
-    for err in result.errors.fatal:
-        print(f"Error: {err.message}")
+--8<-- "docs/snippets/simulation/running/checking_success.py"
 ```
 
 ## Model Safety
@@ -240,14 +178,7 @@ if not result.success:
 `simulate()` copies your model before running — the original is never modified:
 
 ```python
-model = load_idf("building.idf")
-original_count = len(model)
-
-result = simulate(model, weather)
-
-# Model unchanged
-assert len(model) == original_count
-assert "Output:SQLite" not in model
+--8<-- "docs/snippets/simulation/running/model_safety.py"
 ```
 
 ## Command-Line Options
@@ -261,7 +192,7 @@ assert "Output:SQLite" not in model
 | `"D"` | Timestamped separate files |
 
 ```python
-result = simulate(model, weather, output_suffix="L")
+--8<-- "docs/snippets/simulation/running/output_suffix_modes.py"
 ```
 
 ### Extra Arguments
@@ -269,10 +200,7 @@ result = simulate(model, weather, output_suffix="L")
 Pass additional EnergyPlus flags:
 
 ```python
-result = simulate(
-    model, weather,
-    extra_args=["--convert-only"]  # Just convert, don't simulate
-)
+--8<-- "docs/snippets/simulation/running/extra_arguments.py"
 ```
 
 ## Cloud Storage
@@ -280,14 +208,7 @@ result = simulate(
 For remote storage backends (S3, etc.):
 
 ```python
-from idfkit.simulation import S3FileSystem
-
-fs = S3FileSystem(bucket="my-bucket", prefix="runs/")
-result = simulate(
-    model, weather,
-    output_dir="run-001",  # Required with fs
-    fs=fs,
-)
+--8<-- "docs/snippets/simulation/running/cloud_storage.py"
 ```
 
 See [Cloud & Remote Storage](../concepts/cloud-storage.md) for details.
@@ -297,15 +218,7 @@ See [Cloud & Remote Storage](../concepts/cloud-storage.md) for details.
 Enable content-addressed caching to avoid redundant simulations:
 
 ```python
-from idfkit.simulation import SimulationCache
-
-cache = SimulationCache()
-
-# First run: executes simulation
-result1 = simulate(model, weather, cache=cache)
-
-# Second run: instant cache hit
-result2 = simulate(model, weather, cache=cache)
+--8<-- "docs/snippets/simulation/running/caching.py"
 ```
 
 See [Caching](caching.md) for details.

@@ -6,22 +6,7 @@ output files with lazy loading for efficient memory usage.
 ## SimulationResult Overview
 
 ```python
-from idfkit.simulation import simulate
-
-result = simulate(model, weather)
-
-# Basic info
-print(f"Success: {result.success}")
-print(f"Exit code: {result.exit_code}")
-print(f"Runtime: {result.runtime_seconds:.1f}s")
-print(f"Output dir: {result.run_dir}")
-
-# Parsed outputs (lazy-loaded)
-result.errors     # ErrorReport from .err file
-result.sql        # SQLResult from .sql database
-result.variables  # OutputVariableIndex from .rdd/.mdd
-result.csv        # CSVResult from .csv file
-result.html       # HTMLResult from HTML tabular output
+--8<-- "docs/snippets/simulation/results/simulationresult_overview.py"
 ```
 
 ## Output File Paths
@@ -29,13 +14,7 @@ result.html       # HTMLResult from HTML tabular output
 Access paths to specific output files:
 
 ```python
-result.sql_path   # Path to .sql database
-result.err_path   # Path to .err file
-result.eso_path   # Path to .eso file
-result.csv_path   # Path to .csv file
-result.html_path  # Path to HTML table file
-result.rdd_path   # Path to .rdd file
-result.mdd_path   # Path to .mdd file
+--8<-- "docs/snippets/simulation/results/output_file_paths.py"
 ```
 
 Each returns `None` if the file wasn't produced.
@@ -45,29 +24,7 @@ Each returns `None` if the file wasn't produced.
 Parse warnings and errors from the `.err` file:
 
 ```python
-errors = result.errors
-
-# Summary
-print(errors.summary())
-
-# Check for fatal errors
-if errors.has_fatal:
-    for err in errors.fatal:
-        print(f"FATAL: {err.message}")
-
-# Check for severe errors
-if errors.has_severe:
-    for err in errors.severe:
-        print(f"SEVERE: {err.message}")
-
-# All warnings
-for warn in errors.warnings:
-    print(f"Warning: {warn.message}")
-
-# Counts
-print(f"Fatal: {errors.fatal_count}")
-print(f"Severe: {errors.severe_count}")
-print(f"Warnings: {errors.warning_count}")
+--8<-- "docs/snippets/simulation/results/error_report.py"
 ```
 
 See [Error Handling](errors.md) for detailed error parsing.
@@ -77,19 +34,7 @@ See [Error Handling](errors.md) for detailed error parsing.
 Query time-series and tabular data from the SQLite output:
 
 ```python
-sql = result.sql
-if sql is not None:
-    # Time-series data
-    ts = sql.get_timeseries(
-        variable_name="Zone Mean Air Temperature",
-        key_value="THERMAL ZONE 1",
-    )
-    print(f"Max: {max(ts.values):.1f}°C")
-
-    # Tabular reports
-    rows = sql.get_tabular_data(
-        report_name="AnnualBuildingUtilityPerformanceSummary"
-    )
+--8<-- "docs/snippets/simulation/results/sql_database.py"
 ```
 
 See [SQL Output Queries](sql-queries.md) for detailed SQL parsing.
@@ -99,15 +44,7 @@ See [SQL Output Queries](sql-queries.md) for detailed SQL parsing.
 Discover available output variables from `.rdd`/`.mdd` files:
 
 ```python
-variables = result.variables
-if variables is not None:
-    # Search for variables
-    matches = variables.search("Temperature")
-    for var in matches:
-        print(f"{var.name} [{var.units}]")
-
-    # Add outputs to model for next run
-    variables.add_all_to_model(model, filter_pattern="Zone.*Temperature")
+--8<-- "docs/snippets/simulation/results/output_variables.py"
 ```
 
 See [Output Discovery](output-discovery.md) for variable discovery.
@@ -117,14 +54,7 @@ See [Output Discovery](output-discovery.md) for variable discovery.
 Parse CSV time-series output:
 
 ```python
-csv_result = result.csv
-if csv_result is not None:
-    # List all columns
-    for col in csv_result.columns:
-        print(f"{col.variable_name} ({col.key_value}) [{col.units}]")
-
-    # Get data for a specific column
-    values = csv_result.get_column_values("Zone Mean Air Temperature")
+--8<-- "docs/snippets/simulation/results/csv_output.py"
 ```
 
 ## HTML Tabular Output
@@ -133,27 +63,7 @@ Parse the HTML tabular summary file (`eplustbl.htm`) that EnergyPlus
 produces alongside every simulation:
 
 ```python
-html = result.html
-if html is not None:
-    # Iterate all tables
-    for table in html:
-        print(f"{table.title}: {len(table.rows)} rows")
-
-    # eppy-compatible (title, rows) pairs
-    for title, rows in html.titletable():
-        print(title)
-
-    # Look up a table by title (case-insensitive substring match)
-    table = html.tablebyname("Site and Source Energy")
-    if table:
-        data = table.to_dict()  # {row_key: {col_header: value}}
-        print(data)
-
-    # Get all tables from a specific report
-    annual = html.tablesbyreport("Annual Building Utility Performance Summary")
-
-    # Access by index
-    first = html.tablebyindex(0)
+--8<-- "docs/snippets/simulation/results/html_tabular_output.py"
 ```
 
 Each `HTMLTable` has these attributes:
@@ -169,10 +79,7 @@ Each `HTMLTable` has these attributes:
 You can also parse a standalone HTML file without a full simulation:
 
 ```python
-from idfkit.simulation.parsers.html import HTMLResult
-
-html = HTMLResult.from_file("eplustbl.htm")
-html = HTMLResult.from_string(html_string)
+--8<-- "docs/snippets/simulation/results/html_tabular_output_2.py"
 ```
 
 This replaces eppy's `readhtml` module.
@@ -182,14 +89,7 @@ This replaces eppy's `readhtml` module.
 Output files are parsed only when accessed:
 
 ```python
-result = simulate(model, weather)
-
-# Nothing parsed yet - only metadata stored
-
-result.errors    # NOW parses .err file
-result.sql       # NOW opens SQLite database
-result.variables # NOW parses .rdd/.mdd files
-result.html      # NOW parses HTML tabular output
+--8<-- "docs/snippets/simulation/results/lazy_loading.py"
 ```
 
 This keeps memory usage low, especially for batch simulations where you
@@ -200,21 +100,7 @@ might only need specific outputs.
 Inspect results from a previous simulation:
 
 ```python
-from idfkit.simulation import SimulationResult
-
-# From a local directory
-result = SimulationResult.from_directory("/path/to/sim_output")
-
-# From a cloud storage location
-from idfkit.simulation import S3FileSystem
-fs = S3FileSystem(bucket="my-bucket")
-result = SimulationResult.from_directory("runs/run-001", fs=fs)
-
-# Query data
-ts = result.sql.get_timeseries(
-    "Zone Mean Air Temperature",
-    "ZONE 1"
-)
+--8<-- "docs/snippets/simulation/results/reconstructing_from_directory.py"
 ```
 
 ## Attributes Reference

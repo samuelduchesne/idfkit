@@ -57,49 +57,19 @@ pip install idfkit
 ## Quick Example
 
 ```python
-from idfkit import load_idf, write_idf
-
-# Load an existing IDF file
-doc = load_idf("in.idf")
-
-# Query objects with O(1) lookups
-zone = doc["Zone"]["Office"]
-print(zone.x_origin, zone.y_origin)
-
-# Modify a field
-zone.x_origin = 10.0
-
-# See what references the zone
-for obj in doc.get_referencing("Office"):
-    print(obj.obj_type, obj.name)
-
-# Write back to IDF (or epJSON)
-write_idf(doc, "out.idf")
+--8<-- "docs/snippets/index/quick_example.py"
 ```
 
 ## Run Simulations
 
 ```python
-from idfkit.simulation import simulate
-
-result = simulate(doc, "weather.epw", design_day=True)
-
-# Query results
-ts = result.sql.get_timeseries(
-    variable_name="Zone Mean Air Temperature",
-    key_value="Office",
-)
-print(f"Max temp: {max(ts.values):.1f}")
+--8<-- "docs/snippets/index/run_simulations.py"
 ```
 
 ## Find Weather Stations
 
 ```python
-from idfkit.weather import StationIndex, geocode
-
-index = StationIndex.load()
-results = index.nearest(*geocode("Chicago, IL"))
-print(results[0].station.display_name)
+--8<-- "docs/snippets/index/find_weather_stations.py"
 ```
 
 ---

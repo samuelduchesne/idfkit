@@ -90,7 +90,7 @@ packages = ["src/idfkit"]
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
-exclude = ["benchmarks", "src/idfkit/schemas", "src/idfkit/weather/data", ".venv", "**/node_modules", "**/__pycache__"]
+exclude = ["benchmarks", "src/idfkit/schemas", "src/idfkit/weather/data", "docs/snippets", ".venv", "**/node_modules", "**/__pycache__"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "src/idfkit"]
@@ -104,6 +104,20 @@ markers = [
 target-version = "py310"
 line-length = 120
 fix = true
+extend-exclude = [
+    # Doc snippets that are intentionally syntactically incomplete fragments
+    "docs/snippets/design/schedule-evaluator/3_interpolation.py",
+    "docs/snippets/getting-started/quick-start/discover_available_fields_2.py",
+    "docs/snippets/simulation/async/caching_and_cloud_storage.py",
+    "docs/snippets/simulation/async/concurrency.py",
+    "docs/snippets/simulation/async/error_handling.py",
+    "docs/snippets/simulation/batch/partial_failures.py",
+    "docs/snippets/simulation/index/async_execution.py",
+    "docs/snippets/simulation/progress/async_callbacks_2.py",
+    "docs/snippets/simulation/running/function_signature.py",
+    "docs/snippets/simulation/sql-queries/opening_the_database.py",
+    "docs/snippets/weather/station-search/function_signature.py",
+]
 
 [tool.ruff.lint]
 select = [
@@ -149,6 +163,7 @@ ignore = [
 "tests/*" = ["S101"]
 "benchmarks/*" = ["S603", "S607", "SIM115", "B007", "B905"]
 "scripts/*" = ["T201"]
+"docs/snippets/*" = ["E402", "F706", "F821", "F841", "F811", "I", "S", "B", "TRY", "UP008"]
 
 [tool.ruff.format]
 preview = true

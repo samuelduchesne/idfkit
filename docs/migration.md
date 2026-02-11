@@ -9,24 +9,19 @@ listed below are available alongside the newer idfkit API.
 **eppy** requires you to locate and pass the IDD file yourself:
 
 ```python
-from eppy.modeleditor import IDF
-
-IDF.setiddname("/path/to/Energy+.idd")
-idf = IDF("/path/to/in.idf")
+--8<-- "docs/snippets/migration/loading_a_file.py"
 ```
 
 **idfkit** bundles schemas and detects the version automatically:
 
 ```python
-from idfkit import load_idf
-
-doc = load_idf("in.idf")
+--8<-- "docs/snippets/migration/loading_a_file_2.py"
 ```
 
 No IDD path is needed. If you want to target a specific EnergyPlus version:
 
 ```python
-doc = load_idf("in.idf", version=(24, 1, 0))
+--8<-- "docs/snippets/migration/loading_a_file_3.py"
 ```
 
 ## Quick reference
@@ -68,21 +63,19 @@ when one exists.
 **eppy:**
 
 ```python
-zone = idf.newidfobject("ZONE")
-zone.Name = "Office"
-zone.X_Origin = 0.0
+--8<-- "docs/snippets/migration/creating_objects.py"
 ```
 
 **idfkit:**
 
 ```python
-zone = doc.add("Zone", "Office", x_origin=0.0)
+--8<-- "docs/snippets/migration/creating_objects_2.py"
 ```
 
 Or using the eppy-compatible method:
 
 ```python
-zone = doc.newidfobject("Zone", Name="Office", X_Origin=0.0)
+--8<-- "docs/snippets/migration/creating_objects_3.py"
 ```
 
 ## Accessing fields
@@ -90,15 +83,13 @@ zone = doc.newidfobject("Zone", Name="Office", X_Origin=0.0)
 **eppy** uses the capitalised IDD field names:
 
 ```python
-print(zone.X_Origin)
-zone.X_Origin = 5.0
+--8<-- "docs/snippets/migration/accessing_fields.py"
 ```
 
 **idfkit** uses snake_case names:
 
 ```python
-print(zone.x_origin)
-zone.x_origin = 5.0
+--8<-- "docs/snippets/migration/accessing_fields_2.py"
 ```
 
 Both styles resolve to the same underlying data.
@@ -109,12 +100,7 @@ eppy has no built-in way to find which objects reference a given name.
 idfkit maintains a live reference graph:
 
 ```python
-# Find every object that points to the "Office" zone
-for obj in doc.get_referencing("Office"):
-    print(obj.obj_type, obj.name)
-
-# Find every name that the People object references
-names = doc.get_references(people_obj)
+--8<-- "docs/snippets/migration/reference_tracking_new_in_idfkit.py"
 ```
 
 ## Renaming with cascading updates (new in idfkit)
@@ -124,20 +110,13 @@ people, lights, and other object that references it. In idfkit the
 reference graph handles this automatically:
 
 ```python
-zone = doc["Zone"]["Office"]
-zone.name = "Open_Office"
-# All fields across the document that pointed to "Office" now say "Open_Office"
+--8<-- "docs/snippets/migration/renaming_with_cascading_updates_new_in_idfkit.py"
 ```
 
 ## Validation (new in idfkit)
 
 ```python
-from idfkit import validate_document
-
-result = validate_document(doc)
-if not result.is_valid:
-    for error in result.errors:
-        print(error)
+--8<-- "docs/snippets/migration/validation_new_in_idfkit.py"
 ```
 
 ## Saving files
@@ -145,26 +124,19 @@ if not result.is_valid:
 **eppy** saves through methods on the IDF object:
 
 ```python
-idf.saveas("out.idf")
-idf.savecopy("backup.idf")
-idf.save()
+--8<-- "docs/snippets/migration/saving_files.py"
 ```
 
 **idfkit** supports the same methods:
 
 ```python
-doc.saveas("out.idf")    # save and update doc.filepath
-doc.savecopy("backup.idf")  # save without changing doc.filepath
-doc.save()               # save to current doc.filepath
+--8<-- "docs/snippets/migration/saving_files_2.py"
 ```
 
 Or use the standalone writer for more control:
 
 ```python
-from idfkit import write_idf, write_epjson
-
-write_idf(doc, "out.idf")
-write_epjson(doc, "out.epJSON")  # or convert to epJSON
+--8<-- "docs/snippets/migration/saving_files_3.py"
 ```
 
 ## Output formatting modes
@@ -172,18 +144,13 @@ write_epjson(doc, "out.epJSON")  # or convert to epJSON
 **eppy** controls output formatting with `idf.outputtype`:
 
 ```python
-idf.outputtype = "nocomment"
-idf.saveas("out.idf")
+--8<-- "docs/snippets/migration/output_formatting_modes.py"
 ```
 
 **idfkit** passes the mode to the writer:
 
 ```python
-from idfkit import write_idf
-
-write_idf(doc, "out.idf", output_type="nocomment")    # no field comments
-write_idf(doc, "out.idf", output_type="compressed")   # single-line objects
-write_idf(doc, "out.idf", output_type="standard")     # default, with comments
+--8<-- "docs/snippets/migration/output_formatting_modes_2.py"
 ```
 
 ## Following references
@@ -191,15 +158,13 @@ write_idf(doc, "out.idf", output_type="standard")     # default, with comments
 **eppy** lets you follow a reference field to get the target object:
 
 ```python
-surface = idf.idfobjects["BuildingSurface:Detailed"][0]
-construction = surface.get_referenced_object("Construction_Name")
+--8<-- "docs/snippets/migration/following_references.py"
 ```
 
 **idfkit** provides the same method:
 
 ```python
-surface = doc["BuildingSurface:Detailed"][0]
-construction = surface.get_referenced_object("construction_name")
+--8<-- "docs/snippets/migration/following_references_2.py"
 ```
 
 ## Finding referring objects
@@ -207,26 +172,13 @@ construction = surface.get_referenced_object("construction_name")
 **eppy** finds all objects that reference a given object:
 
 ```python
-zone = idf.idfobjects["ZONE"][0]
-referrers = zone.getreferingobjs()
+--8<-- "docs/snippets/migration/finding_referring_objects.py"
 ```
 
 **idfkit** provides both the eppy spelling and a corrected alias:
 
 ```python
-zone = doc["Zone"]["Office"]
-
-# eppy-compatible spelling
-referrers = zone.getreferingobjs()
-
-# Corrected spelling
-referrers = zone.get_referring_objects()
-
-# Optional filters -- by IDD group and/or field name
-surfaces = zone.getreferingobjs(
-    iddgroups=["Thermal Zones and Surfaces"],
-    fields=["zone_name"],
-)
+--8<-- "docs/snippets/migration/finding_referring_objects_2.py"
 ```
 
 ## Range checking
@@ -234,21 +186,13 @@ surfaces = zone.getreferingobjs(
 **eppy** provides range checking on numeric fields:
 
 ```python
-obj.getrange("Density")
-# {'minimum': 0, 'type': 'real'}
-
-obj.checkrange("Density")  # raises RangeError if out of range
+--8<-- "docs/snippets/migration/range_checking.py"
 ```
 
 **idfkit** supports the same API:
 
 ```python
-from idfkit import RangeError
-
-obj.getrange("density")
-# {'minimum': 0, 'type': 'real'}
-
-obj.checkrange("density")  # True, or raises RangeError
+--8<-- "docs/snippets/migration/range_checking_2.py"
 ```
 
 ## Removing objects by index
@@ -256,13 +200,13 @@ obj.checkrange("density")  # True, or raises RangeError
 **eppy** removes objects by index with `popidfobject`:
 
 ```python
-removed = idf.popidfobject("ZONE", 0)
+--8<-- "docs/snippets/migration/removing_objects_by_index.py"
 ```
 
 **idfkit:**
 
 ```python
-removed = doc.popidfobject("Zone", 0)
+--8<-- "docs/snippets/migration/removing_objects_by_index_2.py"
 ```
 
 ## Batch updates
@@ -270,17 +214,13 @@ removed = doc.popidfobject("Zone", 0)
 **eppy** uses `json_functions.updateidf()` for parametric sweeps:
 
 ```python
-from eppy import json_functions
-json_functions.updateidf(idf, {"Zone.Office.x_origin": 10.0})
+--8<-- "docs/snippets/migration/batch_updates.py"
 ```
 
 **idfkit** has this as a method on the document:
 
 ```python
-doc.update({
-    "Zone.Office.x_origin": 10.0,
-    "Zone.Office.y_origin": 5.0,
-})
+--8<-- "docs/snippets/migration/batch_updates_2.py"
 ```
 
 ## Geometry
@@ -290,24 +230,7 @@ geometry operations. idfkit ships its own `Vector3D` and `Polygon3D`
 classes with no external dependencies:
 
 ```python
-from idfkit.geometry import (
-    calculate_surface_area,
-    calculate_surface_tilt,
-    calculate_surface_azimuth,
-    calculate_zone_volume,
-    calculate_zone_height,
-    calculate_zone_ceiling_area,
-)
-
-for surface in doc["BuildingSurface:Detailed"]:
-    area = calculate_surface_area(surface)
-    tilt = calculate_surface_tilt(surface)      # 0=up, 90=vertical, 180=down
-    azimuth = calculate_surface_azimuth(surface) # 0=north, 90=east, 180=south
-    print(f"{surface.name}: {area:.1f} m2, tilt={tilt:.0f}, azimuth={azimuth:.0f}")
-
-print("Zone volume:", calculate_zone_volume(doc, "Office"))
-print("Zone height:", calculate_zone_height(doc, "Office"))
-print("Ceiling area:", calculate_zone_ceiling_area(doc, "Office"))
+--8<-- "docs/snippets/migration/geometry.py"
 ```
 
 ### Building transforms
@@ -315,16 +238,7 @@ print("Ceiling area:", calculate_zone_ceiling_area(doc, "Office"))
 Translate or rotate all surfaces in the model:
 
 ```python
-from idfkit.geometry import translate_building, rotate_building, Vector3D
-
-# Shift the entire building 10m east and 5m north
-translate_building(doc, Vector3D(10.0, 5.0, 0.0))
-
-# Rotate 45 degrees counter-clockwise around the origin
-rotate_building(doc, 45.0)
-
-# Rotate around a custom anchor point
-rotate_building(doc, 90.0, anchor=Vector3D(5.0, 5.0, 0.0))
+--8<-- "docs/snippets/migration/building_transforms.py"
 ```
 
 ## HTML tabular output
@@ -332,34 +246,17 @@ rotate_building(doc, 90.0, anchor=Vector3D(5.0, 5.0, 0.0))
 **eppy** parses HTML tabular output using `readhtml`:
 
 ```python
-from eppy import readhtml
-with open("eplustbl.htm") as f:
-    html = f.read()
-tables = readhtml.titletable(html)
+--8<-- "docs/snippets/migration/html_tabular_output.py"
 ```
 
 **idfkit** parses HTML output as part of `SimulationResult`:
 
 ```python
-result = simulate(doc, weather)
-html = result.html  # HTMLResult, lazily parsed
-
-# eppy-compatible (title, rows) pairs
-for title, rows in html.titletable():
-    print(title, len(rows), "rows")
-
-# Lookup by name
-table = html.tablebyname("Site and Source Energy")
-print(table.to_dict())  # {row_key: {col_header: value}}
-
-# Filter by report
-annual = html.tablesbyreport("Annual Building Utility Performance Summary")
+--8<-- "docs/snippets/migration/html_tabular_output_2.py"
 ```
 
 Or parse a standalone HTML file:
 
 ```python
-from idfkit.simulation.parsers.html import HTMLResult
-
-html = HTMLResult.from_file("eplustbl.htm")
+--8<-- "docs/snippets/migration/html_tabular_output_3.py"
 ```
