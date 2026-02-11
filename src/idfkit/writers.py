@@ -46,21 +46,21 @@ def write_idf(
         IDF string if *filepath* is ``None``, otherwise ``None``.
 
     Examples:
-        Return the IDF as a string (pass no filepath):
+        Serialize the model to an IDF string for inspection:
 
         >>> from idfkit import new_document, write_idf
         >>> model = new_document()
-        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-        Zone('Office')
+        >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+        Zone('Perimeter_ZN_1')
         >>> idf_str = write_idf(model)
         >>> "Zone," in idf_str
         True
 
-        Write to a file::
+        Write to disk for EnergyPlus simulation::
 
-            write_idf(model, "output.idf")
+            write_idf(model, "in.idf")
 
-        Use compressed format for minimal file size:
+        Use compressed format for batch parametric runs:
 
         >>> compressed = write_idf(model, output_type="compressed")
         >>> "\\n" not in compressed.split("Zone")[1].split(";")[0]
@@ -95,19 +95,19 @@ def write_epjson(
         JSON string if filepath is None, otherwise None
 
     Examples:
-        Return JSON as a string:
+        Serialize the model to epJSON for use with EnergyPlus v9.3+:
 
         >>> from idfkit import new_document, write_epjson
         >>> model = new_document()
-        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-        Zone('Office')
+        >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+        Zone('Perimeter_ZN_1')
         >>> json_str = write_epjson(model)
         >>> '"Zone"' in json_str
         True
 
-        Write to a file::
+        Write to disk::
 
-            write_epjson(model, "output.epJSON")
+            write_epjson(model, "in.epJSON")
     """
     writer = EpJSONWriter(doc)
     data = writer.to_dict()
@@ -373,12 +373,12 @@ def convert_idf_to_epjson(
         Path to the output file
 
     Examples:
-        ::
+        Convert an IDF model to native JSON format::
 
-            output = convert_idf_to_epjson("building.idf")
-            # Creates building.epJSON
+            output = convert_idf_to_epjson("5ZoneAirCooled.idf")
+            # Creates 5ZoneAirCooled.epJSON
 
-            convert_idf_to_epjson("building.idf", "output.epJSON")
+            convert_idf_to_epjson("legacy_model.idf", "modern_model.epJSON")
     """
     from .idf_parser import parse_idf
 
@@ -407,12 +407,12 @@ def convert_epjson_to_idf(
         Path to the output file
 
     Examples:
-        ::
+        Convert an epJSON model back to classic IDF format::
 
-            output = convert_epjson_to_idf("building.epJSON")
-            # Creates building.idf
+            output = convert_epjson_to_idf("5ZoneAirCooled.epJSON")
+            # Creates 5ZoneAirCooled.idf
 
-            convert_epjson_to_idf("building.epJSON", "output.idf")
+            convert_epjson_to_idf("modern_model.epJSON", "classic_model.idf")
     """
     from .epjson_parser import parse_epjson
 

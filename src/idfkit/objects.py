@@ -43,28 +43,32 @@ class IDFObject:
     Provides attribute access to fields via __getattr__/__setattr__.
 
     Examples:
+        Create a rigid insulation material and access its properties:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> zone = model.add("Zone", "Office", x_origin=10.0, y_origin=20.0)
+        >>> insulation = model.add("Material", "XPS_50mm",
+        ...     roughness="Rough", thickness=0.05,
+        ...     conductivity=0.034, density=35.0, specific_heat=1400.0)
 
-        Read fields as attributes:
+        Read thermal properties as attributes:
 
-        >>> zone.name
-        'Office'
-        >>> zone.x_origin
-        10.0
+        >>> insulation.conductivity
+        0.034
+        >>> insulation.thickness
+        0.05
 
-        Write fields as attributes:
+        Modify for parametric analysis (double the insulation):
 
-        >>> zone.x_origin = 50.0
-        >>> zone.x_origin
-        50.0
+        >>> insulation.thickness = 0.1
+        >>> insulation.thickness
+        0.1
 
-        Convert to dictionary:
+        Export to a dictionary for use with external tools:
 
-        >>> d = zone.to_dict()
-        >>> d["name"]
-        'Office'
+        >>> d = insulation.to_dict()
+        >>> d["conductivity"]
+        0.034
 
     Attributes:
         _type: The IDF object type (e.g., "Zone", "Material")
@@ -276,13 +280,18 @@ class IDFObject:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation.
 
+        Useful for serializing EnergyPlus objects to JSON, CSV, or
+        DataFrames for post-processing.
+
         Examples:
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> zone = model.add("Zone", "Office", x_origin=1.0, y_origin=2.0)
-            >>> d = zone.to_dict()
-            >>> d["name"], d["x_origin"], d["y_origin"]
-            ('Office', 1.0, 2.0)
+            >>> mat = model.add("Material", "Concrete_200mm",
+            ...     roughness="MediumRough", thickness=0.2,
+            ...     conductivity=1.4, density=2240.0, specific_heat=900.0)
+            >>> d = mat.to_dict()
+            >>> d["name"], d["thickness"], d["conductivity"]
+            ('Concrete_200mm', 0.2, 1.4)
         """
         return {"name": self._name, **self._data}
 
@@ -292,11 +301,13 @@ class IDFObject:
         Examples:
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> zone = model.add("Zone", "Office", x_origin=1.0)
-            >>> zone.get("x_origin")
-            1.0
-            >>> zone.get("nonexistent", "fallback")
-            'fallback'
+            >>> mat = model.add("Material", "Concrete_200mm",
+            ...     roughness="MediumRough", thickness=0.2,
+            ...     conductivity=1.4, density=2240.0, specific_heat=900.0)
+            >>> mat.get("conductivity")
+            1.4
+            >>> mat.get("thermal_absorptance", 0.9)
+            0.9
         """
         value = getattr(self, key)
         return value if value is not None else default
@@ -324,18 +335,22 @@ class IDFObject:
             found.
 
         Examples:
+            Follow a surface's ``zone_name`` reference to retrieve the
+            Zone object it belongs to:
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-            Zone('Office')
-            >>> wall = model.add("BuildingSurface:Detailed", "Wall1",
-            ...     surface_type="Wall", construction_name="", zone_name="Office",
+            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+            Zone('Perimeter_ZN_1')
+            >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
+            ...     surface_type="Wall", construction_name="",
+            ...     zone_name="Perimeter_ZN_1",
             ...     outside_boundary_condition="Outdoors",
             ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
             ...     validate=False)
-            >>> ref = wall.get_referenced_object("zone_name")
-            >>> ref.name
-            'Office'
+            >>> zone = wall.get_referenced_object("zone_name")
+            >>> zone.name
+            'Perimeter_ZN_1'
         """
         doc = self._document
         if doc is None:
@@ -445,11 +460,13 @@ class IDFObject:
         ``type``.
 
         Examples:
+            Check valid thickness bounds before setting a new value:
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> mat = model.add("Material", "Concrete",
-            ...     roughness="MediumRough", thickness=0.2,
-            ...     conductivity=1.0, density=2300.0, specific_heat=880.0)
+            >>> mat = model.add("Material", "Insulation_Board",
+            ...     roughness="MediumRough", thickness=0.05,
+            ...     conductivity=0.04, density=30.0, specific_heat=1500.0)
             >>> rng = mat.getrange("thickness")
             >>> rng["exclusiveMinimum"]
             0.0
@@ -484,11 +501,13 @@ class IDFObject:
             RangeError: If the value is outside the valid range.
 
         Examples:
+            Verify a material's thickness is within EnergyPlus limits:
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> mat = model.add("Material", "Concrete",
+            >>> mat = model.add("Material", "Concrete_200mm",
             ...     roughness="MediumRough", thickness=0.2,
-            ...     conductivity=1.0, density=2300.0, specific_heat=880.0)
+            ...     conductivity=1.4, density=2240.0, specific_heat=900.0)
             >>> mat.checkrange("thickness")
             True
         """
@@ -623,17 +642,20 @@ class IDFCollection:
     Examples:
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-        Zone('Office')
-        >>> model.add("Zone", "Lobby")  # doctest: +ELLIPSIS
-        Zone('Lobby')
+        >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+        Zone('Perimeter_ZN_1')
+        >>> model.add("Zone", "Core_ZN")  # doctest: +ELLIPSIS
+        Zone('Core_ZN')
         >>> zones = model["Zone"]
         >>> len(zones)
         2
-        >>> zones["Office"].name
-        'Office'
+
+        O(1) lookup by name:
+
+        >>> zones["Perimeter_ZN_1"].name
+        'Perimeter_ZN_1'
         >>> zones[0].name
-        'Office'
+        'Perimeter_ZN_1'
 
     Attributes:
         _type: The object type this collection holds
@@ -726,10 +748,10 @@ class IDFCollection:
         Examples:
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-            Zone('Office')
-            >>> model["Zone"].get("Office").name
-            'Office'
+            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+            Zone('Perimeter_ZN_1')
+            >>> model["Zone"].get("Perimeter_ZN_1").name
+            'Perimeter_ZN_1'
             >>> model["Zone"].get("NonExistent") is None
             True
         """
@@ -739,12 +761,14 @@ class IDFCollection:
         """Get the first object or None.
 
         Examples:
+            Quickly grab a singleton like Building or SimulationControl:
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-            Zone('Office')
+            >>> model.add("Zone", "Core_ZN")  # doctest: +ELLIPSIS
+            Zone('Core_ZN')
             >>> model["Zone"].first().name
-            'Office'
+            'Core_ZN'
             >>> model["Material"].first() is None
             True
         """
@@ -756,26 +780,29 @@ class IDFCollection:
         Examples:
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "A")  # doctest: +ELLIPSIS
-            Zone('A')
-            >>> model.add("Zone", "B")  # doctest: +ELLIPSIS
-            Zone('B')
+            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+            Zone('Perimeter_ZN_1')
+            >>> model.add("Zone", "Core_ZN")  # doctest: +ELLIPSIS
+            Zone('Core_ZN')
             >>> [z.name for z in model["Zone"].to_list()]
-            ['A', 'B']
+            ['Perimeter_ZN_1', 'Core_ZN']
         """
         return list(self._items)
 
     def to_dict(self) -> list[dict[str, Any]]:
         """Convert all objects to list of dicts (eppy compatibility).
 
+        Useful for feeding zone/material data into pandas or other
+        analysis tools.
+
         Examples:
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office", x_origin=1.0)  # doctest: +ELLIPSIS
-            Zone('Office')
+            >>> model.add("Zone", "Perimeter_ZN_1", x_origin=0.0)  # doctest: +ELLIPSIS
+            Zone('Perimeter_ZN_1')
             >>> dicts = model["Zone"].to_dict()
             >>> dicts[0]["name"]
-            'Office'
+            'Perimeter_ZN_1'
         """
         return [obj.to_dict() for obj in self._items]
 
@@ -783,14 +810,16 @@ class IDFCollection:
         """Filter objects by predicate function.
 
         Examples:
+            Find zones on upper floors of a multi-story building:
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office", x_origin=0.0)  # doctest: +ELLIPSIS
-            Zone('Office')
-            >>> model.add("Zone", "Lobby", x_origin=10.0)  # doctest: +ELLIPSIS
-            Zone('Lobby')
-            >>> far = model["Zone"].filter(lambda z: z.x_origin > 5)
-            >>> [z.name for z in far]
-            ['Lobby']
+            >>> model.add("Zone", "Ground_Office", z_origin=0.0)  # doctest: +ELLIPSIS
+            Zone('Ground_Office')
+            >>> model.add("Zone", "Floor2_Office", z_origin=3.5)  # doctest: +ELLIPSIS
+            Zone('Floor2_Office')
+            >>> upper = model["Zone"].filter(lambda z: (z.z_origin or 0) > 0)
+            >>> [z.name for z in upper]
+            ['Floor2_Office']
         """
         return [obj for obj in self._items if predicate(obj)]

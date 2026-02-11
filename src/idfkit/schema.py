@@ -37,8 +37,14 @@ class EpJSONSchema:
         >>> schema = get_schema(LATEST_VERSION)
         >>> "Zone" in schema
         True
+
+        Check which IDD group a type belongs to:
+
         >>> schema.get_group("Zone")
         'Thermal Zones and Surfaces'
+
+        Some object types (like Timestep) are singletons with no name field:
+
         >>> schema.has_name("Zone")
         True
         >>> schema.has_name("Timestep")
@@ -127,7 +133,12 @@ class EpJSONSchema:
     def get_field_names(self, obj_type: str) -> list[str]:
         """Get ordered list of field names for an object type (from legacy_idd).
 
+        Useful for discovering valid field names when building objects
+        programmatically.
+
         Examples:
+            List the fields available on a Material object:
+
             >>> from idfkit import get_schema, LATEST_VERSION
             >>> schema = get_schema(LATEST_VERSION)
             >>> "thickness" in schema.get_field_names("Material")
@@ -152,6 +163,8 @@ class EpJSONSchema:
     def get_required_fields(self, obj_type: str) -> list[str]:
         """Get list of required field names for an object type.
 
+        Check which fields must be supplied before a Material is valid:
+
         Examples:
             >>> from idfkit import get_schema, LATEST_VERSION
             >>> schema = get_schema(LATEST_VERSION)
@@ -172,6 +185,9 @@ class EpJSONSchema:
 
     def get_field_type(self, obj_type: str, field_name: str) -> str | None:
         """Get the type of a field ('number', 'string', 'integer', 'array').
+
+        Useful for dynamic type coercion when importing data from
+        spreadsheets or CSV files.
 
         Examples:
             >>> from idfkit import get_schema, LATEST_VERSION
@@ -272,6 +288,9 @@ class EpJSONSchema:
 
     def is_extensible(self, obj_type: str) -> bool:
         """Check if an object type has extensible fields.
+
+        Extensible types (like surfaces) can have a variable number of
+        vertices or layers.
 
         Examples:
             >>> from idfkit import get_schema, LATEST_VERSION

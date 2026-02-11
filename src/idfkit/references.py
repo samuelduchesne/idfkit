@@ -35,17 +35,22 @@ class ReferenceGraph:
     removed, or when reference fields are modified.
 
     Examples:
+        The reference graph automatically tracks which objects point
+        to which names.  For instance, when a surface references a
+        zone, that link is available for instant queries:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-        Zone('Office')
-        >>> model.add("BuildingSurface:Detailed", "Wall1",
-        ...     surface_type="Wall", construction_name="", zone_name="Office",
+        >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+        Zone('Perimeter_ZN_1')
+        >>> model.add("BuildingSurface:Detailed", "South_Wall",
+        ...     surface_type="Wall", construction_name="",
+        ...     zone_name="Perimeter_ZN_1",
         ...     outside_boundary_condition="Outdoors",
         ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
         ...     validate=False)  # doctest: +ELLIPSIS
-        BuildingSurface:Detailed('Wall1')
-        >>> model.references.is_referenced("Office")
+        BuildingSurface:Detailed('South_Wall')
+        >>> model.references.is_referenced("Perimeter_ZN_1")
         True
         >>> stats = model.references.stats()
         >>> stats["total_references"] >= 1
@@ -109,17 +114,20 @@ class ReferenceGraph:
             Set of IDFObjects that reference this name
 
         Examples:
+            Find all surfaces assigned to a zone (O(1)):
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-            Zone('Office')
-            >>> model.add("BuildingSurface:Detailed", "Wall1",
-            ...     surface_type="Wall", construction_name="", zone_name="Office",
+            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+            Zone('Perimeter_ZN_1')
+            >>> model.add("BuildingSurface:Detailed", "South_Wall",
+            ...     surface_type="Wall", construction_name="",
+            ...     zone_name="Perimeter_ZN_1",
             ...     outside_boundary_condition="Outdoors",
             ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
             ...     validate=False)  # doctest: +ELLIPSIS
-            BuildingSurface:Detailed('Wall1')
-            >>> len(model.references.get_referencing("Office"))
+            BuildingSurface:Detailed('South_Wall')
+            >>> len(model.references.get_referencing("Perimeter_ZN_1"))
             1
         """
         refs = self._referenced_by.get(name.upper(), set())
@@ -166,19 +174,22 @@ class ReferenceGraph:
         """Check if a name is referenced by any object.
 
         Examples:
+            Check whether a zone is used by any surface before deleting it:
+
             >>> from idfkit import new_document
             >>> model = new_document()
-            >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
-            Zone('Office')
-            >>> model.references.is_referenced("Office")
+            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
+            Zone('Perimeter_ZN_1')
+            >>> model.references.is_referenced("Perimeter_ZN_1")
             False
-            >>> model.add("BuildingSurface:Detailed", "Wall1",
-            ...     surface_type="Wall", construction_name="", zone_name="Office",
+            >>> model.add("BuildingSurface:Detailed", "South_Wall",
+            ...     surface_type="Wall", construction_name="",
+            ...     zone_name="Perimeter_ZN_1",
             ...     outside_boundary_condition="Outdoors",
             ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
             ...     validate=False)  # doctest: +ELLIPSIS
-            BuildingSurface:Detailed('Wall1')
-            >>> model.references.is_referenced("Office")
+            BuildingSurface:Detailed('South_Wall')
+            >>> model.references.is_referenced("Perimeter_ZN_1")
             True
         """
         return name.upper() in self._referenced_by

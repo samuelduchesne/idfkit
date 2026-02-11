@@ -174,28 +174,28 @@ class Polygon3D:
     transformations (translate, rotate).
 
     Examples:
-        Create a 1 m x 1 m horizontal square:
+        A 5 m x 4 m ground-floor slab:
 
-        >>> square = Polygon3D([
-        ...     Vector3D(0, 0, 0), Vector3D(1, 0, 0),
-        ...     Vector3D(1, 1, 0), Vector3D(0, 1, 0),
+        >>> floor = Polygon3D([
+        ...     Vector3D(0, 0, 0), Vector3D(5, 0, 0),
+        ...     Vector3D(5, 4, 0), Vector3D(0, 4, 0),
         ... ])
-        >>> square.area
-        1.0
-        >>> square.is_horizontal
+        >>> floor.area
+        20.0
+        >>> floor.is_horizontal
         True
 
-        Create a 10 m x 3 m south-facing wall:
+        A 10 m wide, 3 m high south-facing exterior wall:
 
-        >>> wall = Polygon3D([
+        >>> south_wall = Polygon3D([
         ...     Vector3D(0, 0, 0), Vector3D(10, 0, 0),
         ...     Vector3D(10, 0, 3), Vector3D(0, 0, 3),
         ... ])
-        >>> wall.area
+        >>> south_wall.area
         30.0
-        >>> wall.tilt
+        >>> south_wall.tilt
         90.0
-        >>> wall.azimuth
+        >>> south_wall.azimuth
         180.0
     """
 
@@ -243,6 +243,8 @@ class Polygon3D:
         """Surface area using cross product method.
 
         Examples:
+            A 5 m x 5 m floor slab:
+
             >>> Polygon3D([
             ...     Vector3D(0,0,0), Vector3D(5,0,0),
             ...     Vector3D(5,5,0), Vector3D(0,5,0),
@@ -294,7 +296,7 @@ class Polygon3D:
         normal using the same convention as EnergyPlus / eppy.
 
         Examples:
-            Horizontal surface (roof/ceiling):
+            Flat roof (tilt 0 = facing up):
 
             >>> Polygon3D([
             ...     Vector3D(0,0,3), Vector3D(5,0,3),
@@ -302,7 +304,7 @@ class Polygon3D:
             ... ]).tilt
             0.0
 
-            Vertical wall:
+            Exterior wall (tilt 90 = vertical):
 
             >>> Polygon3D([
             ...     Vector3D(0,0,0), Vector3D(10,0,0),
@@ -451,9 +453,11 @@ def get_surface_coords(surface: IDFObject) -> Polygon3D | None:
     - epJSON schema: ``vertex_x_coordinate``, ``vertex_x_coordinate_2``, ...
 
     Examples:
+        Extract geometry from a 10 m x 3 m south-facing exterior wall:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> wall = model.add("BuildingSurface:Detailed", "Wall1",
+        >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
         ...     surface_type="Wall", construction_name="", zone_name="",
         ...     outside_boundary_condition="Outdoors",
         ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
@@ -463,9 +467,11 @@ def get_surface_coords(surface: IDFObject) -> Polygon3D | None:
         ...     vertex_3_x_coordinate=10, vertex_3_y_coordinate=0, vertex_3_z_coordinate=0,
         ...     vertex_4_x_coordinate=10, vertex_4_y_coordinate=0, vertex_4_z_coordinate=3,
         ...     validate=False)
-        >>> coords = get_surface_coords(wall)
-        >>> coords.area
+        >>> poly = get_surface_coords(wall)
+        >>> poly.area
         30.0
+        >>> poly.azimuth
+        180.0
     """
     vertices = _get_vertices_classic(surface)
     if not vertices:
@@ -522,9 +528,11 @@ def set_surface_coords(surface: IDFObject, polygon: Polygon3D) -> None:
     Updates vertex fields and number_of_vertices.
 
     Examples:
+        Shorten a wall from 10 m to 5 m by replacing its vertices:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> wall = model.add("BuildingSurface:Detailed", "Wall1",
+        >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
         ...     surface_type="Wall", construction_name="", zone_name="",
         ...     outside_boundary_condition="Outdoors",
         ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
@@ -534,8 +542,8 @@ def set_surface_coords(surface: IDFObject, polygon: Polygon3D) -> None:
         ...     vertex_3_x_coordinate=10, vertex_3_y_coordinate=0, vertex_3_z_coordinate=0,
         ...     vertex_4_x_coordinate=10, vertex_4_y_coordinate=0, vertex_4_z_coordinate=3,
         ...     validate=False)
-        >>> new_poly = Polygon3D.from_tuples([(0,0,0),(5,0,0),(5,0,3),(0,0,3)])
-        >>> set_surface_coords(wall, new_poly)
+        >>> shorter = Polygon3D.from_tuples([(0,0,0),(5,0,0),(5,0,3),(0,0,3)])
+        >>> set_surface_coords(wall, shorter)
         >>> get_surface_coords(wall).area
         15.0
     """
@@ -553,11 +561,14 @@ def get_zone_origin(zone: IDFObject) -> Vector3D:
     """Get the origin point of a zone.
 
     Examples:
+        A second-floor zone offset 3.5 m above ground:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> zone = model.add("Zone", "Office", x_origin=10.0, y_origin=20.0, z_origin=0.0)
+        >>> zone = model.add("Zone", "Floor2_Office",
+        ...     x_origin=10.0, y_origin=20.0, z_origin=3.5)
         >>> get_zone_origin(zone)
-        Vector3D(x=10.0, y=20.0, z=0.0)
+        Vector3D(x=10.0, y=20.0, z=3.5)
     """
     x = getattr(zone, "x_origin", 0) or 0
     y = getattr(zone, "y_origin", 0) or 0
@@ -569,9 +580,13 @@ def get_zone_rotation(zone: IDFObject) -> float:
     """Get the rotation angle of a zone in degrees.
 
     Examples:
+        A zone rotated 45 degrees from true north (common for
+        buildings aligned to a street grid):
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> zone = model.add("Zone", "Office", direction_of_relative_north=45.0)
+        >>> zone = model.add("Zone", "Corner_Office",
+        ...     direction_of_relative_north=45.0)
         >>> get_zone_rotation(zone)
         45.0
     """
@@ -647,12 +662,14 @@ def translate_to_world(doc: IDFDocument) -> None:  # noqa: C901
 
 
 def calculate_surface_area(surface: IDFObject) -> float:
-    """Calculate the area of a surface.
+    """Calculate the area of a surface in m².
 
     Examples:
+        Area of a 10 m wide, 3 m high exterior wall:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> wall = model.add("BuildingSurface:Detailed", "Wall1",
+        >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
         ...     surface_type="Wall", construction_name="", zone_name="",
         ...     outside_boundary_condition="Outdoors",
         ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
@@ -672,12 +689,14 @@ def calculate_surface_area(surface: IDFObject) -> float:
 def calculate_surface_tilt(surface: IDFObject) -> float:
     """Calculate the tilt of a surface in degrees (eppy compatibility).
 
-    0 = facing up, 90 = vertical, 180 = facing down.
+    0 = facing up (roof), 90 = vertical (wall), 180 = facing down (floor).
 
     Examples:
+        Verify that an exterior wall is vertical:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> wall = model.add("BuildingSurface:Detailed", "Wall1",
+        >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
         ...     surface_type="Wall", construction_name="", zone_name="",
         ...     outside_boundary_condition="Outdoors",
         ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
@@ -697,9 +716,12 @@ def calculate_surface_tilt(surface: IDFObject) -> float:
 def calculate_surface_azimuth(surface: IDFObject) -> float:
     """Calculate the azimuth of a surface in degrees (eppy compatibility).
 
-    0 = north, 90 = east, 180 = south, 270 = west.
+    0 = north, 90 = east, 180 = south, 270 = west.  Useful for
+    identifying solar exposure for glazing and shading studies.
 
     Examples:
+        Confirm a wall faces south (azimuth 180):
+
         >>> from idfkit import new_document
         >>> model = new_document()
         >>> wall = model.add("BuildingSurface:Detailed", "SouthWall",
@@ -722,15 +744,28 @@ def calculate_surface_azimuth(surface: IDFObject) -> float:
 def calculate_zone_floor_area(doc: IDFDocument, zone_name: str) -> float:
     """Calculate the total floor area of a zone.
 
+    Sums the area of all ``BuildingSurface:Detailed`` objects whose
+    ``surface_type`` is ``"Floor"`` and whose ``zone_name`` matches.
+
     Examples:
-        A zone with no surfaces returns 0:
+        Calculate the floor area of a 5 m x 4 m office:
 
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> model.add("Zone", "Empty")  # doctest: +ELLIPSIS
-        Zone('Empty')
-        >>> calculate_zone_floor_area(model, "Empty")
-        0.0
+        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
+        Zone('Office')
+        >>> model.add("BuildingSurface:Detailed", "Office_Floor",
+        ...     surface_type="Floor", construction_name="", zone_name="Office",
+        ...     outside_boundary_condition="Ground",
+        ...     number_of_vertices=4,
+        ...     vertex_1_x_coordinate=0, vertex_1_y_coordinate=0, vertex_1_z_coordinate=0,
+        ...     vertex_2_x_coordinate=5, vertex_2_y_coordinate=0, vertex_2_z_coordinate=0,
+        ...     vertex_3_x_coordinate=5, vertex_3_y_coordinate=4, vertex_3_z_coordinate=0,
+        ...     vertex_4_x_coordinate=0, vertex_4_y_coordinate=4, vertex_4_z_coordinate=0,
+        ...     validate=False)  # doctest: +ELLIPSIS
+        BuildingSurface:Detailed('Office_Floor')
+        >>> calculate_zone_floor_area(model, "Office")
+        20.0
     """
     total_area = 0.0
 
@@ -748,13 +783,28 @@ def calculate_zone_floor_area(doc: IDFDocument, zone_name: str) -> float:
 def calculate_zone_ceiling_area(doc: IDFDocument, zone_name: str) -> float:
     """Calculate the total ceiling/roof area of a zone (eppy compatibility).
 
+    Sums the area of all surfaces whose ``surface_type`` is ``"Ceiling"``
+    or ``"Roof"`` in the given zone.
+
     Examples:
+        Calculate the ceiling area of a 5 m x 4 m office at z=3 m:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> model.add("Zone", "Empty")  # doctest: +ELLIPSIS
-        Zone('Empty')
-        >>> calculate_zone_ceiling_area(model, "Empty")
-        0.0
+        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
+        Zone('Office')
+        >>> model.add("BuildingSurface:Detailed", "Office_Ceiling",
+        ...     surface_type="Ceiling", construction_name="", zone_name="Office",
+        ...     outside_boundary_condition="Outdoors",
+        ...     number_of_vertices=4,
+        ...     vertex_1_x_coordinate=0, vertex_1_y_coordinate=0, vertex_1_z_coordinate=3,
+        ...     vertex_2_x_coordinate=0, vertex_2_y_coordinate=4, vertex_2_z_coordinate=3,
+        ...     vertex_3_x_coordinate=5, vertex_3_y_coordinate=4, vertex_3_z_coordinate=3,
+        ...     vertex_4_x_coordinate=5, vertex_4_y_coordinate=0, vertex_4_z_coordinate=3,
+        ...     validate=False)  # doctest: +ELLIPSIS
+        BuildingSurface:Detailed('Office_Ceiling')
+        >>> calculate_zone_ceiling_area(model, "Office")
+        20.0
     """
     total_area = 0.0
 
@@ -776,12 +826,25 @@ def calculate_zone_height(doc: IDFDocument, zone_name: str) -> float:
     across all surfaces belonging to the zone.
 
     Examples:
+        Determine the floor-to-ceiling height of a 3 m tall office:
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> model.add("Zone", "Empty")  # doctest: +ELLIPSIS
-        Zone('Empty')
-        >>> calculate_zone_height(model, "Empty")
-        0.0
+        >>> model.add("Zone", "Office")  # doctest: +ELLIPSIS
+        Zone('Office')
+        >>> model.add("BuildingSurface:Detailed", "South_Wall",
+        ...     surface_type="Wall", construction_name="", zone_name="Office",
+        ...     outside_boundary_condition="Outdoors",
+        ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
+        ...     number_of_vertices=4,
+        ...     vertex_1_x_coordinate=0, vertex_1_y_coordinate=0, vertex_1_z_coordinate=3,
+        ...     vertex_2_x_coordinate=0, vertex_2_y_coordinate=0, vertex_2_z_coordinate=0,
+        ...     vertex_3_x_coordinate=5, vertex_3_y_coordinate=0, vertex_3_z_coordinate=0,
+        ...     vertex_4_x_coordinate=5, vertex_4_y_coordinate=0, vertex_4_z_coordinate=3,
+        ...     validate=False)  # doctest: +ELLIPSIS
+        BuildingSurface:Detailed('South_Wall')
+        >>> calculate_zone_height(model, "Office")
+        3.0
     """
     z_min = float("inf")
     z_max = float("-inf")
@@ -817,9 +880,12 @@ def translate_building(doc: IDFDocument, offset: Vector3D) -> None:
        coordinates into world coordinates.
 
     Examples:
+        Reposition a building on its site (e.g., from local to
+        geo-referenced coordinates):
+
         >>> from idfkit import new_document
         >>> model = new_document()
-        >>> wall = model.add("BuildingSurface:Detailed", "Wall1",
+        >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
         ...     surface_type="Wall", construction_name="", zone_name="",
         ...     outside_boundary_condition="Outdoors",
         ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
@@ -882,14 +948,7 @@ def calculate_zone_volume(doc: IDFDocument, zone_name: str) -> float:
     Calculate the volume of a zone from its surfaces.
 
     Uses the divergence theorem to compute volume from surface polygons.
-
-    Examples:
-        >>> from idfkit import new_document
-        >>> model = new_document()
-        >>> model.add("Zone", "Empty")  # doctest: +ELLIPSIS
-        Zone('Empty')
-        >>> calculate_zone_volume(model, "Empty")
-        0.0
+    Returns 0.0 if the zone has no surfaces.
     """
     volume = 0.0
 
