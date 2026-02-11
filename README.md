@@ -9,7 +9,7 @@
 
 > [!NOTE]
 > idfkit is in **beta**. The API may change between minor versions. We're looking
-> for early adopters and testers — especially users of eppy or opyplus who want
+> for early adopters and testers — especially users of eppy who want
 > better performance and a modern API. If you try it out, please
 > [open an issue](https://github.com/samuelduchesne/idfkit/issues) with feedback,
 > bug reports, or feature requests.
