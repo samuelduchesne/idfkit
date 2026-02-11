@@ -5,7 +5,7 @@ for EnergyPlus construction assemblies, including R-value, U-value, and SHGC.
 
 ## Quick Start
 
-```python
+```{.python notest}
 from idfkit import load_idf
 from idfkit.thermal import calculate_r_value, calculate_u_value, get_thermal_properties
 
@@ -124,7 +124,7 @@ For glazing constructions (windows), the module calculates:
 
 ### Example: Double Glazing
 
-```python
+```{.python continuation}
 from idfkit import new_document
 from idfkit.thermal import calculate_u_value, calculate_shgc, get_thermal_properties
 
@@ -132,6 +132,7 @@ doc = new_document()
 
 # Add glazing layers
 doc.add("WindowMaterial:Glazing", "ClearGlass", {
+    "optical_data_type": "SpectralAverage",
     "thickness": 0.006,
     "solar_transmittance_at_normal_incidence": 0.775,
     "front_side_solar_reflectance_at_normal_incidence": 0.071,
@@ -146,6 +147,7 @@ doc.add("WindowMaterial:Gas", "ArgonGap", {
 })
 
 doc.add("WindowMaterial:Glazing", "LowEGlass", {
+    "optical_data_type": "SpectralAverage",
     "thickness": 0.006,
     "solar_transmittance_at_normal_incidence": 0.6,
     "front_side_solar_reflectance_at_normal_incidence": 0.17,
@@ -184,7 +186,7 @@ fill gases used in insulated glazing units:
 | Krypton | 83.80 g/mol | ~10% better than air |
 | Xenon | 131.30 g/mol | ~15% better than air |
 
-```python
+```{.python continuation}
 from idfkit.thermal import typical_gap_r_value
 
 # R-value for a 12mm argon gap
@@ -196,7 +198,7 @@ print(f"Argon gap R-value: {r_argon:.3f} m²·K/W")
 
 Use `get_construction_layers()` to analyze individual layers:
 
-```python
+```{.python continuation}
 from idfkit.thermal import get_construction_layers
 
 layers = get_construction_layers(wall)

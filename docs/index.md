@@ -56,7 +56,7 @@ pip install idfkit
 
 ## Quick Example
 
-```python
+```{.python notest}
 from idfkit import load_idf, write_idf
 
 # Load an existing IDF file
@@ -79,7 +79,7 @@ write_idf(doc, "out.idf")
 
 ## Run Simulations
 
-```python
+```{.python notest}
 from idfkit.simulation import simulate
 
 result = simulate(doc, "weather.epw", design_day=True)

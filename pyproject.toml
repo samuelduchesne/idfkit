@@ -72,6 +72,7 @@ dev = [
     "matplotlib-stubs>=0.2.0",
     "types-boto3[s3]>=1.0.0",
     "boto3>=1.26",
+    "pytest-markdown-docs>=0.9.1",
 ]
 benchmark = [
     "eppy>=0.5.63",
@@ -93,8 +94,36 @@ typeCheckingMode = "strict"
 exclude = ["benchmarks", "src/idfkit/schemas", "src/idfkit/weather/data", ".venv", "**/node_modules", "**/__pycache__"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "src/idfkit"]
-addopts = "--doctest-modules --ignore=src/idfkit/simulation --ignore=src/idfkit/weather --ignore=src/idfkit/schedules --ignore=src/idfkit/thermal --ignore=src/idfkit/visualization --ignore=src/idfkit/download.py"
+testpaths = ["tests", "src/idfkit", "docs"]
+addopts = """
+    --doctest-modules
+    --markdown-docs
+    --markdown-docs-syntax=superfences
+    --ignore=src/idfkit/simulation
+    --ignore=src/idfkit/weather
+    --ignore=src/idfkit/schedules
+    --ignore=src/idfkit/thermal
+    --ignore=src/idfkit/visualization
+    --ignore=src/idfkit/download.py
+    --ignore=docs/api/simulation
+    --ignore=docs/api/visualization.md
+    --ignore=docs/concepts
+    --ignore=docs/design
+    --ignore=docs/examples
+    --ignore=docs/getting-started/installation.md
+    --ignore=docs/migration.md
+    --ignore=docs/benchmarks.md
+    --ignore=docs/schedules
+    --ignore=docs/simulation
+    --ignore=docs/troubleshooting
+    --ignore=docs/weather/design-days.md
+    --ignore=docs/weather/downloads.md
+    --ignore=docs/weather/geocoding.md
+    --ignore=docs/weather/index.md
+    --ignore=docs/overrides
+    --ignore=docs/stylesheets
+    --ignore=docs/assets
+    """
 doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 markers = [
     "integration: marks tests as requiring EnergyPlus installation (deselect with '-m \"not integration\"')",

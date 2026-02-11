@@ -5,7 +5,7 @@ operations you'll use every day.
 
 ## Load a Model
 
-```python
+```{.python notest}
 from idfkit import load_idf
 
 # Load an existing IDF file
@@ -17,7 +17,7 @@ print(f"Loaded {len(model)} objects")
 
 Access objects with O(1) dictionary lookups:
 
-```python
+```{.python notest}
 # Get all zones
 for zone in model["Zone"]:
     print(f"Zone: {zone.name}")
@@ -31,7 +31,7 @@ print(f"Origin: ({office.x_origin}, {office.y_origin}, {office.z_origin})")
 
 Change field values with attribute assignment:
 
-```python
+```{.python notest}
 # Update a field
 office.x_origin = 10.0
 
@@ -44,7 +44,7 @@ for obj in model.get_referencing("Office"):
 
 Not sure what fields an object type has? Use `describe()` to see all available fields:
 
-```python
+```{.python notest}
 # See all fields for a Zone
 print(model.describe("Zone"))
 # === Zone ===
@@ -62,14 +62,14 @@ print(f"Required: {desc.required_fields}")
 
 In REPL/Jupyter, use tab completion to explore object fields:
 
-```python
+```{.python notest}
 zone = model["Zone"]["Office"]
 zone.<TAB>  # Shows: x_origin, y_origin, z_origin, multiplier, ...
 ```
 
 Validation is enabled by default, so typos are caught immediately:
 
-```python
+```{.python notest}
 model.add("Zone", "Office", x_orgin=0)  # Raises: unknown field 'x_orgin'
 
 # Disable validation for bulk operations where performance matters
@@ -98,7 +98,7 @@ model.add("GlobalGeometryRules",
 
 ## Write Output
 
-```python
+```{.python continuation}
 from idfkit import write_idf, write_epjson
 
 # Write to IDF format
@@ -113,7 +113,7 @@ idf_string = write_idf(model)
 
 ## Run a Simulation
 
-```python
+```{.python notest}
 from idfkit.simulation import simulate
 
 result = simulate(
@@ -133,7 +133,7 @@ if result.errors.has_fatal:
 
 ## Query Results
 
-```python
+```{.python notest}
 # Get time-series data from SQLite output
 ts = result.sql.get_timeseries(
     variable_name="Zone Mean Air Temperature",
@@ -175,7 +175,7 @@ print(f"{station.display_name}: {results[0].distance_km:.0f} km away")
 
 ## Apply Design Days
 
-```python
+```{.python notest}
 from idfkit.weather import DesignDayManager
 
 # Parse a DDY file and apply design days to your model

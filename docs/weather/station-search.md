@@ -19,7 +19,7 @@ print(f"Countries: {len(index.countries)}")
 
 Fuzzy text search across station names, cities, and WMO numbers:
 
-```python
+```{.python continuation}
 # Search by name
 results = index.search("chicago ohare")
 
@@ -36,7 +36,7 @@ for r in results[:5]:
 
 ### Search Tips
 
-```python
+```{.python continuation}
 # City name
 results = index.search("New York")
 
@@ -54,7 +54,7 @@ results = index.search("London UK")
 
 Find stations nearest to a location using great-circle distance:
 
-```python
+```{.python continuation}
 # Nearest to downtown Chicago
 results = index.nearest(41.88, -87.63)
 
@@ -64,7 +64,7 @@ for r in results[:5]:
 
 ### Function Signature
 
-```python
+```{.python notest}
 def nearest(
     self,
     latitude: float,
@@ -102,7 +102,7 @@ results = index.nearest(lat, lon)
 
 ## Filter by Country
 
-```python
+```{.python continuation}
 # Get all stations in a country
 us_stations = index.filter(country="USA")
 print(f"US stations: {len(us_stations)}")
@@ -115,7 +115,7 @@ california = [s for s in us_stations if s.state == "CA"]
 
 Use `nearest()` with `max_distance_km` to find stations within a geographic area:
 
-```python
+```{.python continuation}
 # Find all stations within 100 km of a point
 stations = index.nearest(
     41.0, -88.5,
@@ -126,7 +126,7 @@ stations = index.nearest(
 
 ## Get by WMO Number
 
-```python
+```{.python continuation}
 # Get specific station by WMO
 results = index.get_by_wmo("725300")
 
@@ -155,7 +155,7 @@ Note: WMO numbers are **not unique** — multiple entries can share a WMO
 
 ## Listing Countries
 
-```python
+```{.python continuation}
 # Get all available countries
 countries = index.countries
 
@@ -168,7 +168,7 @@ for country in sorted(countries)[:10]:
 
 The bundled index works without network access. To get the latest data:
 
-```python
+```{.python notest}
 # Check if upstream has updates
 if index.check_for_updates():
     print("Updates available")
