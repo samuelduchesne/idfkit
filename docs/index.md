@@ -1,49 +1,58 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
+<div class="hero" markdown>
+
 # idfkit
+
+<p class="hero-tagline">
+A fast, modern EnergyPlus IDF/epJSON toolkit for Python — with O(1) lookups,
+automatic reference tracking, and built-in simulation support.
+</p>
+
+<div class="badges">
 
 [![Release](https://img.shields.io/github/v/release/samuelduchesne/idfkit)](https://img.shields.io/github/v/release/samuelduchesne/idfkit)
 [![Build status](https://img.shields.io/github/actions/workflow/status/samuelduchesne/idfkit/main.yml?branch=main)](https://github.com/samuelduchesne/idfkit/actions/workflows/main.yml?query=branch%3Amain)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/samuelduchesne/idfkit)](https://img.shields.io/github/commit-activity/m/samuelduchesne/idfkit)
 [![License](https://img.shields.io/github/license/samuelduchesne/idfkit)](https://img.shields.io/github/license/samuelduchesne/idfkit)
 
-**A fast, modern EnergyPlus IDF/epJSON toolkit for Python.**
+</div>
 
-idfkit lets you load, create, query, and modify EnergyPlus models with an
-intuitive Python API. It is designed as a drop-in replacement for
-[eppy](https://github.com/santoshphilip/eppy) with better performance,
-built-in reference tracking, and native support for both IDF and epJSON
-formats.
+<div class="hero-buttons">
 
-## Key Features
+[Get Started :material-arrow-right:](getting-started/installation.md){ .md-button .md-button--primary }
+[API Reference](api/document.md){ .md-button }
 
-- **O(1) object lookups** — Collections are indexed by name, so
-  `doc["Zone"]["Office"]` is a dict lookup, not a linear scan.
-- **Automatic reference tracking** — A live reference graph keeps track of
-  every cross-object reference. Renaming an object updates every field that
-  pointed to the old name.
-- **IDF + epJSON** — Read and write both formats; convert between them in a
-  single call.
-- **Schema-driven validation** — Validate documents against the official
-  EnergyPlus epJSON schema with detailed error messages.
-- **Built-in 3D geometry** — `Vector3D` and `Polygon3D` classes for surface
-  area, zone volume, and coordinate transforms without external dependencies.
-- **EnergyPlus simulation** — Run simulations as subprocesses with structured
-  result parsing, batch processing, and content-addressed caching.
-- **Weather data** — Search 55,000+ weather stations, download EPW/DDY files,
-  and apply ASHRAE design day conditions.
-- **Broad version support** — Bundled schemas for every EnergyPlus release
-  from v8.9 through v25.2.
+</div>
 
-## Installation
+</div>
+
+<div class="install-cmd" markdown>
 
 ```bash
 pip install idfkit
 ```
 
-Or with [uv](https://docs.astral.sh/uv/):
+</div>
 
-```bash
-uv add idfkit
-```
+<div class="feature-chips" markdown>
+
+<span class="chip">:material-speedometer: O(1) lookups</span>
+<span class="chip">:material-graph-outline: Reference tracking</span>
+<span class="chip">:material-file-swap-outline: IDF + epJSON</span>
+<span class="chip">:material-shield-check-outline: Schema validation</span>
+<span class="chip">:material-cube-outline: 3-D geometry</span>
+<span class="chip">:material-play-circle-outline: Simulation</span>
+<span class="chip">:material-weather-cloudy: Weather data</span>
+<span class="chip">:material-history: v8.9 -- v25.2</span>
+
+</div>
+
+---
 
 ## Quick Example
 
@@ -80,7 +89,7 @@ ts = result.sql.get_timeseries(
     variable_name="Zone Mean Air Temperature",
     key_value="Office",
 )
-print(f"Max temp: {max(ts.values):.1f}°C")
+print(f"Max temp: {max(ts.values):.1f}")
 ```
 
 ## Find Weather Stations
@@ -93,7 +102,9 @@ results = index.nearest(*geocode("Chicago, IL"))
 print(results[0].station.display_name)
 ```
 
-## Documentation
+---
+
+## Explore the Docs
 
 <div class="grid cards" markdown>
 
