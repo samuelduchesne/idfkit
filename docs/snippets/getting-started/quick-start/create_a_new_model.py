@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+
+model: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit import new_document
 
 # Create an empty model for EnergyPlus 24.1
@@ -15,3 +21,4 @@ model.add(
     vertex_entry_direction="Counterclockwise",
     coordinate_system="Relative",
 )
+# --8<-- [end:example]

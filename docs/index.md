@@ -57,19 +57,19 @@ pip install idfkit
 ## Quick Example
 
 ```python
---8<-- "docs/snippets/index/quick_example.py"
+--8<-- "docs/snippets/index/quick_example.py:example"
 ```
 
 ## Run Simulations
 
 ```python
---8<-- "docs/snippets/index/run_simulations.py"
+--8<-- "docs/snippets/index/run_simulations.py:example"
 ```
 
 ## Find Weather Stations
 
 ```python
---8<-- "docs/snippets/index/find_weather_stations.py"
+--8<-- "docs/snippets/index/find_weather_stations.py:example"
 ```
 
 ---

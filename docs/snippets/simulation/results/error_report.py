@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from idfkit.simulation import ErrorReport, SimulationResult
+
+errors: ErrorReport = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 errors = result.errors
 
 # Summary
@@ -21,3 +28,4 @@ for warn in errors.warnings:
 print(f"Fatal: {errors.fatal_count}")
 print(f"Severe: {errors.severe_count}")
 print(f"Warnings: {errors.warning_count}")
+# --8<-- [end:example]

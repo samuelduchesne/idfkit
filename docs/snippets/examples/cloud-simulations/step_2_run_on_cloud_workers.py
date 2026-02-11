@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import S3FileSystem
+
+fs: S3FileSystem = ...  # type: ignore[assignment]
+job_id: str = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+weather_path: str = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 # worker.py (runs on AWS Batch, Kubernetes, etc.)
 from idfkit.simulation import simulate, S3FileSystem
 
@@ -12,3 +22,4 @@ result = simulate(
 )
 
 # Results uploaded to S3 automatically
+# --8<-- [end:example]

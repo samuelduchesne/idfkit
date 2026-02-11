@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+
+# --8<-- [start:example]
 class ScheduleEvaluationError(Exception):
     """Raised when schedule cannot be evaluated."""
 
@@ -20,3 +24,6 @@ class MalformedScheduleError(ScheduleEvaluationError):
     """Schedule syntax is invalid."""
 
     pass
+
+
+# --8<-- [end:example]

@@ -14,7 +14,7 @@ pip install idfkit[progress]    # installs tqdm
 ```
 
 ```python
---8<-- "docs/snippets/simulation/progress/quick_start.py"
+--8<-- "docs/snippets/simulation/progress/quick_start.py:example"
 ```
 
 That's it.  A tqdm progress bar appears in your terminal (or Jupyter notebook)
@@ -23,7 +23,7 @@ and is automatically closed when the simulation finishes -- even on error.
 For full control, pass any callable instead:
 
 ```python
---8<-- "docs/snippets/simulation/progress/quick_start_2.py"
+--8<-- "docs/snippets/simulation/progress/quick_start_2.py:example"
 ```
 
 Output:
@@ -94,7 +94,7 @@ with a spinner or indeterminate bar.
 ### One-liner
 
 ```python
---8<-- "docs/snippets/simulation/progress/one_liner.py"
+--8<-- "docs/snippets/simulation/progress/one_liner.py:example"
 ```
 
 The `"tqdm"` shorthand:
@@ -110,7 +110,7 @@ For more control over the bar appearance, use the `tqdm_progress()` context
 manager directly:
 
 ```python
---8<-- "docs/snippets/simulation/progress/customising_the_tqdm_bar.py"
+--8<-- "docs/snippets/simulation/progress/customising_the_tqdm_bar.py:example"
 ```
 
 `tqdm_progress()` is a context manager that yields a callback.  The bar is
@@ -129,19 +129,19 @@ different use cases.  Each example is a self-contained recipe you can adapt.
 spinners, colours, and multi-column layouts.
 
 ```python
---8<-- "docs/snippets/simulation/progress/rich_console.py"
+--8<-- "docs/snippets/simulation/progress/rich_console.py:example"
 ```
 
 **Batch with rich** -- multiple bars, one per concurrent job:
 
 ```python
---8<-- "docs/snippets/simulation/progress/rich_console_2.py"
+--8<-- "docs/snippets/simulation/progress/rich_console_2.py:example"
 ```
 
 ### Jupyter (ipywidgets)
 
 ```python
---8<-- "docs/snippets/simulation/progress/jupyter_ipywidgets.py"
+--8<-- "docs/snippets/simulation/progress/jupyter_ipywidgets.py:example"
 ```
 
 !!! tip
@@ -153,13 +153,13 @@ spinners, colours, and multi-column layouts.
 Emit structured log entries for observability platforms (Datadog, ELK, etc.):
 
 ```python
---8<-- "docs/snippets/simulation/progress/structured_logging.py"
+--8<-- "docs/snippets/simulation/progress/structured_logging.py:example"
 ```
 
 ### Simple Console Log
 
 ```python
---8<-- "docs/snippets/simulation/progress/simple_console_log.py"
+--8<-- "docs/snippets/simulation/progress/simple_console_log.py:example"
 ```
 
 ### WebSocket Forwarding
@@ -168,7 +168,7 @@ Forward progress events to a web client for real-time dashboards.
 Use an async callback so WebSocket sends don't block the event loop:
 
 ```python
---8<-- "docs/snippets/simulation/progress/websocket_forwarding.py"
+--8<-- "docs/snippets/simulation/progress/websocket_forwarding.py:example"
 ```
 
 ### FastAPI + WebSocket
@@ -176,7 +176,7 @@ Use an async callback so WebSocket sends don't block the event loop:
 A complete FastAPI endpoint that streams progress to a browser:
 
 ```python
---8<-- "docs/snippets/simulation/progress/fastapi_websocket.py"
+--8<-- "docs/snippets/simulation/progress/fastapi_websocket.py:example"
 ```
 
 **JavaScript client:**
@@ -200,7 +200,7 @@ ws.send(JSON.stringify({ idf_path: "building.idf", weather_path: "weather.epw" }
 For one-way streaming without WebSocket overhead (ideal for dashboards):
 
 ```python
---8<-- "docs/snippets/simulation/progress/server_sent_events_sse.py"
+--8<-- "docs/snippets/simulation/progress/server_sent_events_sse.py:example"
 ```
 
 ### Cloud Logging (AWS CloudWatch / GCP Cloud Logging)
@@ -208,13 +208,13 @@ For one-way streaming without WebSocket overhead (ideal for dashboards):
 For cloud-deployed simulations, forward events to your cloud logging service:
 
 ```python
---8<-- "docs/snippets/simulation/progress/cloud_logging_aws_cloudwatch_gcp_cloud_logging.py"
+--8<-- "docs/snippets/simulation/progress/cloud_logging_aws_cloudwatch_gcp_cloud_logging.py:example"
 ```
 
 **With a message queue (Redis, RabbitMQ, SQS):**
 
 ```python
---8<-- "docs/snippets/simulation/progress/cloud_logging_aws_cloudwatch_gcp_cloud_logging_2.py"
+--8<-- "docs/snippets/simulation/progress/cloud_logging_aws_cloudwatch_gcp_cloud_logging_2.py:example"
 ```
 
 ## Async Callbacks
@@ -222,7 +222,7 @@ For cloud-deployed simulations, forward events to your cloud logging service:
 `async_simulate()` accepts both sync and async callables:
 
 ```python
---8<-- "docs/snippets/simulation/progress/async_callbacks.py"
+--8<-- "docs/snippets/simulation/progress/async_callbacks.py:example"
 ```
 
 Synchronous callbacks also work in the async runner and are called directly
@@ -245,7 +245,7 @@ Use `on_progress` for intra-simulation progress and `progress` for
 job-level completion -- they are independent and complementary:
 
 ```python
---8<-- "docs/snippets/simulation/progress/dual_progress_tracking.py"
+--8<-- "docs/snippets/simulation/progress/dual_progress_tracking.py:example"
 ```
 
 ### Batch Progress Bar with tqdm
@@ -255,7 +255,7 @@ single progress bar cannot meaningfully represent multiple concurrent jobs.
 Instead, build per-job bars manually:
 
 ```python
---8<-- "docs/snippets/simulation/progress/batch_progress_bar_with_tqdm.py"
+--8<-- "docs/snippets/simulation/progress/batch_progress_bar_with_tqdm.py:example"
 ```
 
 ### Async Batch with Stream + Progress
@@ -264,7 +264,7 @@ Combine `async_simulate_batch_stream` (job-level events) with
 `on_progress` (intra-simulation events):
 
 ```python
---8<-- "docs/snippets/simulation/progress/async_batch_with_stream_progress.py"
+--8<-- "docs/snippets/simulation/progress/async_batch_with_stream_progress.py:example"
 ```
 
 ## Using ProgressParser Directly
@@ -274,7 +274,7 @@ stdout output -- useful for custom integrations or when processing log files
 from previous simulation runs:
 
 ```python
---8<-- "docs/snippets/simulation/progress/using_progressparser_directly.py"
+--8<-- "docs/snippets/simulation/progress/using_progressparser_directly.py:example"
 ```
 
 The parser is stateful (it tracks environment transitions and warmup
@@ -288,7 +288,7 @@ during the local EnergyPlus execution -- before results are uploaded.  This
 works identically to local execution:
 
 ```python
---8<-- "docs/snippets/simulation/progress/cloud_execution.py"
+--8<-- "docs/snippets/simulation/progress/cloud_execution.py:example"
 ```
 
 For remote execution scenarios (where EnergyPlus runs on a different machine),
@@ -297,7 +297,7 @@ use the async callback to forward events over a transport layer
 JSON-serializable via `dataclasses.asdict()`:
 
 ```python
---8<-- "docs/snippets/simulation/progress/cloud_execution_2.py"
+--8<-- "docs/snippets/simulation/progress/cloud_execution_2.py:example"
 ```
 
 ## Behavior Notes

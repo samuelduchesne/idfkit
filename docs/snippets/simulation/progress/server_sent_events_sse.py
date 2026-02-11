@@ -1,3 +1,14 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationResult
+from typing import Any
+
+data: Any = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+weather_path: str = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from idfkit import load_idf
@@ -33,3 +44,6 @@ async def simulate_stream(idf_path: str, weather_path: str):
         yield f"data: {json.dumps({'phase': 'done', 'success': result.success})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+# --8<-- [end:example]

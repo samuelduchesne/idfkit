@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+
+my_model: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.simulation import SimulationJob
 
 job = SimulationJob(
@@ -9,3 +15,4 @@ job = SimulationJob(
     annual=False,  # Optional: Annual simulation
     timeout=3600.0,  # Optional: Max runtime in seconds
 )
+# --8<-- [end:example]

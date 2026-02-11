@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+
+doc: IDFDocument = ...  # type: ignore[assignment]
+schedule: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from datetime import datetime
 from idfkit import load_idf
 from idfkit.schedules import evaluate, values
@@ -15,3 +22,4 @@ print(f"Value at Monday 10am: {value}")
 # Get hourly values for a full year
 hourly = values(schedule, year=2024, document=doc)
 print(f"Annual hours: {len(hourly)}")  # 8784 for leap year
+# --8<-- [end:example]

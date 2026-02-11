@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Protocol
+
+
+# --8<-- [start:example]
 class FileSystem(Protocol):
     def read_bytes(self, path: str | Path) -> bytes: ...
     def write_bytes(self, path: str | Path, data: bytes) -> None: ...
@@ -8,3 +15,6 @@ class FileSystem(Protocol):
     def copy(self, src: str | Path, dst: str | Path) -> None: ...
     def glob(self, path: str | Path, pattern: str) -> list[str]: ...
     def remove(self, path: str | Path) -> None: ...
+
+
+# --8<-- [end:example]

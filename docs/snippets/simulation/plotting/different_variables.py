@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from idfkit.simulation import SimulationResult
+from typing import Any
+
+plt: Any = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
 # Temperature
@@ -12,3 +20,4 @@ axes[1].set_ylabel("Relative Humidity (%)")
 
 plt.tight_layout()
 plt.show()
+# --8<-- [end:example]

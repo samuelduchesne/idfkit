@@ -6,7 +6,7 @@ and meters from EnergyPlus, then add them to your model for future simulations.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/basic_usage.py"
+--8<-- "docs/snippets/simulation/output-discovery/basic_usage.py:example"
 ```
 
 ## Understanding RDD and MDD Files
@@ -28,31 +28,31 @@ what outputs **could be** requested, not what was actually recorded.
 From simulation results:
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/creating_an_index.py"
+--8<-- "docs/snippets/simulation/output-discovery/creating_an_index.py:example"
 ```
 
 From files directly:
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/creating_an_index_2.py"
+--8<-- "docs/snippets/simulation/output-discovery/creating_an_index_2.py:example"
 ```
 
 ### Search Variables
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/search_variables.py"
+--8<-- "docs/snippets/simulation/output-discovery/search_variables.py:example"
 ```
 
 ### Filter by Units
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/filter_by_units.py"
+--8<-- "docs/snippets/simulation/output-discovery/filter_by_units.py:example"
 ```
 
 ### List All Variables
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/list_all_variables.py"
+--8<-- "docs/snippets/simulation/output-discovery/list_all_variables.py:example"
 ```
 
 ## OutputVariable and OutputMeter
@@ -79,13 +79,13 @@ From files directly:
 ### Add All Matching
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/add_all_matching.py"
+--8<-- "docs/snippets/simulation/output-discovery/add_all_matching.py:example"
 ```
 
 ### Selective Addition
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/selective_addition.py"
+--8<-- "docs/snippets/simulation/output-discovery/selective_addition.py:example"
 ```
 
 ### Reporting Frequencies
@@ -101,7 +101,7 @@ From files directly:
 | `"Environment"` | Once per environment |
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/reporting_frequencies.py"
+--8<-- "docs/snippets/simulation/output-discovery/reporting_frequencies.py:example"
 ```
 
 ## Workflow: Discover Then Request
@@ -110,7 +110,7 @@ A common pattern is to run a "discovery" simulation to find available
 outputs, then run a second simulation with those outputs requested:
 
 ```python
---8<-- "docs/snippets/simulation/output-discovery/workflow_discover_then_request.py"
+--8<-- "docs/snippets/simulation/output-discovery/workflow_discover_then_request.py:example"
 ```
 
 ## Common Output Variables

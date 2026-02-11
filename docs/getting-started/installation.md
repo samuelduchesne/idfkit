@@ -161,7 +161,7 @@ Download from the official EnergyPlus website:
 ### Verify Installation
 
 ```python
---8<-- "docs/snippets/getting-started/installation/verify_installation.py"
+--8<-- "docs/snippets/getting-started/installation/verify_installation.py:example"
 ```
 
 ## Development Installation

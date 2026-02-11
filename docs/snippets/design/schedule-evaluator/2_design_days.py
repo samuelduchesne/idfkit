@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from datetime import datetime
+from enum import Enum
+from idfkit import IDFDocument, IDFObject
+
+
+# --8<-- [start:example]
 class DayType(Enum):
     """Special day type for evaluation."""
 
@@ -19,3 +27,6 @@ def evaluate(
         day_type: Override calendar day with design day schedule.
                   Used for sizing calculations.
     """
+
+
+# --8<-- [end:example]

@@ -1,3 +1,14 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+from idfkit.schedules import DayType, Interpolation
+from idfkit.simulation import FileSystem
+from typing import Any
+
+pd: Any = ...  # type: ignore[assignment]
+
+
+# --8<-- [start:example]
 def to_series(
     schedule: IDFObject,
     year: int = 2024,
@@ -14,3 +25,6 @@ def to_series(
 
     Requires: pandas (optional dependency)
     """
+
+
+# --8<-- [end:example]

@@ -6,7 +6,7 @@ conditions to your EnergyPlus models for HVAC sizing.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/weather/design-days/basic_usage.py"
+--8<-- "docs/snippets/weather/design-days/basic_usage.py:example"
 ```
 
 ## Quick Apply
@@ -14,7 +14,7 @@ conditions to your EnergyPlus models for HVAC sizing.
 Use `apply_ashrae_sizing()` for a streamlined workflow:
 
 ```python
---8<-- "docs/snippets/weather/design-days/quick_apply.py"
+--8<-- "docs/snippets/weather/design-days/quick_apply.py:example"
 ```
 
 ## Design Day Types
@@ -55,13 +55,13 @@ DDY files contain multiple design day types classified by ASHRAE criteria:
 ### By Type
 
 ```python
---8<-- "docs/snippets/weather/design-days/by_type.py"
+--8<-- "docs/snippets/weather/design-days/by_type.py:example"
 ```
 
 ### All Design Days
 
 ```python
---8<-- "docs/snippets/weather/design-days/all_design_days.py"
+--8<-- "docs/snippets/weather/design-days/all_design_days.py:example"
 ```
 
 ## Applying to Models
@@ -69,13 +69,13 @@ DDY files contain multiple design day types classified by ASHRAE criteria:
 ### Basic Application
 
 ```python
---8<-- "docs/snippets/weather/design-days/basic_application.py"
+--8<-- "docs/snippets/weather/design-days/basic_application.py:example"
 ```
 
 ### With Wet-Bulb Design Day
 
 ```python
---8<-- "docs/snippets/weather/design-days/with_wet_bulb_design_day.py"
+--8<-- "docs/snippets/weather/design-days/with_wet_bulb_design_day.py:example"
 ```
 
 ### Skip Site Location Update
@@ -84,7 +84,7 @@ By default, `apply_to_model` also updates the `Site:Location` object.
 To skip this, set `update_location=False`:
 
 ```python
---8<-- "docs/snippets/weather/design-days/skip_site_location_update.py"
+--8<-- "docs/snippets/weather/design-days/skip_site_location_update.py:example"
 ```
 
 ## ASHRAE Standards
@@ -94,13 +94,13 @@ Different standards recommend different percentiles:
 ### ASHRAE 90.1 (Energy Standard)
 
 ```python
---8<-- "docs/snippets/weather/design-days/ashrae_901_energy_standard.py"
+--8<-- "docs/snippets/weather/design-days/ashrae_901_energy_standard.py:example"
 ```
 
 ### ASHRAE 62.1 (Ventilation)
 
 ```python
---8<-- "docs/snippets/weather/design-days/ashrae_621_ventilation.py"
+--8<-- "docs/snippets/weather/design-days/ashrae_621_ventilation.py:example"
 ```
 
 ## Design Day Object Fields
@@ -123,7 +123,7 @@ When you access a design day, it's an `IDFObject` with these fields:
 ## Summary Output
 
 ```python
---8<-- "docs/snippets/weather/design-days/summary_output.py"
+--8<-- "docs/snippets/weather/design-days/summary_output.py:example"
 ```
 
 Output:
@@ -146,19 +146,19 @@ Design days from: chicago.ddy
 DDY files also contain `Site:Location` data:
 
 ```python
---8<-- "docs/snippets/weather/design-days/location_object.py"
+--8<-- "docs/snippets/weather/design-days/location_object.py:example"
 ```
 
 ## Complete Workflow
 
 ```python
---8<-- "docs/snippets/weather/design-days/complete_workflow.py"
+--8<-- "docs/snippets/weather/design-days/complete_workflow.py:example"
 ```
 
 ## Error Handling
 
 ```python
---8<-- "docs/snippets/weather/design-days/error_handling.py"
+--8<-- "docs/snippets/weather/design-days/error_handling.py:example"
 ```
 
 ## See Also

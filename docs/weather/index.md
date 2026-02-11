@@ -6,7 +6,7 @@ weather files, and applying ASHRAE design day conditions to your models.
 ## Quick Start
 
 ```python
---8<-- "docs/snippets/weather/index/quick_start.py"
+--8<-- "docs/snippets/weather/index/quick_start.py:example"
 ```
 
 ## Key Features
@@ -29,7 +29,7 @@ is pre-compiled and bundled with the package.
 Find the nearest weather station to any address:
 
 ```python
---8<-- "docs/snippets/weather/index/address_based_search.py"
+--8<-- "docs/snippets/weather/index/address_based_search.py:example"
 ```
 
 ### ASHRAE Design Days
@@ -37,7 +37,7 @@ Find the nearest weather station to any address:
 Apply standard design day conditions to your model:
 
 ```python
---8<-- "docs/snippets/weather/index/ashrae_design_days.py"
+--8<-- "docs/snippets/weather/index/ashrae_design_days.py:example"
 ```
 
 ## Module Components
@@ -54,7 +54,7 @@ Apply standard design day conditions to your model:
 The core weather module requires no extra dependencies:
 
 ```python
---8<-- "docs/snippets/weather/index/installation.py"
+--8<-- "docs/snippets/weather/index/installation.py:example"
 ```
 
 To refresh the index from upstream:
@@ -64,7 +64,7 @@ pip install idfkit[weather]  # Adds openpyxl
 ```
 
 ```python
---8<-- "docs/snippets/weather/index/installation_2.py"
+--8<-- "docs/snippets/weather/index/installation_2.py:example"
 ```
 
 ## Workflow Example
@@ -72,7 +72,7 @@ pip install idfkit[weather]  # Adds openpyxl
 Complete workflow from address to simulation-ready model:
 
 ```python
---8<-- "docs/snippets/weather/index/workflow_example.py"
+--8<-- "docs/snippets/weather/index/workflow_example.py:example"
 ```
 
 ## Data Source

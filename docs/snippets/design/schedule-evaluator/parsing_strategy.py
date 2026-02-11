@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import time
+from idfkit import IDFObject
+
+
+# --8<-- [start:example]
 @dataclass
 class CompactPeriod:
     """A 'Through:' block covering a date range."""
@@ -17,3 +25,6 @@ class CompactDayRule:
 
 def parse_compact(obj: IDFObject) -> list[CompactPeriod]:
     """Parse Schedule:Compact fields into structured data."""
+
+
+# --8<-- [end:example]

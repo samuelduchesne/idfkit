@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit.simulation import SimulationJob
+
+jobs: list[SimulationJob] = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from rich.progress import Progress
 from idfkit.simulation import simulate_batch, SimulationProgress
 import threading
@@ -20,3 +26,4 @@ with Progress() as progress:
         progress.update(task_id, description=f"{event.job_label}: {event.phase}")
 
     batch = simulate_batch(jobs, on_progress=on_progress, max_workers=4)
+# --8<-- [end:example]

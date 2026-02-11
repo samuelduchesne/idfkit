@@ -6,7 +6,7 @@ station entries from climate.onebuilding.org.
 ## Loading the Index
 
 ```python
---8<-- "docs/snippets/weather/station-search/loading_the_index.py"
+--8<-- "docs/snippets/weather/station-search/loading_the_index.py:example"
 ```
 
 ## Search by Name
@@ -14,7 +14,7 @@ station entries from climate.onebuilding.org.
 Fuzzy text search across station names, cities, and WMO numbers:
 
 ```python
---8<-- "docs/snippets/weather/station-search/search_by_name.py"
+--8<-- "docs/snippets/weather/station-search/search_by_name.py:example"
 ```
 
 ### SearchResult Attributes
@@ -27,7 +27,7 @@ Fuzzy text search across station names, cities, and WMO numbers:
 ### Search Tips
 
 ```python
---8<-- "docs/snippets/weather/station-search/search_tips.py"
+--8<-- "docs/snippets/weather/station-search/search_tips.py:example"
 ```
 
 ## Search by Coordinates
@@ -35,7 +35,7 @@ Fuzzy text search across station names, cities, and WMO numbers:
 Find stations nearest to a location using great-circle distance:
 
 ```python
---8<-- "docs/snippets/weather/station-search/search_by_coordinates.py"
+--8<-- "docs/snippets/weather/station-search/search_by_coordinates.py:example"
 ```
 
 ### Function Signature
@@ -64,13 +64,13 @@ def nearest(
 Combine `geocode()` with `nearest()` for address-based search:
 
 ```python
---8<-- "docs/snippets/weather/station-search/search_by_address.py"
+--8<-- "docs/snippets/weather/station-search/search_by_address.py:example"
 ```
 
 ## Filter by Country
 
 ```python
---8<-- "docs/snippets/weather/station-search/filter_by_country.py"
+--8<-- "docs/snippets/weather/station-search/filter_by_country.py:example"
 ```
 
 ## Filter by Coordinates
@@ -78,13 +78,13 @@ Combine `geocode()` with `nearest()` for address-based search:
 Use `nearest()` with `max_distance_km` to find stations within a geographic area:
 
 ```python
---8<-- "docs/snippets/weather/station-search/filter_by_coordinates.py"
+--8<-- "docs/snippets/weather/station-search/filter_by_coordinates.py:example"
 ```
 
 ## Get by WMO Number
 
 ```python
---8<-- "docs/snippets/weather/station-search/get_by_wmo_number.py"
+--8<-- "docs/snippets/weather/station-search/get_by_wmo_number.py:example"
 ```
 
 Note: WMO numbers are **not unique** — multiple entries can share a WMO
@@ -109,7 +109,7 @@ Note: WMO numbers are **not unique** — multiple entries can share a WMO
 ## Listing Countries
 
 ```python
---8<-- "docs/snippets/weather/station-search/listing_countries.py"
+--8<-- "docs/snippets/weather/station-search/listing_countries.py:example"
 ```
 
 ## Refreshing the Index
@@ -117,7 +117,7 @@ Note: WMO numbers are **not unique** — multiple entries can share a WMO
 The bundled index works without network access. To get the latest data:
 
 ```python
---8<-- "docs/snippets/weather/station-search/refreshing_the_index.py"
+--8<-- "docs/snippets/weather/station-search/refreshing_the_index.py:example"
 ```
 
 Refresh requires: `pip install idfkit[weather]`

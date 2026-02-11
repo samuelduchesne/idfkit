@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+from idfkit import IDFObject
+from idfkit.simulation import S3FileSystem, SimulationResult
+from typing import Any
+
+data: Any = ...  # type: ignore[assignment]
+fs: S3FileSystem = ...  # type: ignore[assignment]
+obj: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import tempfile
 from pathlib import Path
 
@@ -11,3 +21,4 @@ with tempfile.TemporaryDirectory() as tmp:
     # Now use local result
     result = SimulationResult.from_directory(tmp)
     # Multiple queries without network calls
+# --8<-- [end:example]

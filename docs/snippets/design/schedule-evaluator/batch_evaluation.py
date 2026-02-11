@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+from idfkit.schedules import DayType, Interpolation
+from idfkit.simulation import FileSystem
+
+
+# --8<-- [start:example]
 def values(
     schedule: IDFObject,
     year: int = 2024,
@@ -20,3 +28,6 @@ def values(
         interpolation: How to handle sub-hourly alignment
         day_type: Use design day schedule for all days
     """
+
+
+# --8<-- [end:example]

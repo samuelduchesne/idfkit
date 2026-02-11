@@ -6,7 +6,7 @@ operations you'll use every day.
 ## Load a Model
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/load_a_model.py"
+--8<-- "docs/snippets/getting-started/quick-start/load_a_model.py:example"
 ```
 
 ## Query Objects
@@ -14,7 +14,7 @@ operations you'll use every day.
 Access objects with O(1) dictionary lookups:
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/query_objects.py"
+--8<-- "docs/snippets/getting-started/quick-start/query_objects.py:example"
 ```
 
 ## Modify Fields
@@ -22,7 +22,7 @@ Access objects with O(1) dictionary lookups:
 Change field values with attribute assignment:
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/modify_fields.py"
+--8<-- "docs/snippets/getting-started/quick-start/modify_fields.py:example"
 ```
 
 ## Discover Available Fields
@@ -30,7 +30,7 @@ Change field values with attribute assignment:
 Not sure what fields an object type has? Use `describe()` to see all available fields:
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/discover_available_fields.py"
+--8<-- "docs/snippets/getting-started/quick-start/discover_available_fields.py:example"
 ```
 
 In REPL/Jupyter, use tab completion to explore object fields:
@@ -43,43 +43,43 @@ zone.<TAB>  # Shows: x_origin, y_origin, z_origin, multiplier, ...
 Validation is enabled by default, so typos are caught immediately:
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/discover_available_fields_3.py"
+--8<-- "docs/snippets/getting-started/quick-start/discover_available_fields_3.py:example"
 ```
 
 ## Create a New Model
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/create_a_new_model.py"
+--8<-- "docs/snippets/getting-started/quick-start/create_a_new_model.py:example"
 ```
 
 ## Write Output
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/write_output.py"
+--8<-- "docs/snippets/getting-started/quick-start/write_output.py:example"
 ```
 
 ## Run a Simulation
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/run_a_simulation.py"
+--8<-- "docs/snippets/getting-started/quick-start/run_a_simulation.py:example"
 ```
 
 ## Query Results
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/query_results.py"
+--8<-- "docs/snippets/getting-started/quick-start/query_results.py:example"
 ```
 
 ## Find Weather Stations
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/find_weather_stations.py"
+--8<-- "docs/snippets/getting-started/quick-start/find_weather_stations.py:example"
 ```
 
 ## Apply Design Days
 
 ```python
---8<-- "docs/snippets/getting-started/quick-start/apply_design_days.py"
+--8<-- "docs/snippets/getting-started/quick-start/apply_design_days.py:example"
 ```
 
 ## Next Steps

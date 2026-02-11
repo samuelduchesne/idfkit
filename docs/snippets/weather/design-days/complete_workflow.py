@@ -1,3 +1,18 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+from idfkit.weather import DesignDayManager, StationIndex, WeatherDownloader, WeatherFiles, WeatherStation
+
+added: list[IDFObject] = ...  # type: ignore[assignment]
+ddm: DesignDayManager = ...  # type: ignore[assignment]
+downloader: WeatherDownloader = ...  # type: ignore[assignment]
+files: WeatherFiles = ...  # type: ignore[assignment]
+index: StationIndex = ...  # type: ignore[assignment]
+lat: float = ...  # type: ignore[assignment]
+lon: float = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+station: WeatherStation = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit import load_idf
 from idfkit.weather import (
     StationIndex,
@@ -30,3 +45,4 @@ added = ddm.apply_to_model(
 
 print(f"Added {len(added)} design days")
 print(f"Location: {model['Site:Location'].values()[0].name}")
+# --8<-- [end:example]

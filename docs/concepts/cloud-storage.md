@@ -9,7 +9,7 @@ storage systems.
 The `FileSystem` protocol defines a minimal interface for file operations:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/the_filesystem_protocol.py"
+--8<-- "docs/snippets/concepts/cloud-storage/the_filesystem_protocol.py:example"
 ```
 
 ## Built-in Implementations
@@ -19,7 +19,7 @@ The `FileSystem` protocol defines a minimal interface for file operations:
 The default backend, wrapping `pathlib.Path` operations:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/localfilesystem.py"
+--8<-- "docs/snippets/concepts/cloud-storage/localfilesystem.py:example"
 ```
 
 ### S3FileSystem
@@ -27,7 +27,7 @@ The default backend, wrapping `pathlib.Path` operations:
 Amazon S3 backend for cloud workflows:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/s3filesystem.py"
+--8<-- "docs/snippets/concepts/cloud-storage/s3filesystem.py:example"
 ```
 
 Requires the `boto3` package: `pip install idfkit[s3]`
@@ -42,7 +42,7 @@ typical workflow is:
 Create simulation jobs with S3 output paths:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/1_local_preparation.py"
+--8<-- "docs/snippets/concepts/cloud-storage/1_local_preparation.py:example"
 ```
 
 ### 2. Cloud Execution
@@ -50,7 +50,7 @@ Create simulation jobs with S3 output paths:
 Workers run simulations locally, results upload to S3:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/2_cloud_execution.py"
+--8<-- "docs/snippets/concepts/cloud-storage/2_cloud_execution.py:example"
 ```
 
 ### 3. Result Collection
@@ -58,7 +58,7 @@ Workers run simulations locally, results upload to S3:
 Retrieve results from S3 from any machine:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/3_result_collection.py"
+--8<-- "docs/snippets/concepts/cloud-storage/3_result_collection.py:example"
 ```
 
 ## S3 Configuration
@@ -73,7 +73,7 @@ S3FileSystem uses boto3's credential chain:
 4. Shared credentials file (`~/.aws/credentials`)
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/authentication.py"
+--8<-- "docs/snippets/concepts/cloud-storage/authentication.py:example"
 ```
 
 ### S3-Compatible Services
@@ -81,7 +81,7 @@ S3FileSystem uses boto3's credential chain:
 Works with MinIO, LocalStack, and other S3-compatible services:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/s3_compatible_services.py"
+--8<-- "docs/snippets/concepts/cloud-storage/s3_compatible_services.py:example"
 ```
 
 ### Key Prefixes
@@ -89,7 +89,7 @@ Works with MinIO, LocalStack, and other S3-compatible services:
 Use prefixes to namespace simulations:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/key_prefixes.py"
+--8<-- "docs/snippets/concepts/cloud-storage/key_prefixes.py:example"
 ```
 
 ## Implementing Custom Backends
@@ -97,7 +97,7 @@ Use prefixes to namespace simulations:
 Implement the `FileSystem` protocol for other storage systems:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/implementing_custom_backends.py"
+--8<-- "docs/snippets/concepts/cloud-storage/implementing_custom_backends.py:example"
 ```
 
 ## EnergyPlus Execution
@@ -119,7 +119,7 @@ are copied to the configured FileSystem.
 Result files are read on-demand, so only accessed data is downloaded:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/lazy_loading.py"
+--8<-- "docs/snippets/concepts/cloud-storage/lazy_loading.py:example"
 ```
 
 ### Local Caching
@@ -127,7 +127,7 @@ Result files are read on-demand, so only accessed data is downloaded:
 For repeated access, consider downloading to local disk:
 
 ```python
---8<-- "docs/snippets/concepts/cloud-storage/local_caching.py"
+--8<-- "docs/snippets/concepts/cloud-storage/local_caching.py:example"
 ```
 
 ## See Also

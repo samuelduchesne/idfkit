@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit.simulation import TimeSeriesResult
+
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 # Get DataFrame
 df = ts.to_dataframe()
 
@@ -8,3 +14,4 @@ df.plot(figsize=(12, 6))
 import plotly.express as px
 
 fig = px.line(df.reset_index(), x="timestamp", y=ts.variable_name)
+# --8<-- [end:example]

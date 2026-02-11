@@ -7,7 +7,7 @@ analyses.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/batch/basic_usage.py"
+--8<-- "docs/snippets/simulation/batch/basic_usage.py:example"
 ```
 
 ## SimulationJob
@@ -15,7 +15,7 @@ analyses.
 Define individual simulations with `SimulationJob`:
 
 ```python
---8<-- "docs/snippets/simulation/batch/simulationjob.py"
+--8<-- "docs/snippets/simulation/batch/simulationjob.py:example"
 ```
 
 ### SimulationJob Attributes
@@ -40,7 +40,7 @@ Define individual simulations with `SimulationJob`:
 Create model variants for parametric analysis:
 
 ```python
---8<-- "docs/snippets/simulation/batch/parametric_studies.py"
+--8<-- "docs/snippets/simulation/batch/parametric_studies.py:example"
 ```
 
 ## BatchResult
@@ -48,7 +48,7 @@ Create model variants for parametric analysis:
 The `BatchResult` class aggregates results:
 
 ```python
---8<-- "docs/snippets/simulation/batch/batchresult.py"
+--8<-- "docs/snippets/simulation/batch/batchresult.py:example"
 ```
 
 ## Progress Callbacks
@@ -56,7 +56,7 @@ The `BatchResult` class aggregates results:
 Monitor progress with a callback function:
 
 ```python
---8<-- "docs/snippets/simulation/batch/progress_callbacks.py"
+--8<-- "docs/snippets/simulation/batch/progress_callbacks.py:example"
 ```
 
 The callback receives:
@@ -71,7 +71,7 @@ The callback receives:
 ### Rich Progress Bar
 
 ```python
---8<-- "docs/snippets/simulation/batch/rich_progress_bar.py"
+--8<-- "docs/snippets/simulation/batch/rich_progress_bar.py:example"
 ```
 
 ## Parallelism
@@ -81,7 +81,7 @@ The callback receives:
 Control concurrency with `max_workers`:
 
 ```python
---8<-- "docs/snippets/simulation/batch/worker_count.py"
+--8<-- "docs/snippets/simulation/batch/worker_count.py:example"
 ```
 
 Default: `min(len(jobs), os.cpu_count())`
@@ -99,7 +99,7 @@ Default: `min(len(jobs), os.cpu_count())`
 Failed simulations don't stop the batch:
 
 ```python
---8<-- "docs/snippets/simulation/batch/error_handling.py"
+--8<-- "docs/snippets/simulation/batch/error_handling.py:example"
 ```
 
 ### Partial Failures
@@ -119,7 +119,7 @@ if not batch.all_succeeded:
 Share a cache across batch jobs:
 
 ```python
---8<-- "docs/snippets/simulation/batch/caching.py"
+--8<-- "docs/snippets/simulation/batch/caching.py:example"
 ```
 
 ## Cloud Storage
@@ -127,7 +127,7 @@ Share a cache across batch jobs:
 Store results in S3:
 
 ```python
---8<-- "docs/snippets/simulation/batch/cloud_storage.py"
+--8<-- "docs/snippets/simulation/batch/cloud_storage.py:example"
 ```
 
 ## Best Practices

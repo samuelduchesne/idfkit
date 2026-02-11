@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+data: Any = ...  # type: ignore[assignment]
+
+
+# --8<-- [start:example]
 class AzureBlobFileSystem:
     """Azure Blob Storage backend."""
 
@@ -15,3 +24,6 @@ class AzureBlobFileSystem:
         blob.upload_blob(data, overwrite=True)
 
     # ... implement remaining methods
+
+
+# --8<-- [end:example]

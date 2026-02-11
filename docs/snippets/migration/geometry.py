@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+
+doc: IDFDocument = ...  # type: ignore[assignment]
+surface: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.geometry import (
     calculate_surface_area,
     calculate_surface_tilt,
@@ -16,3 +23,4 @@ for surface in doc["BuildingSurface:Detailed"]:
 print("Zone volume:", calculate_zone_volume(doc, "Office"))
 print("Zone height:", calculate_zone_height(doc, "Office"))
 print("Ceiling area:", calculate_zone_ceiling_area(doc, "Office"))
+# --8<-- [end:example]

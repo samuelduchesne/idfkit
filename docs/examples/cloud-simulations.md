@@ -26,7 +26,7 @@ export AWS_DEFAULT_REGION=us-east-1
 ## Basic S3 Usage
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/basic_s3_usage.py"
+--8<-- "docs/snippets/examples/cloud-simulations/basic_s3_usage.py:example"
 ```
 
 ## Cloud Workflow Pattern
@@ -36,7 +36,7 @@ For large-scale simulations on AWS Batch, Kubernetes, or similar:
 ### Step 1: Create Jobs Locally
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/step_1_create_jobs_locally.py"
+--8<-- "docs/snippets/examples/cloud-simulations/step_1_create_jobs_locally.py:example"
 ```
 
 ### Step 2: Run on Cloud Workers
@@ -44,7 +44,7 @@ For large-scale simulations on AWS Batch, Kubernetes, or similar:
 Each worker runs a subset of jobs:
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/step_2_run_on_cloud_workers.py"
+--8<-- "docs/snippets/examples/cloud-simulations/step_2_run_on_cloud_workers.py:example"
 ```
 
 ### Step 3: Collect Results
@@ -52,13 +52,13 @@ Each worker runs a subset of jobs:
 From any machine with S3 access:
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/step_3_collect_results.py"
+--8<-- "docs/snippets/examples/cloud-simulations/step_3_collect_results.py:example"
 ```
 
 ## Batch Processing with S3
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/batch_processing_with_s3.py"
+--8<-- "docs/snippets/examples/cloud-simulations/batch_processing_with_s3.py:example"
 ```
 
 ## S3-Compatible Services
@@ -68,19 +68,19 @@ Works with MinIO, LocalStack, and other S3-compatible APIs:
 ### MinIO
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/minio.py"
+--8<-- "docs/snippets/examples/cloud-simulations/minio.py:example"
 ```
 
 ### LocalStack
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/localstack.py"
+--8<-- "docs/snippets/examples/cloud-simulations/localstack.py:example"
 ```
 
 ### DigitalOcean Spaces
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/digitalocean_spaces.py"
+--8<-- "docs/snippets/examples/cloud-simulations/digitalocean_spaces.py:example"
 ```
 
 ## Weather File Handling
@@ -88,7 +88,7 @@ Works with MinIO, LocalStack, and other S3-compatible APIs:
 Important: Weather files must be local. Download before simulating:
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/weather_file_handling.py"
+--8<-- "docs/snippets/examples/cloud-simulations/weather_file_handling.py:example"
 ```
 
 ## Performance Considerations
@@ -96,7 +96,7 @@ Important: Weather files must be local. Download before simulating:
 ### Minimize S3 Round-Trips
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/minimize_s3_round_trips.py"
+--8<-- "docs/snippets/examples/cloud-simulations/minimize_s3_round_trips.py:example"
 ```
 
 ### Batch Downloads
@@ -104,7 +104,7 @@ Important: Weather files must be local. Download before simulating:
 For heavy analysis, download everything locally first:
 
 ```python
---8<-- "docs/snippets/examples/cloud-simulations/batch_downloads.py"
+--8<-- "docs/snippets/examples/cloud-simulations/batch_downloads.py:example"
 ```
 
 ## Cost Optimization

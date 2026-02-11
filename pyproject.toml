@@ -90,7 +90,45 @@ packages = ["src/idfkit"]
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "strict"
-exclude = ["benchmarks", "src/idfkit/schemas", "src/idfkit/weather/data", "docs/snippets", ".venv", "**/node_modules", "**/__pycache__"]
+exclude = [
+    "benchmarks", "src/idfkit/schemas", "src/idfkit/weather/data",
+    ".venv", "**/node_modules", "**/__pycache__",
+    # Snippets with async/return at module level (doc fragments, not full modules)
+    "docs/snippets/concepts/simulation-architecture/streaming.py",
+    "docs/snippets/simulation/async/early_termination.py",
+    "docs/snippets/simulation/sql-queries/error_handling.py",
+]
+
+[[tool.pyright.executionEnvironments]]
+root = "docs/snippets"
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+reportOptionalMemberAccess = false
+reportMissingParameterType = false
+reportMissingImports = false
+reportUntypedFunctionDecorator = false
+reportUntypedBaseClass = false
+reportMissingTypeArgument = false
+reportReturnType = false
+reportUnusedVariable = false
+reportUnusedExpression = false
+reportUnusedFunction = false
+reportAssignmentType = false
+reportAttributeAccessIssue = false
+reportOptionalIterable = false
+reportOptionalSubscript = false
+reportIncompatibleMethodOverride = false
+reportPossiblyUnboundVariable = false
+reportMatchNotExhaustive = false
+reportMissingModuleSource = false
+reportOperatorIssue = false
+reportArgumentType = false
+reportCallIssue = false
+reportGeneralTypeIssues = false
+reportIndexIssue = false
+reportInvalidTypeForm = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "src/idfkit"]

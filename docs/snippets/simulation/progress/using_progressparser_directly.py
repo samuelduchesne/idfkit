@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+# --8<-- [start:example]
 from idfkit.simulation import ProgressParser
 
 parser = ProgressParser()
@@ -8,3 +11,4 @@ with open("energyplus_stdout.log") as f:
         event = parser.parse_line(line)
         if event is not None:
             print(f"{event.phase}: {event.message}")
+# --8<-- [end:example]

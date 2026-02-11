@@ -26,7 +26,7 @@ The `StationIndex` provides two modes of operation:
 `StationIndex.load()` loads a **pre-compiled index** bundled with the package:
 
 ```python
---8<-- "docs/snippets/concepts/weather-pipeline/bundled_index_no_dependencies.py"
+--8<-- "docs/snippets/concepts/weather-pipeline/bundled_index_no_dependencies.py:example"
 ```
 
 This works without any extra dependencies or network access.
@@ -37,7 +37,7 @@ This works without any extra dependencies or network access.
 climate.onebuilding.org and rebuilds the index:
 
 ```python
---8<-- "docs/snippets/concepts/weather-pipeline/live_refresh_requires_openpyxl.py"
+--8<-- "docs/snippets/concepts/weather-pipeline/live_refresh_requires_openpyxl.py:example"
 ```
 
 This requires the `openpyxl` package (`pip install idfkit[weather]`).
@@ -65,7 +65,7 @@ internationally. Important notes:
 - Use `url` for the exact dataset you want to download
 
 ```python
---8<-- "docs/snippets/concepts/weather-pipeline/wmo_numbers.py"
+--8<-- "docs/snippets/concepts/weather-pipeline/wmo_numbers.py:example"
 ```
 
 ## Spatial Search
@@ -74,13 +74,13 @@ The `nearest()` method uses the **Haversine formula** for great-circle
 distance calculations:
 
 ```python
---8<-- "docs/snippets/concepts/weather-pipeline/spatial_search.py"
+--8<-- "docs/snippets/concepts/weather-pipeline/spatial_search.py:example"
 ```
 
 Combine with `geocode()` for address-based lookups:
 
 ```python
---8<-- "docs/snippets/concepts/weather-pipeline/spatial_search_2.py"
+--8<-- "docs/snippets/concepts/weather-pipeline/spatial_search_2.py:example"
 ```
 
 ## Design Day Classification
@@ -115,7 +115,7 @@ Use `apply_to_model()` or `apply_ashrae_sizing()` with the appropriate
 percentiles:
 
 ```python
---8<-- "docs/snippets/concepts/weather-pipeline/ashrae_standards.py"
+--8<-- "docs/snippets/concepts/weather-pipeline/ashrae_standards.py:example"
 ```
 
 ## Caching

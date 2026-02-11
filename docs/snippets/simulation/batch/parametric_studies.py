@@ -1,3 +1,16 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import BatchResult, SimulationJob, SimulationResult, TimeSeriesResult
+
+batch: BatchResult = ...  # type: ignore[assignment]
+job: SimulationJob = ...  # type: ignore[assignment]
+jobs: list[SimulationJob] = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+variant: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.simulation import simulate_batch, SimulationJob
 
 # Create variants
@@ -25,3 +38,4 @@ for job, result in zip(jobs, batch):
             "ZONE 1",
         )
         print(f"{job.label}: Max temp {max(ts.values):.1f}°C")
+# --8<-- [end:example]

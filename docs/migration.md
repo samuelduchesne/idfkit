@@ -9,19 +9,19 @@ listed below are available alongside the newer idfkit API.
 **eppy** requires you to locate and pass the IDD file yourself:
 
 ```python
---8<-- "docs/snippets/migration/loading_a_file.py"
+--8<-- "docs/snippets/migration/loading_a_file.py:example"
 ```
 
 **idfkit** bundles schemas and detects the version automatically:
 
 ```python
---8<-- "docs/snippets/migration/loading_a_file_2.py"
+--8<-- "docs/snippets/migration/loading_a_file_2.py:example"
 ```
 
 No IDD path is needed. If you want to target a specific EnergyPlus version:
 
 ```python
---8<-- "docs/snippets/migration/loading_a_file_3.py"
+--8<-- "docs/snippets/migration/loading_a_file_3.py:example"
 ```
 
 ## Quick reference
@@ -63,19 +63,19 @@ when one exists.
 **eppy:**
 
 ```python
---8<-- "docs/snippets/migration/creating_objects.py"
+--8<-- "docs/snippets/migration/creating_objects.py:example"
 ```
 
 **idfkit:**
 
 ```python
---8<-- "docs/snippets/migration/creating_objects_2.py"
+--8<-- "docs/snippets/migration/creating_objects_2.py:example"
 ```
 
 Or using the eppy-compatible method:
 
 ```python
---8<-- "docs/snippets/migration/creating_objects_3.py"
+--8<-- "docs/snippets/migration/creating_objects_3.py:example"
 ```
 
 ## Accessing fields
@@ -83,13 +83,13 @@ Or using the eppy-compatible method:
 **eppy** uses the capitalised IDD field names:
 
 ```python
---8<-- "docs/snippets/migration/accessing_fields.py"
+--8<-- "docs/snippets/migration/accessing_fields.py:example"
 ```
 
 **idfkit** uses snake_case names:
 
 ```python
---8<-- "docs/snippets/migration/accessing_fields_2.py"
+--8<-- "docs/snippets/migration/accessing_fields_2.py:example"
 ```
 
 Both styles resolve to the same underlying data.
@@ -100,7 +100,7 @@ eppy has no built-in way to find which objects reference a given name.
 idfkit maintains a live reference graph:
 
 ```python
---8<-- "docs/snippets/migration/reference_tracking_new_in_idfkit.py"
+--8<-- "docs/snippets/migration/reference_tracking_new_in_idfkit.py:example"
 ```
 
 ## Renaming with cascading updates (new in idfkit)
@@ -110,13 +110,13 @@ people, lights, and other object that references it. In idfkit the
 reference graph handles this automatically:
 
 ```python
---8<-- "docs/snippets/migration/renaming_with_cascading_updates_new_in_idfkit.py"
+--8<-- "docs/snippets/migration/renaming_with_cascading_updates_new_in_idfkit.py:example"
 ```
 
 ## Validation (new in idfkit)
 
 ```python
---8<-- "docs/snippets/migration/validation_new_in_idfkit.py"
+--8<-- "docs/snippets/migration/validation_new_in_idfkit.py:example"
 ```
 
 ## Saving files
@@ -124,19 +124,19 @@ reference graph handles this automatically:
 **eppy** saves through methods on the IDF object:
 
 ```python
---8<-- "docs/snippets/migration/saving_files.py"
+--8<-- "docs/snippets/migration/saving_files.py:example"
 ```
 
 **idfkit** supports the same methods:
 
 ```python
---8<-- "docs/snippets/migration/saving_files_2.py"
+--8<-- "docs/snippets/migration/saving_files_2.py:example"
 ```
 
 Or use the standalone writer for more control:
 
 ```python
---8<-- "docs/snippets/migration/saving_files_3.py"
+--8<-- "docs/snippets/migration/saving_files_3.py:example"
 ```
 
 ## Output formatting modes
@@ -144,13 +144,13 @@ Or use the standalone writer for more control:
 **eppy** controls output formatting with `idf.outputtype`:
 
 ```python
---8<-- "docs/snippets/migration/output_formatting_modes.py"
+--8<-- "docs/snippets/migration/output_formatting_modes.py:example"
 ```
 
 **idfkit** passes the mode to the writer:
 
 ```python
---8<-- "docs/snippets/migration/output_formatting_modes_2.py"
+--8<-- "docs/snippets/migration/output_formatting_modes_2.py:example"
 ```
 
 ## Following references
@@ -158,13 +158,13 @@ Or use the standalone writer for more control:
 **eppy** lets you follow a reference field to get the target object:
 
 ```python
---8<-- "docs/snippets/migration/following_references.py"
+--8<-- "docs/snippets/migration/following_references.py:example"
 ```
 
 **idfkit** provides the same method:
 
 ```python
---8<-- "docs/snippets/migration/following_references_2.py"
+--8<-- "docs/snippets/migration/following_references_2.py:example"
 ```
 
 ## Finding referring objects
@@ -172,13 +172,13 @@ Or use the standalone writer for more control:
 **eppy** finds all objects that reference a given object:
 
 ```python
---8<-- "docs/snippets/migration/finding_referring_objects.py"
+--8<-- "docs/snippets/migration/finding_referring_objects.py:example"
 ```
 
 **idfkit** provides both the eppy spelling and a corrected alias:
 
 ```python
---8<-- "docs/snippets/migration/finding_referring_objects_2.py"
+--8<-- "docs/snippets/migration/finding_referring_objects_2.py:example"
 ```
 
 ## Range checking
@@ -186,13 +186,13 @@ Or use the standalone writer for more control:
 **eppy** provides range checking on numeric fields:
 
 ```python
---8<-- "docs/snippets/migration/range_checking.py"
+--8<-- "docs/snippets/migration/range_checking.py:example"
 ```
 
 **idfkit** supports the same API:
 
 ```python
---8<-- "docs/snippets/migration/range_checking_2.py"
+--8<-- "docs/snippets/migration/range_checking_2.py:example"
 ```
 
 ## Removing objects by index
@@ -200,13 +200,13 @@ Or use the standalone writer for more control:
 **eppy** removes objects by index with `popidfobject`:
 
 ```python
---8<-- "docs/snippets/migration/removing_objects_by_index.py"
+--8<-- "docs/snippets/migration/removing_objects_by_index.py:example"
 ```
 
 **idfkit:**
 
 ```python
---8<-- "docs/snippets/migration/removing_objects_by_index_2.py"
+--8<-- "docs/snippets/migration/removing_objects_by_index_2.py:example"
 ```
 
 ## Batch updates
@@ -214,13 +214,13 @@ Or use the standalone writer for more control:
 **eppy** uses `json_functions.updateidf()` for parametric sweeps:
 
 ```python
---8<-- "docs/snippets/migration/batch_updates.py"
+--8<-- "docs/snippets/migration/batch_updates.py:example"
 ```
 
 **idfkit** has this as a method on the document:
 
 ```python
---8<-- "docs/snippets/migration/batch_updates_2.py"
+--8<-- "docs/snippets/migration/batch_updates_2.py:example"
 ```
 
 ## Geometry
@@ -230,7 +230,7 @@ geometry operations. idfkit ships its own `Vector3D` and `Polygon3D`
 classes with no external dependencies:
 
 ```python
---8<-- "docs/snippets/migration/geometry.py"
+--8<-- "docs/snippets/migration/geometry.py:example"
 ```
 
 ### Building transforms
@@ -238,7 +238,7 @@ classes with no external dependencies:
 Translate or rotate all surfaces in the model:
 
 ```python
---8<-- "docs/snippets/migration/building_transforms.py"
+--8<-- "docs/snippets/migration/building_transforms.py:example"
 ```
 
 ## HTML tabular output
@@ -246,17 +246,17 @@ Translate or rotate all surfaces in the model:
 **eppy** parses HTML tabular output using `readhtml`:
 
 ```python
---8<-- "docs/snippets/migration/html_tabular_output.py"
+--8<-- "docs/snippets/migration/html_tabular_output.py:example"
 ```
 
 **idfkit** parses HTML output as part of `SimulationResult`:
 
 ```python
---8<-- "docs/snippets/migration/html_tabular_output_2.py"
+--8<-- "docs/snippets/migration/html_tabular_output_2.py:example"
 ```
 
 Or parse a standalone HTML file:
 
 ```python
---8<-- "docs/snippets/migration/html_tabular_output_3.py"
+--8<-- "docs/snippets/migration/html_tabular_output_3.py:example"
 ```

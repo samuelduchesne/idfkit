@@ -6,7 +6,7 @@ output files with lazy loading for efficient memory usage.
 ## SimulationResult Overview
 
 ```python
---8<-- "docs/snippets/simulation/results/simulationresult_overview.py"
+--8<-- "docs/snippets/simulation/results/simulationresult_overview.py:example"
 ```
 
 ## Output File Paths
@@ -14,7 +14,7 @@ output files with lazy loading for efficient memory usage.
 Access paths to specific output files:
 
 ```python
---8<-- "docs/snippets/simulation/results/output_file_paths.py"
+--8<-- "docs/snippets/simulation/results/output_file_paths.py:example"
 ```
 
 Each returns `None` if the file wasn't produced.
@@ -24,7 +24,7 @@ Each returns `None` if the file wasn't produced.
 Parse warnings and errors from the `.err` file:
 
 ```python
---8<-- "docs/snippets/simulation/results/error_report.py"
+--8<-- "docs/snippets/simulation/results/error_report.py:example"
 ```
 
 See [Error Handling](errors.md) for detailed error parsing.
@@ -34,7 +34,7 @@ See [Error Handling](errors.md) for detailed error parsing.
 Query time-series and tabular data from the SQLite output:
 
 ```python
---8<-- "docs/snippets/simulation/results/sql_database.py"
+--8<-- "docs/snippets/simulation/results/sql_database.py:example"
 ```
 
 See [SQL Output Queries](sql-queries.md) for detailed SQL parsing.
@@ -44,7 +44,7 @@ See [SQL Output Queries](sql-queries.md) for detailed SQL parsing.
 Discover available output variables from `.rdd`/`.mdd` files:
 
 ```python
---8<-- "docs/snippets/simulation/results/output_variables.py"
+--8<-- "docs/snippets/simulation/results/output_variables.py:example"
 ```
 
 See [Output Discovery](output-discovery.md) for variable discovery.
@@ -54,7 +54,7 @@ See [Output Discovery](output-discovery.md) for variable discovery.
 Parse CSV time-series output:
 
 ```python
---8<-- "docs/snippets/simulation/results/csv_output.py"
+--8<-- "docs/snippets/simulation/results/csv_output.py:example"
 ```
 
 ## HTML Tabular Output
@@ -63,7 +63,7 @@ Parse the HTML tabular summary file (`eplustbl.htm`) that EnergyPlus
 produces alongside every simulation:
 
 ```python
---8<-- "docs/snippets/simulation/results/html_tabular_output.py"
+--8<-- "docs/snippets/simulation/results/html_tabular_output.py:example"
 ```
 
 Each `HTMLTable` has these attributes:
@@ -79,7 +79,7 @@ Each `HTMLTable` has these attributes:
 You can also parse a standalone HTML file without a full simulation:
 
 ```python
---8<-- "docs/snippets/simulation/results/html_tabular_output_2.py"
+--8<-- "docs/snippets/simulation/results/html_tabular_output_2.py:example"
 ```
 
 This replaces eppy's `readhtml` module.
@@ -89,7 +89,7 @@ This replaces eppy's `readhtml` module.
 Output files are parsed only when accessed:
 
 ```python
---8<-- "docs/snippets/simulation/results/lazy_loading.py"
+--8<-- "docs/snippets/simulation/results/lazy_loading.py:example"
 ```
 
 This keeps memory usage low, especially for batch simulations where you
@@ -100,7 +100,7 @@ might only need specific outputs.
 Inspect results from a previous simulation:
 
 ```python
---8<-- "docs/snippets/simulation/results/reconstructing_from_directory.py"
+--8<-- "docs/snippets/simulation/results/reconstructing_from_directory.py:example"
 ```
 
 ## Attributes Reference

@@ -6,7 +6,7 @@ structured result parsing, batch processing, and content-addressed caching.
 ## Quick Start
 
 ```python
---8<-- "docs/snippets/simulation/index/quick_start.py"
+--8<-- "docs/snippets/simulation/index/quick_start.py:example"
 ```
 
 ## Requirements
@@ -17,7 +17,7 @@ structured result parsing, batch processing, and content-addressed caching.
 Check your installation:
 
 ```python
---8<-- "docs/snippets/simulation/index/requirements.py"
+--8<-- "docs/snippets/simulation/index/requirements.py:example"
 ```
 
 ## Module Components
@@ -49,7 +49,7 @@ reliable access to all simulation data through a single queryable file.
 Output files are only parsed when accessed, keeping memory usage low:
 
 ```python
---8<-- "docs/snippets/simulation/index/lazy_loading.py"
+--8<-- "docs/snippets/simulation/index/lazy_loading.py:example"
 ```
 
 ### Model Safety
@@ -57,7 +57,7 @@ Output files are only parsed when accessed, keeping memory usage low:
 Your original model is never mutated — simulations work on a copy:
 
 ```python
---8<-- "docs/snippets/simulation/index/model_safety.py"
+--8<-- "docs/snippets/simulation/index/model_safety.py:example"
 ```
 
 ### Parallel Execution
@@ -65,7 +65,7 @@ Your original model is never mutated — simulations work on a copy:
 Run parametric studies efficiently with batch processing:
 
 ```python
---8<-- "docs/snippets/simulation/index/parallel_execution.py"
+--8<-- "docs/snippets/simulation/index/parallel_execution.py:example"
 ```
 
 ### Async Execution

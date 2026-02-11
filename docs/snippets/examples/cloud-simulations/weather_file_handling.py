@@ -1,3 +1,16 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import S3FileSystem, simulate
+from idfkit.weather import StationIndex, WeatherDownloader, WeatherFiles, WeatherStation
+
+downloader: WeatherDownloader = ...  # type: ignore[assignment]
+files: WeatherFiles = ...  # type: ignore[assignment]
+fs: S3FileSystem = ...  # type: ignore[assignment]
+index: StationIndex = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+station: WeatherStation = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.weather import StationIndex, WeatherDownloader
 
 # Download weather file locally
@@ -14,3 +27,4 @@ result = simulate(
     output_dir="run-001",
     fs=fs,
 )
+# --8<-- [end:example]

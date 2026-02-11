@@ -7,7 +7,7 @@ simulation flags.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/caching/basic_usage.py"
+--8<-- "docs/snippets/simulation/caching/basic_usage.py:example"
 ```
 
 ## How It Works
@@ -21,7 +21,7 @@ The cache key is a SHA-256 digest of:
 3. **Simulation flags** — `annual`, `design_day`, `expand_objects`, etc.
 
 ```python
---8<-- "docs/snippets/simulation/caching/cache_key_computation.py"
+--8<-- "docs/snippets/simulation/caching/cache_key_computation.py:example"
 ```
 
 ### What Gets Cached
@@ -48,7 +48,7 @@ Default locations by platform:
 ### Custom Location
 
 ```python
---8<-- "docs/snippets/simulation/caching/custom_location.py"
+--8<-- "docs/snippets/simulation/caching/custom_location.py:example"
 ```
 
 ## Cache Operations
@@ -56,19 +56,19 @@ Default locations by platform:
 ### Check for Hit
 
 ```python
---8<-- "docs/snippets/simulation/caching/check_for_hit.py"
+--8<-- "docs/snippets/simulation/caching/check_for_hit.py:example"
 ```
 
 ### Manual Get/Put
 
 ```python
---8<-- "docs/snippets/simulation/caching/manual_getput.py"
+--8<-- "docs/snippets/simulation/caching/manual_getput.py:example"
 ```
 
 ### Clear Cache
 
 ```python
---8<-- "docs/snippets/simulation/caching/clear_cache.py"
+--8<-- "docs/snippets/simulation/caching/clear_cache.py:example"
 ```
 
 ## Batch Processing
@@ -76,7 +76,7 @@ Default locations by platform:
 Share a cache across batch simulations:
 
 ```python
---8<-- "docs/snippets/simulation/caching/batch_processing.py"
+--8<-- "docs/snippets/simulation/caching/batch_processing.py:example"
 ```
 
 ## Cache Invalidation
@@ -129,7 +129,7 @@ The cache is safe for concurrent access:
 - **Process-safe** — Multiple Python processes can share the cache
 
 ```python
---8<-- "docs/snippets/simulation/caching/thread_and_process_safety.py"
+--8<-- "docs/snippets/simulation/caching/thread_and_process_safety.py:example"
 ```
 
 ## Storage Considerations
@@ -145,7 +145,7 @@ du -sh ~/.cache/idfkit/simulation/
 ### Cleanup
 
 ```python
---8<-- "docs/snippets/simulation/caching/cleanup.py"
+--8<-- "docs/snippets/simulation/caching/cleanup.py:example"
 ```
 
 ## Disabling Caching
@@ -153,7 +153,7 @@ du -sh ~/.cache/idfkit/simulation/
 Pass `cache=None` (the default) to skip caching:
 
 ```python
---8<-- "docs/snippets/simulation/caching/disabling_caching.py"
+--8<-- "docs/snippets/simulation/caching/disabling_caching.py:example"
 ```
 
 ## Best Practices

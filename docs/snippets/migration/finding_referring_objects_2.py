@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+
+doc: IDFDocument = ...  # type: ignore[assignment]
+zone: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 zone = doc["Zone"]["Office"]
 
 # eppy-compatible spelling
@@ -11,3 +18,4 @@ surfaces = zone.getreferingobjs(
     iddgroups=["Thermal Zones and Surfaces"],
     fields=["zone_name"],
 )
+# --8<-- [end:example]

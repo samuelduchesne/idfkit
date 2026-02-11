@@ -1,3 +1,17 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.weather import DesignDayManager, StationIndex, WeatherDownloader, WeatherFiles, WeatherStation
+
+ddm: DesignDayManager = ...  # type: ignore[assignment]
+downloader: WeatherDownloader = ...  # type: ignore[assignment]
+files: WeatherFiles = ...  # type: ignore[assignment]
+index: StationIndex = ...  # type: ignore[assignment]
+lat: float = ...  # type: ignore[assignment]
+lon: float = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+station: WeatherStation = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit import load_idf
 from idfkit.weather import (
     StationIndex,
@@ -31,3 +45,4 @@ ddm.apply_to_model(
 from idfkit.simulation import simulate
 
 result = simulate(model, files.epw)
+# --8<-- [end:example]

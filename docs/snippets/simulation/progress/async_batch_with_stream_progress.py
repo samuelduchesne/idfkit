@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationJob
+
+jobs: list[SimulationJob] = ...  # type: ignore[assignment]
+variant: IDFDocument = ...  # type: ignore[assignment]
+variants: list[IDFDocument] = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import asyncio
 from idfkit.simulation import (
     async_simulate_batch_stream,
@@ -25,3 +34,4 @@ async def main():
 
 
 asyncio.run(main())
+# --8<-- [end:example]

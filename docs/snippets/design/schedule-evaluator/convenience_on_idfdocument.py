@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from datetime import datetime
+from idfkit.schedules import DayType, Interpolation
+
+
+# --8<-- [start:example]
 class IDFDocument:
     def evaluate_schedule(
         self,
@@ -16,3 +23,6 @@ class IDFDocument:
         interpolation: Interpolation = Interpolation.NO,
     ) -> list[float]:
         """Shorthand for values(self.get_schedule(name), ...)"""
+
+
+# --8<-- [end:example]

@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationResult
+from typing import Any
+
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+weather_meta: dict[str, Any] = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import asyncio
 from idfkit.simulation import async_simulate
 
@@ -19,3 +29,4 @@ async def main():
 
 
 asyncio.run(main())
+# --8<-- [end:example]

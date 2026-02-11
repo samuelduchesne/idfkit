@@ -1,3 +1,14 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationResult
+from typing import Any
+
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+weather: str = ...  # type: ignore[assignment]
+websocket: Any = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import json
 from idfkit.simulation import async_simulate, SimulationProgress
 
@@ -25,3 +36,6 @@ async def run_with_websocket(model, weather, websocket):
         })
     )
     return result
+
+
+# --8<-- [end:example]

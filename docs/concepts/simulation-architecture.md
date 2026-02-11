@@ -22,7 +22,7 @@ The `simulate()` function:
 5. Returns a `SimulationResult` with access to all outputs
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/subprocess_execution.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/subprocess_execution.py:example"
 ```
 
 ## SQLite Over ESO
@@ -39,7 +39,7 @@ The module automatically ensures `Output:SQLite` is present in your model,
 so you don't need to add it manually.
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/sqlite_over_eso.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/sqlite_over_eso.py:example"
 ```
 
 ### What About ESO/HTML?
@@ -61,7 +61,7 @@ If you have a specific need for these formats, please open an issue.
 you access them:
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/lazy_loading.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/lazy_loading.py:example"
 ```
 
 This keeps memory usage low and startup fast, especially for batch
@@ -72,7 +72,7 @@ simulations where you might only need specific outputs.
 The `simulate()` function **copies** your model before simulation:
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/model_immutability.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/model_immutability.py:example"
 ```
 
 This ensures:
@@ -97,7 +97,7 @@ When multiple versions are found in the default directories, the most
 recent version is selected.
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/energyplus_discovery.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/energyplus_discovery.py:example"
 ```
 
 ## Concurrent Execution
@@ -106,7 +106,7 @@ For parametric studies, `simulate_batch()` runs simulations in parallel
 using a thread pool:
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/concurrent_execution.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/concurrent_execution.py:example"
 ```
 
 Each simulation runs in its own subprocess and directory, so there are
@@ -156,7 +156,7 @@ producer tasks from the consumer's `async for` loop.  Events arrive in
 completion order.  Breaking out of the loop cancels remaining tasks.
 
 ```python
---8<-- "docs/snippets/concepts/simulation-architecture/streaming.py"
+--8<-- "docs/snippets/concepts/simulation-architecture/streaming.py:example"
 ```
 
 ## See Also

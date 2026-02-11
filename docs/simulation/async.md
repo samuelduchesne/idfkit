@@ -19,7 +19,7 @@ progress without callbacks.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/async/basic_usage.py"
+--8<-- "docs/snippets/simulation/async/basic_usage.py:example"
 ```
 
 `async_simulate()` accepts exactly the same parameters as `simulate()` and
@@ -33,7 +33,7 @@ while waiting.
 `asyncio.Semaphore` for concurrency control instead of a thread pool:
 
 ```python
---8<-- "docs/snippets/simulation/async/async_batch_processing.py"
+--8<-- "docs/snippets/simulation/async/async_batch_processing.py:example"
 ```
 
 Results are returned in the same order as the input jobs, identical to
@@ -62,7 +62,7 @@ Default: `min(len(jobs), os.cpu_count())`
 `SimulationEvent` objects as each simulation completes — no callbacks needed:
 
 ```python
---8<-- "docs/snippets/simulation/async/streaming_progress.py"
+--8<-- "docs/snippets/simulation/async/streaming_progress.py:example"
 ```
 
 ### SimulationEvent
@@ -85,7 +85,7 @@ to map back to the original job.
 Breaking out of the stream cancels remaining simulations:
 
 ```python
---8<-- "docs/snippets/simulation/async/early_termination.py"
+--8<-- "docs/snippets/simulation/async/early_termination.py:example"
 ```
 
 ## Cancellation
@@ -94,7 +94,7 @@ Async tasks support cancellation natively.  Cancelling a task kills the
 underlying EnergyPlus subprocess:
 
 ```python
---8<-- "docs/snippets/simulation/async/cancellation.py"
+--8<-- "docs/snippets/simulation/async/cancellation.py:example"
 ```
 
 ## Parametric Study
@@ -103,7 +103,7 @@ Create model variants and analyze results — the async equivalent of the
 pattern shown in [Batch Processing](batch.md#parametric-studies):
 
 ```python
---8<-- "docs/snippets/simulation/async/parametric_study.py"
+--8<-- "docs/snippets/simulation/async/parametric_study.py:example"
 ```
 
 ## Running Simulations Alongside Other Async Work
@@ -113,7 +113,7 @@ other I/O-bound tasks — database queries, HTTP requests, file uploads —
 without blocking:
 
 ```python
---8<-- "docs/snippets/simulation/async/running_simulations_alongside_other_async_work.py"
+--8<-- "docs/snippets/simulation/async/running_simulations_alongside_other_async_work.py:example"
 ```
 
 ## Collecting Streaming Results
@@ -122,7 +122,7 @@ The streaming API yields events in completion order.  To collect and
 reorder results for analysis:
 
 ```python
---8<-- "docs/snippets/simulation/async/collecting_streaming_results.py"
+--8<-- "docs/snippets/simulation/async/collecting_streaming_results.py:example"
 ```
 
 ## Caching and Cloud Storage
@@ -149,7 +149,7 @@ result = await async_simulate(
 A minimal example of an async simulation endpoint:
 
 ```python
---8<-- "docs/snippets/simulation/async/fastapi_integration.py"
+--8<-- "docs/snippets/simulation/async/fastapi_integration.py:example"
 ```
 
 Because `async_simulate` doesn't block the event loop, the server remains

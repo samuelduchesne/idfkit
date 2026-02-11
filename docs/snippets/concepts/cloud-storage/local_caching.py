@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from idfkit.simulation import S3FileSystem, SimulationResult
+from pathlib import Path
+from typing import Any
+
+data: Any = ...  # type: ignore[assignment]
+s3_fs: S3FileSystem = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import tempfile
 
 # Download entire result directory
@@ -11,3 +20,4 @@ with tempfile.TemporaryDirectory() as tmp:
     # Use local result
     result = SimulationResult.from_directory(tmp)
     # Multiple queries without network calls
+# --8<-- [end:example]

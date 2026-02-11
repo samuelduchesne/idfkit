@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+
+model: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from idfkit.simulation import simulate, SimulationProgress
 
@@ -17,3 +23,4 @@ with Progress(
             progress.update(task, phase=event.phase)
 
     result = simulate(model, "weather.epw", annual=True, on_progress=on_progress)
+# --8<-- [end:example]

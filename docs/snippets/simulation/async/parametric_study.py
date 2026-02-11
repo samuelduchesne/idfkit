@@ -1,3 +1,16 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import BatchResult, SimulationJob, SimulationResult, TimeSeriesResult
+
+batch: BatchResult = ...  # type: ignore[assignment]
+job: SimulationJob = ...  # type: ignore[assignment]
+jobs: list[SimulationJob] = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+variant: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import asyncio
 from idfkit.simulation import async_simulate_batch, SimulationJob
 
@@ -31,3 +44,4 @@ async def main():
 
 
 asyncio.run(main())
+# --8<-- [end:example]

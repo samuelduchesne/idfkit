@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit.simulation import SimulationJob
+
+jobs: list[SimulationJob] = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from tqdm import tqdm
 from idfkit.simulation import simulate_batch, SimulationProgress
 
@@ -32,3 +38,4 @@ batch = simulate_batch(
 
 overall.close()
 current.close()
+# --8<-- [end:example]

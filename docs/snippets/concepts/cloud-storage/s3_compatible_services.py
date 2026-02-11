@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from idfkit.simulation import S3FileSystem
+
+# --8<-- [start:example]
 # MinIO
 fs = S3FileSystem(
     bucket="local-bucket",
@@ -12,3 +17,4 @@ fs = S3FileSystem(
     endpoint_url="http://localhost:4566",
     region_name="us-east-1",
 )
+# --8<-- [end:example]

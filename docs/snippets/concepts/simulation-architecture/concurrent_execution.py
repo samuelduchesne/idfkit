@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationJob
+
+jobs: list[SimulationJob] = ...  # type: ignore[assignment]
+variant1: IDFDocument = ...  # type: ignore[assignment]
+variant2: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.simulation import simulate_batch, SimulationJob
 
 jobs = [
@@ -6,3 +15,4 @@ jobs = [
 ]
 
 batch = simulate_batch(jobs, max_workers=4)
+# --8<-- [end:example]

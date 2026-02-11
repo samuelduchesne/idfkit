@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from idfkit import IDFObject
+from idfkit.simulation import FileSystem
+from pathlib import Path
+
+
+# --8<-- [start:example]
 class ScheduleFileCache:
     """Cache for Schedule:File CSV data."""
 
@@ -10,3 +18,6 @@ class ScheduleFileCache:
         base_path: Path,
     ) -> list[float]:
         """Get cached values or read from file."""
+
+
+# --8<-- [end:example]

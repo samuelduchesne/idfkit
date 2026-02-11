@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+
+model: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 # See all fields for a Zone
 print(model.describe("Zone"))
 # === Zone ===
@@ -11,3 +17,4 @@ print(model.describe("Zone"))
 desc = model.describe("Material")
 print(f"Required: {desc.required_fields}")
 # Required: ['roughness', 'thickness', 'conductivity', 'density', 'specific_heat']
+# --8<-- [end:example]

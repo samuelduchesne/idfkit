@@ -6,7 +6,7 @@ Nominatim (OpenStreetMap) service.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/weather/geocoding/basic_usage.py"
+--8<-- "docs/snippets/weather/geocoding/basic_usage.py:example"
 ```
 
 ## With Station Search
@@ -14,7 +14,7 @@ Nominatim (OpenStreetMap) service.
 Combine with `StationIndex.nearest()` for address-based weather station lookup:
 
 ```python
---8<-- "docs/snippets/weather/geocoding/with_station_search.py"
+--8<-- "docs/snippets/weather/geocoding/with_station_search.py:example"
 ```
 
 ## Address Formats
@@ -22,13 +22,13 @@ Combine with `StationIndex.nearest()` for address-based weather station lookup:
 The geocoder accepts various address formats:
 
 ```python
---8<-- "docs/snippets/weather/geocoding/address_formats.py"
+--8<-- "docs/snippets/weather/geocoding/address_formats.py:example"
 ```
 
 ## Error Handling
 
 ```python
---8<-- "docs/snippets/weather/geocoding/error_handling.py"
+--8<-- "docs/snippets/weather/geocoding/error_handling.py:example"
 ```
 
 ### Common Errors
@@ -45,7 +45,7 @@ Nominatim requires a maximum of 1 request per second. The `geocode()`
 function automatically handles rate limiting:
 
 ```python
---8<-- "docs/snippets/weather/geocoding/rate_limiting.py"
+--8<-- "docs/snippets/weather/geocoding/rate_limiting.py:example"
 ```
 
 ## No API Key Required
@@ -61,13 +61,13 @@ Nominatim is a free service that doesn't require an API key. However:
 For repeated lookups, cache the coordinates:
 
 ```python
---8<-- "docs/snippets/weather/geocoding/caching_results.py"
+--8<-- "docs/snippets/weather/geocoding/caching_results.py:example"
 ```
 
 ## Complete Workflow
 
 ```python
---8<-- "docs/snippets/weather/geocoding/complete_workflow.py"
+--8<-- "docs/snippets/weather/geocoding/complete_workflow.py:example"
 ```
 
 ## Accuracy Notes
@@ -81,7 +81,7 @@ For repeated lookups, cache the coordinates:
 If you already know the coordinates, skip geocoding entirely:
 
 ```python
---8<-- "docs/snippets/weather/geocoding/alternative_direct_coordinates.py"
+--8<-- "docs/snippets/weather/geocoding/alternative_direct_coordinates.py:example"
 ```
 
 ## See Also

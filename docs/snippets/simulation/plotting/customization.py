@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from idfkit.simulation import SimulationResult, TimeSeriesResult
+
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+zone_names: list[str] = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import matplotlib.pyplot as plt
 
 # Create custom figure
@@ -15,3 +23,4 @@ ax.legend()
 ax.set_xlabel("Time")
 ax.set_ylabel("Temperature (°C)")
 plt.show()
+# --8<-- [end:example]

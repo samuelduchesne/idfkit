@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+# --8<-- [start:example]
 from idfkit.simulation import PlotBackend
 
 
@@ -26,3 +29,6 @@ class MyBackend(PlotBackend):
     ):
         # Return a figure object
         ...
+
+
+# --8<-- [end:example]

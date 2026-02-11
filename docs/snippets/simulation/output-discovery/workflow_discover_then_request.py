@@ -1,3 +1,14 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+from idfkit.simulation import SimulationResult, TimeSeriesResult
+
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+weather: str = ...  # type: ignore[assignment]
+zone: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.simulation import simulate
 
 # Step 1: Discovery run
@@ -24,3 +35,4 @@ for zone in ["ZONE 1", "ZONE 2"]:
         zone,
     )
     print(f"{zone}: avg {sum(ts.values) / len(ts.values):.1f}°C")
+# --8<-- [end:example]

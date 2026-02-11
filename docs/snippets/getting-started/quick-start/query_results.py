@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from idfkit.simulation import SimulationResult, TimeSeriesResult
+
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 # Get time-series data from SQLite output
 ts = result.sql.get_timeseries(
     variable_name="Zone Mean Air Temperature",
@@ -15,3 +22,4 @@ ts_sizing = result.sql.get_timeseries(
 
 # Get tabular data
 tables = result.sql.get_tabular_data(report_name="AnnualBuildingUtilityPerformanceSummary")
+# --8<-- [end:example]

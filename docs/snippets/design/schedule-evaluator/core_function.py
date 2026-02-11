@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from datetime import datetime
+from idfkit import IDFDocument, IDFObject
+from idfkit.schedules import DayType
+from idfkit.simulation import FileSystem
+
+
+# --8<-- [start:example]
 def evaluate(
     schedule: IDFObject,
     dt: datetime,
@@ -22,3 +31,6 @@ def evaluate(
     Raises:
         ScheduleEvaluationError: If schedule type unsupported or malformed
     """
+
+
+# --8<-- [end:example]

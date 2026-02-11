@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit.simulation import S3FileSystem
+
+fs: S3FileSystem = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.simulation.fs import FileSystem
 
 
@@ -17,3 +23,6 @@ def _read_schedule_csv(
         cols = line.split(sep)
         values.append(float(cols[column - 1]))  # 1-based index
     return values
+
+
+# --8<-- [end:example]

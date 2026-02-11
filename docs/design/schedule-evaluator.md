@@ -47,25 +47,25 @@ src/idfkit/schedules/
 ### Core Function
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/core_function.py"
+--8<-- "docs/snippets/design/schedule-evaluator/core_function.py:example"
 ```
 
 ### Batch Evaluation
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/batch_evaluation.py"
+--8<-- "docs/snippets/design/schedule-evaluator/batch_evaluation.py:example"
 ```
 
 ### Pandas Integration (optional)
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/pandas_integration_optional.py"
+--8<-- "docs/snippets/design/schedule-evaluator/pandas_integration_optional.py:example"
 ```
 
 ### Convenience on IDFDocument
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/convenience_on_idfdocument.py"
+--8<-- "docs/snippets/design/schedule-evaluator/convenience_on_idfdocument.py:example"
 ```
 
 ## Schedule:Compact Parser
@@ -88,7 +88,7 @@ Schedule:Compact,
 ### Parsing Strategy
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/parsing_strategy.py"
+--8<-- "docs/snippets/design/schedule-evaluator/parsing_strategy.py:example"
 ```
 
 ### Day Type Mapping
@@ -117,7 +117,7 @@ EnergyPlus day types to Python weekday:
 `Schedule:Year` references `Schedule:Week:*` which references `Schedule:Day:*`:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/hierarchical_schedule_resolution.py"
+--8<-- "docs/snippets/design/schedule-evaluator/hierarchical_schedule_resolution.py:example"
 ```
 
 ## Schedule:Day Evaluation
@@ -127,7 +127,7 @@ EnergyPlus day types to Python weekday:
 24 values, one per hour:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/scheduledayhourly.py"
+--8<-- "docs/snippets/design/schedule-evaluator/scheduledayhourly.py:example"
 ```
 
 ### Schedule:Day:Interval
@@ -135,13 +135,13 @@ EnergyPlus day types to Python weekday:
 Time/value pairs where value applies UNTIL that time:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/scheduledayinterval.py"
+--8<-- "docs/snippets/design/schedule-evaluator/scheduledayinterval.py:example"
 ```
 
 ## Error Handling
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/error_handling.py"
+--8<-- "docs/snippets/design/schedule-evaluator/error_handling.py:example"
 ```
 
 ## Testing Strategy
@@ -154,7 +154,7 @@ Time/value pairs where value applies UNTIL that time:
 ### Example Test
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/example_test.py"
+--8<-- "docs/snippets/design/schedule-evaluator/example_test.py:example"
 ```
 
 ## Dependencies
@@ -180,7 +180,7 @@ dataframes = ["pandas>=2.0"]  # Already exists
 The `FileSystem` protocol enables Schedule:File to work with remote storage:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/filesystem_integration.py"
+--8<-- "docs/snippets/design/schedule-evaluator/filesystem_integration.py:example"
 ```
 
 ## Implementation Order
@@ -219,7 +219,7 @@ Total estimate: ~650 LOC + tests
 Holidays are extracted from `RunPeriodControl:SpecialDays` objects in the document.
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/1_holidays.py"
+--8<-- "docs/snippets/design/schedule-evaluator/1_holidays.py:example"
 ```
 
 Day types from `RunPeriodControl:SpecialDays`:
@@ -231,7 +231,7 @@ Day types from `RunPeriodControl:SpecialDays`:
 Expose `SummerDesignDay` and `WinterDesignDay` via explicit parameter:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/2_design_days.py"
+--8<-- "docs/snippets/design/schedule-evaluator/2_design_days.py:example"
 ```
 
 ### 3. Interpolation
@@ -278,7 +278,7 @@ def values(
 Support external CSV files via the existing `FileSystem` protocol:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/4_schedulefile_support.py"
+--8<-- "docs/snippets/design/schedule-evaluator/4_schedulefile_support.py:example"
 ```
 
 **Schedule:File fields:**
@@ -296,11 +296,11 @@ Support external CSV files via the existing `FileSystem` protocol:
 
 **CSV parsing with FileSystem:**
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/4_schedulefile_support_2.py"
+--8<-- "docs/snippets/design/schedule-evaluator/4_schedulefile_support_2.py:example"
 ```
 
 **Caching:** Schedule:File data should be cached after first read to avoid repeated I/O:
 
 ```python
---8<-- "docs/snippets/design/schedule-evaluator/4_schedulefile_support_3.py"
+--8<-- "docs/snippets/design/schedule-evaluator/4_schedulefile_support_3.py:example"
 ```

@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from datetime import datetime
+from idfkit import IDFDocument, IDFObject
+
+doc: IDFDocument = ...  # type: ignore[assignment]
+schedule: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit.schedules import evaluate
 
 # Summer design day (typically peak cooling)
@@ -15,3 +23,4 @@ value = evaluate(
     document=doc,
     day_type="winter",
 )
+# --8<-- [end:example]

@@ -6,7 +6,7 @@ results with matplotlib or plotly.
 ## Quick Start
 
 ```python
---8<-- "docs/snippets/simulation/plotting/quick_start.py"
+--8<-- "docs/snippets/simulation/plotting/quick_start.py:example"
 ```
 
 ## Installation
@@ -29,19 +29,19 @@ pip install idfkit[plot,plotly]
 ### Temperature Profile
 
 ```python
---8<-- "docs/snippets/simulation/plotting/temperature_profile.py"
+--8<-- "docs/snippets/simulation/plotting/temperature_profile.py:example"
 ```
 
 ### Energy Balance
 
 ```python
---8<-- "docs/snippets/simulation/plotting/energy_balance.py"
+--8<-- "docs/snippets/simulation/plotting/energy_balance.py:example"
 ```
 
 ### Comfort Hours
 
 ```python
---8<-- "docs/snippets/simulation/plotting/comfort_hours.py"
+--8<-- "docs/snippets/simulation/plotting/comfort_hours.py:example"
 ```
 
 ## Time Series Plotting
@@ -49,7 +49,7 @@ pip install idfkit[plot,plotly]
 `TimeSeriesResult` has a built-in `plot()` method:
 
 ```python
---8<-- "docs/snippets/simulation/plotting/time_series_plotting.py"
+--8<-- "docs/snippets/simulation/plotting/time_series_plotting.py:example"
 ```
 
 ## Backend Selection
@@ -59,7 +59,7 @@ pip install idfkit[plot,plotly]
 By default, the first available backend is used:
 
 ```python
---8<-- "docs/snippets/simulation/plotting/auto_detection.py"
+--8<-- "docs/snippets/simulation/plotting/auto_detection.py:example"
 ```
 
 Priority: matplotlib → plotly
@@ -67,7 +67,7 @@ Priority: matplotlib → plotly
 ### Explicit Backend
 
 ```python
---8<-- "docs/snippets/simulation/plotting/explicit_backend.py"
+--8<-- "docs/snippets/simulation/plotting/explicit_backend.py:example"
 ```
 
 ## PlotBackend Protocol
@@ -75,7 +75,7 @@ Priority: matplotlib → plotly
 Create custom backends by implementing the `PlotBackend` protocol:
 
 ```python
---8<-- "docs/snippets/simulation/plotting/plotbackend_protocol.py"
+--8<-- "docs/snippets/simulation/plotting/plotbackend_protocol.py:example"
 ```
 
 ## Matplotlib Backend
@@ -83,13 +83,13 @@ Create custom backends by implementing the `PlotBackend` protocol:
 ### Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/plotting/basic_usage.py"
+--8<-- "docs/snippets/simulation/plotting/basic_usage.py:example"
 ```
 
 ### Customization
 
 ```python
---8<-- "docs/snippets/simulation/plotting/customization.py"
+--8<-- "docs/snippets/simulation/plotting/customization.py:example"
 ```
 
 ## Plotly Backend
@@ -97,13 +97,13 @@ Create custom backends by implementing the `PlotBackend` protocol:
 ### Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/plotting/basic_usage_2.py"
+--8<-- "docs/snippets/simulation/plotting/basic_usage_2.py:example"
 ```
 
 ### Customization
 
 ```python
---8<-- "docs/snippets/simulation/plotting/customization_2.py"
+--8<-- "docs/snippets/simulation/plotting/customization_2.py:example"
 ```
 
 ## DataFrame Integration
@@ -111,7 +111,7 @@ Create custom backends by implementing the `PlotBackend` protocol:
 Convert to pandas and use native plotting:
 
 ```python
---8<-- "docs/snippets/simulation/plotting/dataframe_integration.py"
+--8<-- "docs/snippets/simulation/plotting/dataframe_integration.py:example"
 ```
 
 ## Multiple Time Series
@@ -119,13 +119,13 @@ Convert to pandas and use native plotting:
 ### Same Variable, Multiple Keys
 
 ```python
---8<-- "docs/snippets/simulation/plotting/same_variable_multiple_keys.py"
+--8<-- "docs/snippets/simulation/plotting/same_variable_multiple_keys.py:example"
 ```
 
 ### Different Variables
 
 ```python
---8<-- "docs/snippets/simulation/plotting/different_variables.py"
+--8<-- "docs/snippets/simulation/plotting/different_variables.py:example"
 ```
 
 ## Saving Figures
@@ -133,13 +133,13 @@ Convert to pandas and use native plotting:
 ### Matplotlib
 
 ```python
---8<-- "docs/snippets/simulation/plotting/matplotlib.py"
+--8<-- "docs/snippets/simulation/plotting/matplotlib.py:example"
 ```
 
 ### Plotly
 
 ```python
---8<-- "docs/snippets/simulation/plotting/plotly.py"
+--8<-- "docs/snippets/simulation/plotting/plotly.py:example"
 ```
 
 ## See Also

@@ -6,7 +6,7 @@ a structured `SimulationResult` with access to all output files.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/simulation/running/basic_usage.py"
+--8<-- "docs/snippets/simulation/running/basic_usage.py:example"
 ```
 
 ## Simulation Modes
@@ -16,7 +16,7 @@ a structured `SimulationResult` with access to all output files.
 Fast simulation using only design day conditions:
 
 ```python
---8<-- "docs/snippets/simulation/running/design_day_only.py"
+--8<-- "docs/snippets/simulation/running/design_day_only.py:example"
 ```
 
 ### Annual Simulation
@@ -24,7 +24,7 @@ Fast simulation using only design day conditions:
 Full-year simulation:
 
 ```python
---8<-- "docs/snippets/simulation/running/annual_simulation.py"
+--8<-- "docs/snippets/simulation/running/annual_simulation.py:example"
 ```
 
 ### Default Mode
@@ -32,7 +32,7 @@ Full-year simulation:
 Without flags, EnergyPlus uses whatever run periods are defined in the model:
 
 ```python
---8<-- "docs/snippets/simulation/running/default_mode.py"
+--8<-- "docs/snippets/simulation/running/default_mode.py:example"
 ```
 
 ## Preprocessing
@@ -47,7 +47,7 @@ standalone preprocessing functions for this.
 `expand_objects()` converts them into their fully specified equivalents:
 
 ```python
---8<-- "docs/snippets/simulation/running/expanding_hvac_templates.py"
+--8<-- "docs/snippets/simulation/running/expanding_hvac_templates.py:example"
 ```
 
 !!! note
@@ -70,7 +70,7 @@ For cases where you need to inspect or modify the preprocessed model
 before simulation, standalone functions are available:
 
 ```python
---8<-- "docs/snippets/simulation/running/ground_heat_transfer_slab_basement.py"
+--8<-- "docs/snippets/simulation/running/ground_heat_transfer_slab_basement.py:example"
 ```
 
 Each function runs ExpandObjects first (to extract the ground heat-transfer
@@ -140,7 +140,7 @@ def simulate(
 By default, `simulate()` auto-discovers EnergyPlus:
 
 ```python
---8<-- "docs/snippets/simulation/running/energyplus_discovery.py"
+--8<-- "docs/snippets/simulation/running/energyplus_discovery.py:example"
 ```
 
 Discovery priority:
@@ -157,7 +157,7 @@ Discovery priority:
 By default, outputs go to an auto-generated temp directory:
 
 ```python
---8<-- "docs/snippets/simulation/running/automatic_temporary_directory.py"
+--8<-- "docs/snippets/simulation/running/automatic_temporary_directory.py:example"
 ```
 
 ### Explicit Directory
@@ -165,7 +165,7 @@ By default, outputs go to an auto-generated temp directory:
 Specify where to store outputs:
 
 ```python
---8<-- "docs/snippets/simulation/running/explicit_directory.py"
+--8<-- "docs/snippets/simulation/running/explicit_directory.py:example"
 ```
 
 The directory is created if it doesn't exist.
@@ -175,19 +175,19 @@ The directory is created if it doesn't exist.
 ### Simulation Errors
 
 ```python
---8<-- "docs/snippets/simulation/running/simulation_errors.py"
+--8<-- "docs/snippets/simulation/running/simulation_errors.py:example"
 ```
 
 ### Timeout
 
 ```python
---8<-- "docs/snippets/simulation/running/timeout.py"
+--8<-- "docs/snippets/simulation/running/timeout.py:example"
 ```
 
 ### Checking Success
 
 ```python
---8<-- "docs/snippets/simulation/running/checking_success.py"
+--8<-- "docs/snippets/simulation/running/checking_success.py:example"
 ```
 
 ## Model Safety
@@ -195,7 +195,7 @@ The directory is created if it doesn't exist.
 `simulate()` copies your model before running — the original is never modified:
 
 ```python
---8<-- "docs/snippets/simulation/running/model_safety.py"
+--8<-- "docs/snippets/simulation/running/model_safety.py:example"
 ```
 
 ## Command-Line Options
@@ -209,7 +209,7 @@ The directory is created if it doesn't exist.
 | `"D"` | Timestamped separate files |
 
 ```python
---8<-- "docs/snippets/simulation/running/output_suffix_modes.py"
+--8<-- "docs/snippets/simulation/running/output_suffix_modes.py:example"
 ```
 
 ### Extra Arguments
@@ -217,7 +217,7 @@ The directory is created if it doesn't exist.
 Pass additional EnergyPlus flags:
 
 ```python
---8<-- "docs/snippets/simulation/running/extra_arguments.py"
+--8<-- "docs/snippets/simulation/running/extra_arguments.py:example"
 ```
 
 ## Cloud Storage
@@ -225,7 +225,7 @@ Pass additional EnergyPlus flags:
 For remote storage backends (S3, etc.):
 
 ```python
---8<-- "docs/snippets/simulation/running/cloud_storage.py"
+--8<-- "docs/snippets/simulation/running/cloud_storage.py:example"
 ```
 
 See [Cloud & Remote Storage](../concepts/cloud-storage.md) for details.
@@ -235,7 +235,7 @@ See [Cloud & Remote Storage](../concepts/cloud-storage.md) for details.
 Enable content-addressed caching to avoid redundant simulations:
 
 ```python
---8<-- "docs/snippets/simulation/running/caching.py"
+--8<-- "docs/snippets/simulation/running/caching.py:example"
 ```
 
 See [Caching](caching.md) for details.

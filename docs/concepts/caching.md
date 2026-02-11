@@ -22,7 +22,7 @@ digest of:
 3. **Simulation flags** — `annual`, `design_day`, `expand_objects`, etc.
 
 ```python
---8<-- "docs/snippets/concepts/caching/simulation_cache.py"
+--8<-- "docs/snippets/concepts/caching/simulation_cache.py:example"
 ```
 
 ### How It Works
@@ -57,13 +57,13 @@ The cache uses platform-appropriate directories:
 Override with a custom path:
 
 ```python
---8<-- "docs/snippets/concepts/caching/cache_location.py"
+--8<-- "docs/snippets/concepts/caching/cache_location.py:example"
 ```
 
 ### Cache Management
 
 ```python
---8<-- "docs/snippets/concepts/caching/cache_management.py"
+--8<-- "docs/snippets/concepts/caching/cache_management.py:example"
 ```
 
 ## Weather Cache
@@ -102,7 +102,7 @@ Downloaded weather files are cached by URL:
 Files are never automatically deleted. Manual cleanup:
 
 ```python
---8<-- "docs/snippets/concepts/caching/weather_file_cache.py"
+--8<-- "docs/snippets/concepts/caching/weather_file_cache.py:example"
 ```
 
 ## Cache Invalidation
@@ -124,7 +124,7 @@ Both caches are **thread-safe** and **process-safe**:
 - Multiple processes can share the same cache directory
 
 ```python
---8<-- "docs/snippets/concepts/caching/parallel_safety.py"
+--8<-- "docs/snippets/concepts/caching/parallel_safety.py:example"
 ```
 
 ## Memory vs Disk
@@ -141,7 +141,7 @@ idfkit uses **disk-based caching** rather than in-memory caching because:
 Pass `cache=None` (the default) to skip caching:
 
 ```python
---8<-- "docs/snippets/concepts/caching/disabling_caching.py"
+--8<-- "docs/snippets/concepts/caching/disabling_caching.py:example"
 ```
 
 ## See Also

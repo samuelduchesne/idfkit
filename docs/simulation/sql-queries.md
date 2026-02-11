@@ -18,7 +18,7 @@ if sql is not None:
 Or open directly:
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/opening_the_database_2.py"
+--8<-- "docs/snippets/simulation/sql-queries/opening_the_database_2.py:example"
 ```
 
 ## Time-Series Data
@@ -26,7 +26,7 @@ Or open directly:
 ### Basic Query
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/basic_query.py"
+--8<-- "docs/snippets/simulation/sql-queries/basic_query.py:example"
 ```
 
 ### TimeSeriesResult Attributes
@@ -45,7 +45,7 @@ Or open directly:
 Specify which simulation environment to query:
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/filtering_by_environment.py"
+--8<-- "docs/snippets/simulation/sql-queries/filtering_by_environment.py:example"
 ```
 
 The `environment` parameter accepts:
@@ -59,7 +59,7 @@ The `environment` parameter accepts:
 ### Converting to DataFrame
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/converting_to_dataframe.py"
+--8<-- "docs/snippets/simulation/sql-queries/converting_to_dataframe.py:example"
 ```
 
 Requires pandas: `pip install idfkit[dataframes]`
@@ -67,7 +67,7 @@ Requires pandas: `pip install idfkit[dataframes]`
 ### Plotting Time Series
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/plotting_time_series.py"
+--8<-- "docs/snippets/simulation/sql-queries/plotting_time_series.py:example"
 ```
 
 Requires matplotlib or plotly: `pip install idfkit[plot]`
@@ -77,7 +77,7 @@ Requires matplotlib or plotly: `pip install idfkit[plot]`
 ### Query Tabular Reports
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/query_tabular_reports.py"
+--8<-- "docs/snippets/simulation/sql-queries/query_tabular_reports.py:example"
 ```
 
 ### TabularRow Attributes
@@ -95,7 +95,7 @@ Requires matplotlib or plotly: `pip install idfkit[plot]`
 ### Filter by Table
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/filter_by_table.py"
+--8<-- "docs/snippets/simulation/sql-queries/filter_by_table.py:example"
 ```
 
 ### Common Reports
@@ -115,7 +115,7 @@ Requires matplotlib or plotly: `pip install idfkit[plot]`
 ### List Available Variables
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/list_available_variables.py"
+--8<-- "docs/snippets/simulation/sql-queries/list_available_variables.py:example"
 ```
 
 ### VariableInfo Attributes
@@ -132,7 +132,7 @@ Requires matplotlib or plotly: `pip install idfkit[plot]`
 ### Search Variables
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/search_variables.py"
+--8<-- "docs/snippets/simulation/sql-queries/search_variables.py:example"
 ```
 
 ## Environment Metadata
@@ -140,7 +140,7 @@ Requires matplotlib or plotly: `pip install idfkit[plot]`
 ### List Environments
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/list_environments.py"
+--8<-- "docs/snippets/simulation/sql-queries/list_environments.py:example"
 ```
 
 ### Environment Types
@@ -170,7 +170,7 @@ automatically converts database timestamps to Python `datetime` objects.
 - Warmup days are filtered out automatically
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/energyplus_time_convention.py"
+--8<-- "docs/snippets/simulation/sql-queries/energyplus_time_convention.py:example"
 ```
 
 ## Context Manager
@@ -178,13 +178,13 @@ automatically converts database timestamps to Python `datetime` objects.
 `SQLResult` is a context manager for clean database cleanup:
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/context_manager.py"
+--8<-- "docs/snippets/simulation/sql-queries/context_manager.py:example"
 ```
 
 ## Error Handling
 
 ```python
---8<-- "docs/snippets/simulation/sql-queries/error_handling.py"
+--8<-- "docs/snippets/simulation/sql-queries/error_handling.py:example"
 ```
 
 ## Performance Tips

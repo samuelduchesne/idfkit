@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+
+doc: IDFDocument = ...  # type: ignore[assignment]
+occupancy: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit import load_idf
 from idfkit.schedules import values, to_series
 
@@ -20,3 +27,4 @@ print(f"Average (occupied): {series[series > 0].mean():.2f}")
 weekly = series.groupby(series.index.dayofweek).mean()
 print("Average by day of week:")
 print(weekly)
+# --8<-- [end:example]

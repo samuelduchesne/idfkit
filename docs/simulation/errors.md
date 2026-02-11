@@ -8,7 +8,7 @@ parsing EnergyPlus error reports and handling simulation failures.
 The `ErrorReport` class parses the `.err` file produced by EnergyPlus:
 
 ```python
---8<-- "docs/snippets/simulation/errors/error_report.py"
+--8<-- "docs/snippets/simulation/errors/error_report.py:example"
 ```
 
 ## Error Severity Levels
@@ -27,19 +27,19 @@ EnergyPlus uses several error severity levels:
 ### By Severity
 
 ```python
---8<-- "docs/snippets/simulation/errors/by_severity.py"
+--8<-- "docs/snippets/simulation/errors/by_severity.py:example"
 ```
 
 ### Error Counts
 
 ```python
---8<-- "docs/snippets/simulation/errors/error_counts.py"
+--8<-- "docs/snippets/simulation/errors/error_counts.py:example"
 ```
 
 ### Summary
 
 ```python
---8<-- "docs/snippets/simulation/errors/summary.py"
+--8<-- "docs/snippets/simulation/errors/summary.py:example"
 ```
 
 ## ErrorMessage Attributes
@@ -56,7 +56,7 @@ Each error/warning is an `ErrorMessage` object:
 The `simulate()` function raises `SimulationError` for certain failures:
 
 ```python
---8<-- "docs/snippets/simulation/errors/simulation_exceptions.py"
+--8<-- "docs/snippets/simulation/errors/simulation_exceptions.py:example"
 ```
 
 ### Exception Cases
@@ -71,7 +71,7 @@ The `simulate()` function raises `SimulationError` for certain failures:
 ### Timeout Handling
 
 ```python
---8<-- "docs/snippets/simulation/errors/timeout_handling.py"
+--8<-- "docs/snippets/simulation/errors/timeout_handling.py:example"
 ```
 
 ## Non-Exception Failures
@@ -80,7 +80,7 @@ Some simulation failures don't raise exceptions but return a result
 with `success=False`:
 
 ```python
---8<-- "docs/snippets/simulation/errors/non_exception_failures.py"
+--8<-- "docs/snippets/simulation/errors/non_exception_failures.py:example"
 ```
 
 ## Batch Error Handling
@@ -88,7 +88,7 @@ with `success=False`:
 In batch processing, individual failures don't stop the batch:
 
 ```python
---8<-- "docs/snippets/simulation/errors/batch_error_handling.py"
+--8<-- "docs/snippets/simulation/errors/batch_error_handling.py:example"
 ```
 
 ## Common EnergyPlus Errors
@@ -138,13 +138,13 @@ In batch processing, individual failures don't stop the batch:
 ### 1. Check the Error Report First
 
 ```python
---8<-- "docs/snippets/simulation/errors/1_check_the_error_report_first.py"
+--8<-- "docs/snippets/simulation/errors/1_check_the_error_report_first.py:example"
 ```
 
 ### 2. Examine Raw Output
 
 ```python
---8<-- "docs/snippets/simulation/errors/2_examine_raw_output.py"
+--8<-- "docs/snippets/simulation/errors/2_examine_raw_output.py:example"
 ```
 
 ### 3. Run Design-Day First
@@ -152,13 +152,13 @@ In batch processing, individual failures don't stop the batch:
 Design-day simulations are faster and catch most errors:
 
 ```python
---8<-- "docs/snippets/simulation/errors/3_run_design_day_first.py"
+--8<-- "docs/snippets/simulation/errors/3_run_design_day_first.py:example"
 ```
 
 ### 4. Validate Before Simulation
 
 ```python
---8<-- "docs/snippets/simulation/errors/4_validate_before_simulation.py"
+--8<-- "docs/snippets/simulation/errors/4_validate_before_simulation.py:example"
 ```
 
 ## Error Report from File
@@ -166,13 +166,13 @@ Design-day simulations are faster and catch most errors:
 Parse an error file directly:
 
 ```python
---8<-- "docs/snippets/simulation/errors/error_report_from_file.py"
+--8<-- "docs/snippets/simulation/errors/error_report_from_file.py:example"
 ```
 
 Or from string:
 
 ```python
---8<-- "docs/snippets/simulation/errors/error_report_from_file_2.py"
+--8<-- "docs/snippets/simulation/errors/error_report_from_file_2.py:example"
 ```
 
 ## See Also

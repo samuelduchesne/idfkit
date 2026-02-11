@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+from idfkit.simulation import SimulationResult, TimeSeriesResult
+from typing import Any
+
+fig: Any = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+zone_names: list[str] = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import plotly.graph_objects as go
 
 fig = go.Figure()
@@ -21,3 +31,4 @@ fig.update_layout(
     yaxis_title="Temperature (°C)",
 )
 fig.show()
+# --8<-- [end:example]

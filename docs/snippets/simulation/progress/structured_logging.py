@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+
+model: IDFDocument = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 import logging
 from idfkit.simulation import simulate, SimulationProgress
 
@@ -17,3 +23,4 @@ def on_progress(event: SimulationProgress) -> None:
 
 
 result = simulate(model, "weather.epw", on_progress=on_progress)
+# --8<-- [end:example]

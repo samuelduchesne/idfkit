@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument, IDFObject
+
+doc: IDFDocument = ...  # type: ignore[assignment]
+obj: IDFObject = ...  # type: ignore[assignment]
+zone: IDFObject = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit import load_idf, write_idf
 
 # Load an existing IDF file
@@ -16,3 +24,4 @@ for obj in doc.get_referencing("Office"):
 
 # Write back to IDF (or epJSON)
 write_idf(doc, "out.idf")
+# --8<-- [end:example]

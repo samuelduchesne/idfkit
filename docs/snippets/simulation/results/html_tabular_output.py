@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+from idfkit.simulation import HTMLResult, SimulationResult
+from typing import Any
+
+data: Any = ...  # type: ignore[assignment]
+html: HTMLResult | None = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+table: Any = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 html = result.html
 if html is not None:
     # Iterate all tables
@@ -19,3 +29,4 @@ if html is not None:
 
     # Access by index
     first = html.tablebyindex(0)
+# --8<-- [end:example]

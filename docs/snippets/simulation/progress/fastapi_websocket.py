@@ -1,3 +1,14 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationResult
+from typing import Any
+
+data: Any = ...  # type: ignore[assignment]
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+websocket: Any = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from fastapi import FastAPI, WebSocket
 from idfkit import load_idf
 from idfkit.simulation import async_simulate, SimulationProgress
@@ -31,3 +42,6 @@ async def simulate_ws(websocket: WebSocket):
         "runtime": result.runtime_seconds,
     })
     await websocket.close()
+
+
+# --8<-- [end:example]

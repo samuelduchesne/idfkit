@@ -6,7 +6,7 @@ climate.onebuilding.org with automatic caching.
 ## Basic Usage
 
 ```python
---8<-- "docs/snippets/weather/downloads/basic_usage.py"
+--8<-- "docs/snippets/weather/downloads/basic_usage.py:example"
 ```
 
 ## WeatherFiles
@@ -22,7 +22,7 @@ The `download()` method returns a `WeatherFiles` object:
 | `station` | `WeatherStation` | The station this download corresponds to |
 
 ```python
---8<-- "docs/snippets/weather/downloads/weatherfiles.py"
+--8<-- "docs/snippets/weather/downloads/weatherfiles.py:example"
 ```
 
 ## Caching
@@ -30,7 +30,7 @@ The `download()` method returns a `WeatherFiles` object:
 Downloaded files are cached locally to avoid redundant downloads:
 
 ```python
---8<-- "docs/snippets/weather/downloads/caching.py"
+--8<-- "docs/snippets/weather/downloads/caching.py:example"
 ```
 
 ### Cache Location
@@ -46,13 +46,13 @@ Default locations by platform:
 ### Custom Cache Directory
 
 ```python
---8<-- "docs/snippets/weather/downloads/custom_cache_directory.py"
+--8<-- "docs/snippets/weather/downloads/custom_cache_directory.py:example"
 ```
 
 ### Clear Cache
 
 ```python
---8<-- "docs/snippets/weather/downloads/clear_cache.py"
+--8<-- "docs/snippets/weather/downloads/clear_cache.py:example"
 ```
 
 ## Download Process
@@ -68,7 +68,7 @@ The downloader:
 ## Error Handling
 
 ```python
---8<-- "docs/snippets/weather/downloads/error_handling.py"
+--8<-- "docs/snippets/weather/downloads/error_handling.py:example"
 ```
 
 Common errors:
@@ -82,7 +82,7 @@ Common errors:
 Once files are cached, no network is needed:
 
 ```python
---8<-- "docs/snippets/weather/downloads/offline_usage.py"
+--8<-- "docs/snippets/weather/downloads/offline_usage.py:example"
 ```
 
 ## Batch Downloads
@@ -90,7 +90,7 @@ Once files are cached, no network is needed:
 Download files for multiple stations:
 
 ```python
---8<-- "docs/snippets/weather/downloads/batch_downloads.py"
+--8<-- "docs/snippets/weather/downloads/batch_downloads.py:example"
 ```
 
 ## File Format Details
@@ -112,7 +112,7 @@ Download files for multiple stations:
 Complete workflow:
 
 ```python
---8<-- "docs/snippets/weather/downloads/integration_example.py"
+--8<-- "docs/snippets/weather/downloads/integration_example.py:example"
 ```
 
 ## See Also

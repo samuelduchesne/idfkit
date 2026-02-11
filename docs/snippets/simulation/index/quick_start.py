@@ -1,3 +1,12 @@
+from __future__ import annotations
+
+from idfkit import IDFDocument
+from idfkit.simulation import SimulationResult, TimeSeriesResult
+
+model: IDFDocument = ...  # type: ignore[assignment]
+result: SimulationResult = ...  # type: ignore[assignment]
+ts: TimeSeriesResult = ...  # type: ignore[assignment]
+# --8<-- [start:example]
 from idfkit import load_idf
 from idfkit.simulation import simulate
 
@@ -15,3 +24,4 @@ ts = result.sql.get_timeseries(
     key_value="THERMAL ZONE 1",
 )
 print(f"Max temp: {max(ts.values):.1f}°C")
+# --8<-- [end:example]
