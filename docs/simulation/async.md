@@ -128,13 +128,14 @@ reorder results for analysis:
 ## Caching and Cloud Storage
 
 All async functions accept the same `cache` and `fs` parameters as their
-sync counterparts:
+sync counterparts.  For best results in async code, use an `AsyncFileSystem`
+to avoid blocking the event loop during file uploads and result reads:
 
 ```python
-from idfkit.simulation import SimulationCache, S3FileSystem
+from idfkit.simulation import SimulationCache, AsyncLocalFileSystem
 
 cache = SimulationCache()
-fs = S3FileSystem(bucket="my-bucket", prefix="study/")
+fs = AsyncLocalFileSystem()
 
 result = await async_simulate(
     model, "weather.epw",
@@ -142,7 +143,34 @@ result = await async_simulate(
     output_dir="run-001",
     fs=fs,
 )
+
+# Use async accessors to read results without blocking
+errors = await result.async_errors()
+sql = await result.async_sql()
 ```
+
+For S3 storage, use `AsyncS3FileSystem` (requires `pip install idfkit[async-s3]`):
+
+```python
+from idfkit.simulation import AsyncS3FileSystem, SimulationCache
+
+cache = SimulationCache()
+
+async with AsyncS3FileSystem(bucket="my-bucket", prefix="study/") as fs:
+    result = await async_simulate(
+        model, "weather.epw",
+        cache=cache,
+        output_dir="run-001",
+        fs=fs,
+    )
+```
+
+A sync `FileSystem` (e.g., `S3FileSystem`) is still accepted — the upload
+step is automatically wrapped in `asyncio.to_thread()` so it doesn't block
+the event loop.  However, using `AsyncFileSystem` is recommended because it
+provides true non-blocking I/O for both uploads *and* result reads (via the
+`async_errors()`, `async_sql()`, etc. accessors), and avoids thread-pool
+overhead.
 
 ## FastAPI Integration
 

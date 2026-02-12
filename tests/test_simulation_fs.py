@@ -8,9 +8,16 @@ from types import ModuleType
 from unittest.mock import MagicMock, patch
 
 import pytest
-from conftest import InMemoryFileSystem
+from conftest import InMemoryAsyncFileSystem, InMemoryFileSystem
 
-from idfkit.simulation.fs import FileSystem, LocalFileSystem, S3FileSystem
+from idfkit.simulation.fs import (
+    AsyncFileSystem,
+    AsyncLocalFileSystem,
+    AsyncS3FileSystem,
+    FileSystem,
+    LocalFileSystem,
+    S3FileSystem,
+)
 
 # ---------------------------------------------------------------------------
 # FileSystem protocol
@@ -185,6 +192,85 @@ class TestS3FileSystem:
 
 
 # ---------------------------------------------------------------------------
+# AsyncS3FileSystem
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_aiobotocore() -> ModuleType:
+    """Create a fake aiobotocore.session module with a mocked get_session."""
+    session_mod = ModuleType("aiobotocore.session")
+
+    mock_session = MagicMock()
+
+    def get_session() -> MagicMock:  # type: ignore[return-value]
+        return mock_session
+
+    session_mod.get_session = get_session  # type: ignore[attr-defined]
+    return session_mod
+
+
+class TestAsyncS3FileSystem:
+    """Tests for AsyncS3FileSystem."""
+
+    def test_import_error_when_aiobotocore_missing(self) -> None:
+        with (
+            patch.dict(sys.modules, {"aiobotocore": None, "aiobotocore.session": None}),
+            pytest.raises(ImportError, match="aiobotocore is required"),
+        ):
+            AsyncS3FileSystem(bucket="test-bucket")
+
+    def test_constructor_with_mocked_aiobotocore(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        # Need both aiobotocore and aiobotocore.session to pass import
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="my-bucket", prefix="results")
+            assert fs._bucket == "my-bucket"
+            assert fs._prefix == "results"
+
+    def test_key_with_prefix(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b", prefix="pre/fix")
+            assert fs._key("file.txt") == "pre/fix/file.txt"
+
+    def test_key_without_prefix(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b", prefix="")
+            assert fs._key("file.txt") == "file.txt"
+
+    @pytest.mark.asyncio
+    async def test_makedirs_is_noop(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b")
+            # Should not raise or need a client
+            await fs.makedirs("some/dir", exist_ok=True)
+            await fs.makedirs("some/dir", exist_ok=False)
+
+    def test_ensure_client_raises_without_context(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b")
+            with pytest.raises(RuntimeError, match="not initialised"):
+                fs._ensure_client()
+
+    def test_is_detected_as_async_fs(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            from idfkit.simulation.async_runner import _is_async_fs
+
+            fs = AsyncS3FileSystem(bucket="b")
+            assert _is_async_fs(fs)
+
+
+# ---------------------------------------------------------------------------
 # Custom FileSystem (InMemoryFileSystem)
 # ---------------------------------------------------------------------------
 
@@ -194,3 +280,110 @@ class TestCustomFileSystem:
 
     def test_isinstance_check(self) -> None:
         assert isinstance(InMemoryFileSystem(), FileSystem)
+
+
+# ---------------------------------------------------------------------------
+# AsyncFileSystem protocol
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncFileSystemProtocol:
+    """Tests for the AsyncFileSystem protocol."""
+
+    def test_async_local_satisfies_protocol(self) -> None:
+        assert isinstance(AsyncLocalFileSystem(), AsyncFileSystem)
+
+    def test_in_memory_async_satisfies_protocol(self) -> None:
+        assert isinstance(InMemoryAsyncFileSystem(), AsyncFileSystem)
+
+    def test_sync_fs_does_not_match_async_protocol(self) -> None:
+        """A sync FileSystem should not satisfy AsyncFileSystem isinstance check."""
+        # sync methods are not coroutines, so runtime_checkable only checks
+        # attribute existence — but we document the intended usage.
+        fs = LocalFileSystem()
+        # isinstance will pass because runtime_checkable only checks attr existence;
+        # the actual distinction is made via inspect.iscoroutinefunction at runtime.
+        # This test verifies that the helper function can distinguish them.
+        from idfkit.simulation.async_runner import _is_async_fs
+
+        assert not _is_async_fs(fs)
+
+    def test_async_fs_detected_by_helper(self) -> None:
+        from idfkit.simulation.async_runner import _is_async_fs
+
+        assert _is_async_fs(AsyncLocalFileSystem())
+        assert _is_async_fs(InMemoryAsyncFileSystem())
+
+
+# ---------------------------------------------------------------------------
+# AsyncLocalFileSystem
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncLocalFileSystem:
+    """Tests for AsyncLocalFileSystem backed by tmp_path."""
+
+    @pytest.fixture
+    def fs(self) -> AsyncLocalFileSystem:
+        return AsyncLocalFileSystem()
+
+    @pytest.mark.asyncio
+    async def test_write_and_read_bytes(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        p = tmp_path / "data.bin"
+        await fs.write_bytes(p, b"\x00\x01\x02")
+        assert await fs.read_bytes(p) == b"\x00\x01\x02"
+
+    @pytest.mark.asyncio
+    async def test_write_and_read_text(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        p = tmp_path / "hello.txt"
+        await fs.write_text(p, "hello world")
+        assert await fs.read_text(p) == "hello world"
+
+    @pytest.mark.asyncio
+    async def test_read_text_encoding(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        p = tmp_path / "latin.txt"
+        await fs.write_text(p, "caf\u00e9", encoding="latin-1")
+        assert await fs.read_text(p, encoding="latin-1") == "caf\u00e9"
+
+    @pytest.mark.asyncio
+    async def test_exists(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        p = tmp_path / "exists.txt"
+        assert await fs.exists(p) is False
+        p.write_text("yes")
+        assert await fs.exists(p) is True
+
+    @pytest.mark.asyncio
+    async def test_makedirs(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        d = tmp_path / "a" / "b" / "c"
+        await fs.makedirs(d)
+        assert d.is_dir()
+
+    @pytest.mark.asyncio
+    async def test_copy(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        src = tmp_path / "src.txt"
+        dst = tmp_path / "dst.txt"
+        src.write_text("content")
+        await fs.copy(src, dst)
+        assert dst.read_text() == "content"
+
+    @pytest.mark.asyncio
+    async def test_glob(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        (tmp_path / "a.txt").write_text("a")
+        (tmp_path / "b.txt").write_text("b")
+        (tmp_path / "c.csv").write_text("c")
+        matches = await fs.glob(tmp_path, "*.txt")
+        assert len(matches) == 2
+        names = {Path(m).name for m in matches}
+        assert names == {"a.txt", "b.txt"}
+
+    @pytest.mark.asyncio
+    async def test_remove(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        p = tmp_path / "removeme.txt"
+        p.write_text("bye")
+        await fs.remove(p)
+        assert not p.exists()
+
+    @pytest.mark.asyncio
+    async def test_read_nonexistent_raises(self, fs: AsyncLocalFileSystem, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError):
+            await fs.read_bytes(tmp_path / "nope.bin")

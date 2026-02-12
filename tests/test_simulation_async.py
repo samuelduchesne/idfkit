@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from conftest import InMemoryFileSystem
+from conftest import InMemoryAsyncFileSystem, InMemoryFileSystem
 
 from idfkit import new_document
 from idfkit.exceptions import SimulationError
@@ -392,3 +392,239 @@ class TestSimulationEvent:
         assert event.result is result
         assert event.completed == 3
         assert event.total == 5
+
+
+# ---------------------------------------------------------------------------
+# AsyncFileSystem integration
+# ---------------------------------------------------------------------------
+
+
+class TestAsyncFileSystem:
+    """Tests for async file system support in async_simulate()."""
+
+    @pytest.mark.asyncio
+    @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
+    async def test_simulate_with_async_fs_uploads_results(
+        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """async_simulate with an AsyncFileSystem should upload without blocking."""
+        mock_exec.return_value = _make_mock_process()
+        fs = InMemoryAsyncFileSystem()
+        model = new_document()
+        result = await async_simulate(
+            model,
+            weather_file,
+            energyplus=mock_config,
+            output_dir="remote/output",
+            fs=fs,
+        )
+        assert result.success
+        assert result.async_fs is fs
+        assert result.fs is None
+        assert result.run_dir == Path("remote/output")
+        uploaded = [k for k in fs._files if k.startswith("remote/output/")]
+        assert len(uploaded) > 0
+
+    @pytest.mark.asyncio
+    @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
+    async def test_simulate_with_sync_fs_wraps_in_thread(
+        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """async_simulate with a sync FileSystem should wrap upload in to_thread."""
+        mock_exec.return_value = _make_mock_process()
+        fs = InMemoryFileSystem()
+        model = new_document()
+        result = await async_simulate(
+            model,
+            weather_file,
+            energyplus=mock_config,
+            output_dir="remote/output",
+            fs=fs,
+        )
+        assert result.success
+        assert result.fs is fs
+        assert result.async_fs is None
+        assert result.run_dir == Path("remote/output")
+        uploaded = [k for k in fs._files if k.startswith("remote/output/")]
+        assert len(uploaded) > 0
+
+    @pytest.mark.asyncio
+    @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
+    async def test_async_fs_result_has_async_accessors(
+        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """SimulationResult from async fs should support async_errors() etc."""
+        mock_exec.return_value = _make_mock_process()
+        fs = InMemoryAsyncFileSystem()
+        model = new_document()
+        result = await async_simulate(
+            model,
+            weather_file,
+            energyplus=mock_config,
+            output_dir="remote/output",
+            fs=fs,
+        )
+        # async_errors should not raise (even if no .err file exists)
+        errors = await result.async_errors()
+        assert errors is not None
+
+    @pytest.mark.asyncio
+    @patch("idfkit.simulation.async_runner.asyncio.create_subprocess_exec")
+    async def test_async_batch_with_async_fs(
+        self, mock_exec: AsyncMock, mock_config: EnergyPlusConfig, weather_file: Path
+    ) -> None:
+        """async_simulate_batch should accept an AsyncFileSystem."""
+        mock_exec.return_value = _make_mock_process()
+        fs = InMemoryAsyncFileSystem()
+        jobs = [
+            SimulationJob(model=new_document(), weather=weather_file, label="job-0", output_dir="batch/run-0"),
+            SimulationJob(model=new_document(), weather=weather_file, label="job-1", output_dir="batch/run-1"),
+        ]
+        result = await async_simulate_batch(jobs, energyplus=mock_config, fs=fs)
+        assert len(result) == 2
+        assert result.all_succeeded
+        # Both should have used the async fs
+        for r in result.results:
+            assert r.async_fs is fs
+
+    @pytest.mark.asyncio
+    async def test_sync_property_raises_when_only_async_fs_set(self) -> None:
+        """Accessing sync properties on an async_fs-only result should raise."""
+        from idfkit.simulation.result import SimulationResult
+
+        fs = InMemoryAsyncFileSystem()
+        result = SimulationResult(
+            run_dir=Path("remote/output"),
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=0.0,
+            async_fs=fs,
+        )
+        with pytest.raises(RuntimeError, match="async accessors"):
+            _ = result.errors
+        with pytest.raises(RuntimeError, match="async accessors"):
+            _ = result.sql
+
+    @pytest.mark.asyncio
+    async def test_async_errors_with_actual_data(self) -> None:
+        """async_errors should parse .err content from an async fs."""
+        from idfkit.simulation.result import SimulationResult
+
+        fs = InMemoryAsyncFileSystem()
+        await fs.write_text(
+            "run/eplusout.err",
+            "Program Version,EnergyPlus, 24.1\n   ************* EnergyPlus Completed Successfully.\n",
+        )
+        result = SimulationResult(
+            run_dir=Path("run"),
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=0.0,
+            async_fs=fs,
+        )
+        errors = await result.async_errors()
+        assert "completed successfully" in errors.summary()
+
+    @pytest.mark.asyncio
+    async def test_async_csv_with_actual_data(self) -> None:
+        """async_csv should parse .csv content from an async fs."""
+        from idfkit.simulation.result import SimulationResult
+
+        fs = InMemoryAsyncFileSystem()
+        csv_content = "Date/Time,Zone Mean Air Temperature [C](TimeStep)\n 01/01  01:00:00,21.5\n"
+        await fs.write_text("run/eplusout.csv", csv_content)
+        result = SimulationResult(
+            run_dir=Path("run"),
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=0.0,
+            async_fs=fs,
+        )
+        csv_result = await result.async_csv()
+        assert csv_result is not None
+        assert len(csv_result.columns) > 0
+
+    @pytest.mark.asyncio
+    async def test_async_variables_with_actual_data(self) -> None:
+        """async_variables should parse .rdd content from an async fs."""
+        from idfkit.simulation.result import SimulationResult
+
+        fs = InMemoryAsyncFileSystem()
+        rdd_content = "! Program Version,EnergyPlus, 24.1\nOutput:Variable,*,Zone Mean Air Temperature,hourly; !- [C]\n"
+        await fs.write_text("run/eplusout.rdd", rdd_content)
+        result = SimulationResult(
+            run_dir=Path("run"),
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=0.0,
+            async_fs=fs,
+        )
+        variables = await result.async_variables()
+        assert variables is not None
+        assert len(variables.variables) == 1
+
+    @pytest.mark.asyncio
+    async def test_async_html_with_actual_data(self) -> None:
+        """async_html should parse HTML content from an async fs."""
+        from idfkit.simulation.result import SimulationResult
+
+        fs = InMemoryAsyncFileSystem()
+        html_content = (
+            "<html><body>"
+            "<b>Report:</b><b>Test Report</b>"
+            "<table><tr><td>Zone</td><td>Value</td></tr>"
+            "<tr><td>Zone1</td><td>21.5</td></tr></table>"
+            "</body></html>"
+        )
+        await fs.write_text("run/eplusoutTable.html", html_content)
+        result = SimulationResult(
+            run_dir=Path("run"),
+            success=True,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            runtime_seconds=0.0,
+            async_fs=fs,
+        )
+        html_result = await result.async_html()
+        assert html_result is not None
+
+    @pytest.mark.asyncio
+    async def test_from_directory_with_async_fs(self) -> None:
+        """from_directory should accept async_fs and populate it on the result."""
+        from idfkit.simulation.result import SimulationResult
+
+        fs = InMemoryAsyncFileSystem()
+        await fs.write_text(
+            "run/eplusout.err",
+            "Program Version,EnergyPlus, 24.1\n   ************* EnergyPlus Completed Successfully.\n",
+        )
+        result = SimulationResult.from_directory("run", async_fs=fs)
+        assert result.async_fs is fs
+        assert result.fs is None
+        errors = await result.async_errors()
+        assert "completed successfully" in errors.summary()
+
+    def test_both_fs_and_async_fs_raises(self) -> None:
+        """Setting both fs and async_fs should raise ValueError."""
+        from idfkit.simulation.result import SimulationResult
+
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            SimulationResult(
+                run_dir=Path("run"),
+                success=True,
+                exit_code=0,
+                stdout="",
+                stderr="",
+                runtime_seconds=0.0,
+                fs=InMemoryFileSystem(),
+                async_fs=InMemoryAsyncFileSystem(),
+            )
