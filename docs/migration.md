@@ -54,9 +54,12 @@ when one exists.
 | Save file | `idf.save()` | `doc.save()` | `doc.save()` |
 | Save as | `idf.saveas(path)` | `doc.saveas(path)` | `doc.saveas(path)` |
 | Save copy | `idf.savecopy(path)` | `doc.savecopy(path)` | `doc.savecopy(path)` |
-| Output type | `idf.outputtype = "compressed"` | `write_idf(doc, path, output_type="compressed")` | -- |
+| Output type | `idf.outputtype = "compressed"` | `doc.save(output_type="compressed")` | -- |
+| Run simulation | `idf.run(weather)` | `simulate(doc, weather)` | `doc.run(weather)` |
 | Batch update | `json_functions.updateidf(idf, d)` | `doc.update(d)` | `doc.update(d)` |
 | HTML tables | `readhtml.titletable(html)` | `result.html.titletable()` | -- |
+| Window-wall ratio | `idf.set_wwr(0.4)` | `set_wwr(doc, 0.4)` | -- |
+| Match surfaces | `idf.intersect_match()` | `intersect_match(doc)` | -- |
 
 ## Creating objects
 
@@ -239,6 +242,68 @@ Translate or rotate all surfaces in the model:
 
 ```python
 --8<-- "docs/snippets/migration/building_transforms.py:example"
+```
+
+### Window-wall ratio
+
+**geomeppy** sets window-wall ratios as a method on the IDF:
+
+```python
+--8<-- "docs/snippets/migration/set_wwr.py:example"
+```
+
+**idfkit** uses a standalone function:
+
+```python
+--8<-- "docs/snippets/migration/set_wwr_2.py:example"
+```
+
+### Surface intersection and matching
+
+**geomeppy** matches adjacent surfaces as a method on the IDF:
+
+```python
+--8<-- "docs/snippets/migration/intersect_match.py:example"
+```
+
+**idfkit** uses a standalone function:
+
+```python
+--8<-- "docs/snippets/migration/intersect_match_2.py:example"
+```
+
+## Strict field access (new in idfkit)
+
+eppy silently returns an empty string when you mistype a field name,
+making bugs hard to find. idfkit defaults to the same behaviour for
+compatibility, but you can opt in to **strict mode** to catch typos
+immediately:
+
+```python
+--8<-- "docs/snippets/migration/strict_mode.py:example"
+```
+
+Enable strict mode during migration to surface field-name mismatches
+early. Once your code is clean you can leave it on or turn it off.
+
+## Running a simulation
+
+**eppy** runs simulations directly on the IDF object:
+
+```python
+--8<-- "docs/snippets/migration/running_a_simulation.py:example"
+```
+
+**idfkit** uses a standalone `simulate()` function (recommended):
+
+```python
+--8<-- "docs/snippets/migration/running_a_simulation_2.py:example"
+```
+
+Or use the eppy-compatible convenience method:
+
+```python
+--8<-- "docs/snippets/migration/running_a_simulation_3.py:example"
 ```
 
 ## HTML tabular output

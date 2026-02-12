@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .document import IDFDocument
@@ -970,3 +970,297 @@ def calculate_zone_volume(doc: IDFDocument, zone_name: str) -> float:
             volume += v1.dot(v2.cross(centroid)) / 6.0
 
     return abs(volume)
+
+
+# ---------------------------------------------------------------------------
+# Window-Wall Ratio (WWR)
+# ---------------------------------------------------------------------------
+
+
+def set_wwr(  # noqa: C901
+    doc: IDFDocument,
+    wwr: float,
+    *,
+    construction: str | None = None,
+    surface_type: str = "Wall",
+    orientation: str | None = None,
+    tolerance: float = 10.0,
+) -> list[IDFObject]:
+    """Add or replace windows to achieve a target window-wall ratio.
+
+    For each exterior wall matching the filter criteria, a single
+    rectangular sub-surface (``FenestrationSurface:Detailed``) is
+    created whose area equals ``wwr * wall_area``.  Any existing
+    ``FenestrationSurface:Detailed`` sub-surfaces on matching walls are
+    removed first.
+
+    This is the idfkit equivalent of geomeppy's ``idf.set_wwr()``.
+
+    Args:
+        doc: The document to modify in-place.
+        wwr: Target window-wall ratio in the range ``(0, 1)``.
+        construction: Name of the window ``Construction`` to assign.
+            If ``None``, the field is left empty (EnergyPlus will
+            require it to be set before simulation).
+        surface_type: Only walls whose ``surface_type`` matches (case-
+            insensitive) are considered.  Defaults to ``"Wall"``.
+        orientation: Optional cardinal direction filter — one of
+            ``"north"``, ``"south"``, ``"east"``, ``"west"``.  Only
+            walls within *tolerance* degrees of that azimuth are modified.
+        tolerance: Azimuth tolerance in degrees when *orientation* is
+            given.  Defaults to 10°.
+
+    Returns:
+        List of newly created ``FenestrationSurface:Detailed`` objects.
+
+    Raises:
+        ValueError: If *wwr* is not in ``(0, 1)``.
+    """
+    if not 0 < wwr < 1:
+        msg = f"wwr must be between 0 and 1 (exclusive), got {wwr}"
+        raise ValueError(msg)
+
+    azimuth_target = _orientation_to_azimuth(orientation) if orientation else None
+
+    # Remove existing fenestration on matching walls
+    existing_fen: list[IDFObject] = []
+    wall_names: set[str] = set()
+    for wall in doc["BuildingSurface:Detailed"]:
+        if not _wall_matches(wall, surface_type, azimuth_target, tolerance):
+            continue
+        wall_names.add(wall.name.upper())
+
+    for fen in list(doc["FenestrationSurface:Detailed"]):
+        bsn = getattr(fen, "building_surface_name", None) or ""
+        if bsn.upper() in wall_names:
+            existing_fen.append(fen)
+    for fen in existing_fen:
+        doc.removeidfobject(fen)
+
+    # Create new windows
+    new_windows: list[IDFObject] = []
+    for wall in doc["BuildingSurface:Detailed"]:
+        if not _wall_matches(wall, surface_type, azimuth_target, tolerance):
+            continue
+        obc = getattr(wall, "outside_boundary_condition", None) or ""
+        if obc.upper() != "OUTDOORS":
+            continue
+
+        coords = get_surface_coords(wall)
+        if coords is None or coords.area < 1e-6:
+            continue
+
+        window_poly = _inset_polygon(coords, wwr)
+        if window_poly is None:
+            continue
+
+        win_name = f"{wall.name}_Window"
+        win_data: dict[str, Any] = {
+            "surface_type": "Window",
+            "building_surface_name": wall.name,
+            "number_of_vertices": window_poly.num_vertices,
+        }
+        if construction is not None:
+            win_data["construction_name"] = construction
+        for i, v in enumerate(window_poly.vertices, 1):
+            win_data[f"vertex_{i}_x_coordinate"] = round(v.x, 6)
+            win_data[f"vertex_{i}_y_coordinate"] = round(v.y, 6)
+            win_data[f"vertex_{i}_z_coordinate"] = round(v.z, 6)
+
+        win_obj = doc.add("FenestrationSurface:Detailed", win_name, win_data, validate=False)
+        new_windows.append(win_obj)
+
+    return new_windows
+
+
+def _orientation_to_azimuth(orientation: str) -> float:
+    """Convert cardinal direction to azimuth degrees."""
+    mapping = {"north": 0.0, "east": 90.0, "south": 180.0, "west": 270.0}
+    key = orientation.strip().lower()
+    if key not in mapping:
+        msg = f"orientation must be one of {list(mapping)}, got '{orientation}'"
+        raise ValueError(msg)
+    return mapping[key]
+
+
+def _wall_matches(
+    wall: IDFObject,
+    surface_type: str,
+    azimuth_target: float | None,
+    tolerance: float,
+) -> bool:
+    """Check if a wall matches the surface type and orientation filter."""
+    st = getattr(wall, "surface_type", None) or ""
+    if st.upper() != surface_type.upper():
+        return False
+    if azimuth_target is not None:
+        coords = get_surface_coords(wall)
+        if coords is None:
+            return False
+        az = coords.azimuth
+        diff = abs(az - azimuth_target)
+        if diff > 180:
+            diff = 360 - diff
+        if diff > tolerance:
+            return False
+    return True
+
+
+def _inset_polygon(wall_poly: Polygon3D, wwr: float) -> Polygon3D | None:
+    """Create a rectangular window polygon inset into a wall polygon.
+
+    The window is centred on the wall and sized so that its area equals
+    ``wwr * wall_area``.  The inset preserves the wall's plane — it
+    simply scales the bounding rectangle toward the centroid.
+    """
+    if wall_poly.num_vertices < 3:
+        return None
+
+    # Build a 2D coordinate system on the wall plane
+    normal = wall_poly.normal
+    # Pick a "horizontal" axis on the wall plane
+    up = Vector3D(0, 0, 1)
+    if abs(normal.dot(up)) > 0.99:
+        # Wall is nearly horizontal — unusual, but handle it
+        up = Vector3D(0, 1, 0)
+    right = up.cross(normal).normalize()
+    local_up = normal.cross(right).normalize()
+
+    origin = wall_poly.centroid
+
+    # Project vertices to 2D
+    coords_2d: list[tuple[float, float]] = []
+    for v in wall_poly.vertices:
+        d = v - origin
+        coords_2d.append((right.dot(d), local_up.dot(d)))
+
+    # Bounding rectangle in 2D
+    xs = [c[0] for c in coords_2d]
+    ys = [c[1] for c in coords_2d]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+
+    wall_w = max_x - min_x
+    wall_h = max_y - min_y
+    if wall_w < 1e-6 or wall_h < 1e-6:
+        return None
+
+    # Scale factor: window area = wwr * wall polygon area
+    # We size the window proportional to the bounding rect
+    scale = math.sqrt(wwr)
+    win_w = wall_w * scale
+    win_h = wall_h * scale
+
+    cx = (min_x + max_x) / 2.0
+    cy = (min_y + max_y) / 2.0
+
+    # 2D corners of window (counter-clockwise from bottom-left)
+    hw, hh = win_w / 2.0, win_h / 2.0
+    win_2d = [
+        (cx - hw, cy - hh),
+        (cx + hw, cy - hh),
+        (cx + hw, cy + hh),
+        (cx - hw, cy + hh),
+    ]
+
+    # Project back to 3D
+    window_verts = [origin + right * u + local_up * v for u, v in win_2d]
+    return Polygon3D(window_verts)
+
+
+# ---------------------------------------------------------------------------
+# Surface Intersection and Boundary Matching
+# ---------------------------------------------------------------------------
+
+
+def intersect_match(doc: IDFDocument) -> None:  # noqa: C901
+    """Match adjacent surfaces and set boundary conditions.
+
+    Scans all ``BuildingSurface:Detailed`` walls and identifies pairs
+    whose polygons are coincident (same plane, overlapping area).  For
+    each matched pair, the boundary conditions are updated so the
+    surfaces reference each other.
+
+    This is the idfkit equivalent of geomeppy's
+    ``idf.intersect_match()``.
+
+    The algorithm is O(n²) over exterior walls but uses normal-vector
+    and centroid-distance filters to skip most comparisons quickly.
+
+    Args:
+        doc: The document to modify in-place.
+
+    .. note::
+
+        This implementation handles the common case of full-overlap
+        matching (same-size surfaces on opposite sides of a shared
+        wall).  Partial intersection and surface splitting are **not**
+        implemented — use EnergyPlus' ``ExpandObjects`` preprocessor
+        or manual surface definition for complex cases.
+    """
+    walls: list[IDFObject] = []
+    for surface in doc["BuildingSurface:Detailed"]:
+        st = getattr(surface, "surface_type", None) or ""
+        if st.upper() == "WALL":
+            walls.append(surface)
+
+    matched: set[int] = set()
+
+    for i, wall_a in enumerate(walls):
+        if id(wall_a) in matched:
+            continue
+        coords_a = get_surface_coords(wall_a)
+        if coords_a is None:
+            continue
+
+        normal_a = coords_a.normal
+        centroid_a = coords_a.centroid
+
+        for j in range(i + 1, len(walls)):
+            wall_b = walls[j]
+            if id(wall_b) in matched:
+                continue
+            coords_b = get_surface_coords(wall_b)
+            if coords_b is None:
+                continue
+
+            # Quick filter: normals must be anti-parallel
+            normal_b = coords_b.normal
+            dot = normal_a.dot(normal_b)
+            if dot > -0.99:
+                continue
+
+            # Quick filter: centroids must be close
+            centroid_b = coords_b.centroid
+            dist = (centroid_a - centroid_b).length()
+            if dist > 1.0:  # Allow 1 m tolerance for thick walls
+                continue
+
+            # Check coplanarity: centroid_b must lie on plane of A
+            d = (centroid_b - centroid_a).dot(normal_a)
+            if abs(d) > 0.5:  # Allow 0.5 m for wall thickness
+                continue
+
+            # Check area similarity
+            area_a = coords_a.area
+            area_b = coords_b.area
+            if area_a < 1e-6:
+                continue
+            ratio = area_b / area_a
+            if ratio < 0.9 or ratio > 1.1:
+                continue
+
+            # Match found — update boundary conditions
+            wall_a.outside_boundary_condition = "Surface"
+            wall_a.outside_boundary_condition_object = wall_b.name
+            wall_a.sun_exposure = "NoSun"
+            wall_a.wind_exposure = "NoWind"
+
+            wall_b.outside_boundary_condition = "Surface"
+            wall_b.outside_boundary_condition_object = wall_a.name
+            wall_b.sun_exposure = "NoSun"
+            wall_b.wind_exposure = "NoWind"
+
+            matched.add(id(wall_a))
+            matched.add(id(wall_b))
+            break

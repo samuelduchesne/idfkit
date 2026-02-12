@@ -6,11 +6,16 @@ Tests cover:
 - get_referenced_object / getreferingobjs
 - getrange / checkrange
 - popidfobject
-- saveas / savecopy / save
+- saveas / savecopy / save (with output_type)
 - Building-level translate / rotate
 - IDF output formatting modes (nocomment, compressed)
 - JSON batch updates (doc.update)
 - HTML tabular output parser
+- Strict field access mode
+- getiddgroupdict with schema groups
+- set_wwr (window-wall ratio)
+- intersect_match (surface boundary matching)
+- doc.run() convenience method
 """
 
 from __future__ import annotations
@@ -28,7 +33,9 @@ from idfkit.geometry import (
     calculate_surface_tilt,
     calculate_zone_ceiling_area,
     calculate_zone_height,
+    intersect_match,
     rotate_building,
+    set_wwr,
     translate_building,
 )
 from idfkit.objects import IDFObject
@@ -766,3 +773,393 @@ class TestRotateBuildingAnchor:
         assert wall is not None
         assert _close(wall.vertex_1_x_coordinate, 0.0, tol=1e-5)
         assert _close(wall.vertex_4_x_coordinate, 10.0, tol=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# save/saveas/savecopy with output_type
+# ---------------------------------------------------------------------------
+
+
+class TestSaveMethodsOutputType:
+    """Test that save methods accept and forward output_type."""
+
+    def test_saveas_compressed(self, tmp_path: Path) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "Office")
+        out = tmp_path / "compressed.idf"
+        doc.saveas(out, output_type="compressed")
+        text = out.read_text(encoding="latin-1")
+        # Compressed mode puts objects on single lines
+        assert "!-" not in text
+        assert "Office" in text
+
+    def test_savecopy_nocomment(self, tmp_path: Path) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "Office")
+        out = tmp_path / "nocomment.idf"
+        doc.savecopy(out, output_type="nocomment")
+        text = out.read_text(encoding="latin-1")
+        # nocomment mode removes per-field comments ("!- Name", "!- X Origin")
+        # but may keep header/generator comments.  Check no field comments exist.
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("!-"):
+                # Header/option lines are OK
+                continue
+            # Field comments come after a comma or semicolon
+            assert "!- Name" not in line
+            assert "!- X Origin" not in line
+
+    def test_save_with_output_type(self, tmp_path: Path) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "Office")
+        out = tmp_path / "standard.idf"
+        doc.save(out, output_type="standard")
+        text = out.read_text(encoding="latin-1")
+        assert "!-" in text
+
+
+# ---------------------------------------------------------------------------
+# Strict field access mode
+# ---------------------------------------------------------------------------
+
+
+class TestStrictFieldAccess:
+    """Test that strict mode catches unknown field access."""
+
+    def test_strict_raises_on_unknown_field(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.strict = True
+        zone = doc.add("Zone", "Office")
+        with pytest.raises(AttributeError, match="no field"):
+            _ = zone.x_orgin  # intentional typo
+
+    def test_strict_allows_known_field(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.strict = True
+        zone = doc.add("Zone", "Office", x_origin=5.0)
+        assert zone.x_origin == 5.0
+
+    def test_non_strict_returns_none_for_unknown(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        zone = doc.add("Zone", "Office")
+        assert zone.x_orgin is None  # typo returns None
+
+    def test_strict_via_constructor(self) -> None:
+        from idfkit.schema import get_schema
+
+        schema = get_schema((24, 1, 0))
+        doc = IDFDocument(version=(24, 1, 0), schema=schema, strict=True)
+        zone = doc.add("Zone", "StrictTest")
+        with pytest.raises(AttributeError):
+            _ = zone.nonexistent_field
+
+
+# ---------------------------------------------------------------------------
+# getiddgroupdict with actual schema groups
+# ---------------------------------------------------------------------------
+
+
+class TestGetIddGroupDict:
+    """Test that getiddgroupdict() returns real IDD group names."""
+
+    def test_zone_in_thermal_zones_group(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "Office")
+        groups = doc.getiddgroupdict()
+        # Zone should be in "Thermal Zones and Surfaces", not "Miscellaneous"
+        found_group = None
+        for group, types in groups.items():
+            if "Zone" in types:
+                found_group = group
+                break
+        assert found_group == "Thermal Zones and Surfaces"
+
+    def test_material_in_surface_construction_group(self) -> None:
+        doc = new_document(version=(24, 1, 0))
+        doc.add(
+            "Material",
+            "Concrete",
+            roughness="MediumRough",
+            thickness=0.2,
+            conductivity=1.4,
+            density=2240.0,
+            specific_heat=900.0,
+        )
+        groups = doc.getiddgroupdict()
+        found_group = None
+        for group, types in groups.items():
+            if "Material" in types:
+                found_group = group
+                break
+        assert found_group is not None
+        assert found_group != "Miscellaneous"
+
+
+# ---------------------------------------------------------------------------
+# set_wwr (window-wall ratio)
+# ---------------------------------------------------------------------------
+
+
+class TestSetWWR:
+    """Test set_wwr geometry operation."""
+
+    @staticmethod
+    def _make_box_model() -> IDFDocument:
+        """Create a simple single-zone box model with 4 walls."""
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "Box")
+
+        # South wall (y=0, facing south)
+        doc.add(
+            "BuildingSurface:Detailed",
+            "SouthWall",
+            {
+                "surface_type": "Wall",
+                "construction_name": "",
+                "zone_name": "Box",
+                "outside_boundary_condition": "Outdoors",
+                "sun_exposure": "SunExposed",
+                "wind_exposure": "WindExposed",
+                "number_of_vertices": 4,
+                "vertex_1_x_coordinate": 0,
+                "vertex_1_y_coordinate": 0,
+                "vertex_1_z_coordinate": 3,
+                "vertex_2_x_coordinate": 0,
+                "vertex_2_y_coordinate": 0,
+                "vertex_2_z_coordinate": 0,
+                "vertex_3_x_coordinate": 10,
+                "vertex_3_y_coordinate": 0,
+                "vertex_3_z_coordinate": 0,
+                "vertex_4_x_coordinate": 10,
+                "vertex_4_y_coordinate": 0,
+                "vertex_4_z_coordinate": 3,
+            },
+            validate=False,
+        )
+        # North wall (y=10, facing north)
+        doc.add(
+            "BuildingSurface:Detailed",
+            "NorthWall",
+            {
+                "surface_type": "Wall",
+                "construction_name": "",
+                "zone_name": "Box",
+                "outside_boundary_condition": "Outdoors",
+                "sun_exposure": "SunExposed",
+                "wind_exposure": "WindExposed",
+                "number_of_vertices": 4,
+                "vertex_1_x_coordinate": 10,
+                "vertex_1_y_coordinate": 10,
+                "vertex_1_z_coordinate": 3,
+                "vertex_2_x_coordinate": 10,
+                "vertex_2_y_coordinate": 10,
+                "vertex_2_z_coordinate": 0,
+                "vertex_3_x_coordinate": 0,
+                "vertex_3_y_coordinate": 10,
+                "vertex_3_z_coordinate": 0,
+                "vertex_4_x_coordinate": 0,
+                "vertex_4_y_coordinate": 10,
+                "vertex_4_z_coordinate": 3,
+            },
+            validate=False,
+        )
+        return doc
+
+    def test_set_wwr_creates_windows(self) -> None:
+
+        doc = self._make_box_model()
+        windows = set_wwr(doc, 0.4)
+        assert len(windows) == 2  # South and North walls
+        for win in windows:
+            assert win.obj_type == "FenestrationSurface:Detailed"
+
+    def test_set_wwr_window_area_matches_ratio(self) -> None:
+        from idfkit.geometry import calculate_surface_area, get_surface_coords
+
+        doc = self._make_box_model()
+        set_wwr(doc, 0.25)
+        for fen in doc["FenestrationSurface:Detailed"]:
+            win_coords = get_surface_coords(fen)
+            assert win_coords is not None
+            bsn = fen.building_surface_name
+            wall = doc.getobject("BuildingSurface:Detailed", bsn)
+            assert wall is not None
+            wall_area = calculate_surface_area(wall)
+            actual_ratio = win_coords.area / wall_area
+            assert _close(actual_ratio, 0.25, tol=0.02)
+
+    def test_set_wwr_with_orientation_filter(self) -> None:
+
+        doc = self._make_box_model()
+        windows = set_wwr(doc, 0.3, orientation="south")
+        assert len(windows) == 1
+        assert "SouthWall" in windows[0].name
+
+    def test_set_wwr_replaces_existing(self) -> None:
+
+        doc = self._make_box_model()
+        set_wwr(doc, 0.4)
+        assert len(doc["FenestrationSurface:Detailed"]) == 2
+        # Replace with different ratio
+        set_wwr(doc, 0.2)
+        assert len(doc["FenestrationSurface:Detailed"]) == 2
+
+    def test_set_wwr_invalid_ratio_raises(self) -> None:
+
+        doc = self._make_box_model()
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            set_wwr(doc, 1.5)
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            set_wwr(doc, 0.0)
+
+    def test_set_wwr_with_construction(self) -> None:
+
+        doc = self._make_box_model()
+        windows = set_wwr(doc, 0.3, construction="SimpleGlazing")
+        for win in windows:
+            assert win.construction_name == "SimpleGlazing"
+
+
+# ---------------------------------------------------------------------------
+# intersect_match (surface boundary matching)
+# ---------------------------------------------------------------------------
+
+
+class TestIntersectMatch:
+    """Test intersect_match surface boundary matching."""
+
+    def test_match_coincident_walls(self) -> None:
+
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "ZoneA")
+        doc.add("Zone", "ZoneB")
+
+        # Two coincident walls with anti-parallel normals
+        doc.add(
+            "BuildingSurface:Detailed",
+            "WallA",
+            {
+                "surface_type": "Wall",
+                "construction_name": "",
+                "zone_name": "ZoneA",
+                "outside_boundary_condition": "Outdoors",
+                "sun_exposure": "SunExposed",
+                "wind_exposure": "WindExposed",
+                "number_of_vertices": 4,
+                "vertex_1_x_coordinate": 0,
+                "vertex_1_y_coordinate": 5,
+                "vertex_1_z_coordinate": 3,
+                "vertex_2_x_coordinate": 0,
+                "vertex_2_y_coordinate": 5,
+                "vertex_2_z_coordinate": 0,
+                "vertex_3_x_coordinate": 10,
+                "vertex_3_y_coordinate": 5,
+                "vertex_3_z_coordinate": 0,
+                "vertex_4_x_coordinate": 10,
+                "vertex_4_y_coordinate": 5,
+                "vertex_4_z_coordinate": 3,
+            },
+            validate=False,
+        )
+        doc.add(
+            "BuildingSurface:Detailed",
+            "WallB",
+            {
+                "surface_type": "Wall",
+                "construction_name": "",
+                "zone_name": "ZoneB",
+                "outside_boundary_condition": "Outdoors",
+                "sun_exposure": "SunExposed",
+                "wind_exposure": "WindExposed",
+                "number_of_vertices": 4,
+                "vertex_1_x_coordinate": 10,
+                "vertex_1_y_coordinate": 5,
+                "vertex_1_z_coordinate": 3,
+                "vertex_2_x_coordinate": 10,
+                "vertex_2_y_coordinate": 5,
+                "vertex_2_z_coordinate": 0,
+                "vertex_3_x_coordinate": 0,
+                "vertex_3_y_coordinate": 5,
+                "vertex_3_z_coordinate": 0,
+                "vertex_4_x_coordinate": 0,
+                "vertex_4_y_coordinate": 5,
+                "vertex_4_z_coordinate": 3,
+            },
+            validate=False,
+        )
+
+        intersect_match(doc)
+
+        wall_a = doc.getobject("BuildingSurface:Detailed", "WallA")
+        wall_b = doc.getobject("BuildingSurface:Detailed", "WallB")
+        assert wall_a is not None and wall_b is not None
+        assert wall_a.outside_boundary_condition == "Surface"
+        assert wall_a.outside_boundary_condition_object == "WallB"
+        assert wall_b.outside_boundary_condition == "Surface"
+        assert wall_b.outside_boundary_condition_object == "WallA"
+
+    def test_no_match_for_non_coincident_walls(self) -> None:
+
+        doc = new_document(version=(24, 1, 0))
+        doc.add("Zone", "ZoneA")
+        doc.add("Zone", "ZoneB")
+
+        # South wall
+        doc.add(
+            "BuildingSurface:Detailed",
+            "SouthWall",
+            {
+                "surface_type": "Wall",
+                "construction_name": "",
+                "zone_name": "ZoneA",
+                "outside_boundary_condition": "Outdoors",
+                "number_of_vertices": 4,
+                "vertex_1_x_coordinate": 0,
+                "vertex_1_y_coordinate": 0,
+                "vertex_1_z_coordinate": 3,
+                "vertex_2_x_coordinate": 0,
+                "vertex_2_y_coordinate": 0,
+                "vertex_2_z_coordinate": 0,
+                "vertex_3_x_coordinate": 10,
+                "vertex_3_y_coordinate": 0,
+                "vertex_3_z_coordinate": 0,
+                "vertex_4_x_coordinate": 10,
+                "vertex_4_y_coordinate": 0,
+                "vertex_4_z_coordinate": 3,
+            },
+            validate=False,
+        )
+        # North wall (far away)
+        doc.add(
+            "BuildingSurface:Detailed",
+            "NorthWall",
+            {
+                "surface_type": "Wall",
+                "construction_name": "",
+                "zone_name": "ZoneB",
+                "outside_boundary_condition": "Outdoors",
+                "number_of_vertices": 4,
+                "vertex_1_x_coordinate": 10,
+                "vertex_1_y_coordinate": 20,
+                "vertex_1_z_coordinate": 3,
+                "vertex_2_x_coordinate": 10,
+                "vertex_2_y_coordinate": 20,
+                "vertex_2_z_coordinate": 0,
+                "vertex_3_x_coordinate": 0,
+                "vertex_3_y_coordinate": 20,
+                "vertex_3_z_coordinate": 0,
+                "vertex_4_x_coordinate": 0,
+                "vertex_4_y_coordinate": 20,
+                "vertex_4_z_coordinate": 3,
+            },
+            validate=False,
+        )
+
+        intersect_match(doc)
+
+        south = doc.getobject("BuildingSurface:Detailed", "SouthWall")
+        north = doc.getobject("BuildingSurface:Detailed", "NorthWall")
+        assert south is not None and north is not None
+        assert south.outside_boundary_condition == "Outdoors"
+        assert north.outside_boundary_condition == "Outdoors"

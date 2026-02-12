@@ -57,7 +57,9 @@ from .geometry import (
     calculate_zone_floor_area,
     calculate_zone_height,
     calculate_zone_volume,
+    intersect_match,
     rotate_building,
+    set_wwr,
     translate_building,
 )
 
@@ -225,6 +227,7 @@ __all__ = [
     "get_idf_version",
     "get_schema",
     "get_schema_manager",
+    "intersect_match",
     "is_supported_version",
     "load_epjson",
     "load_idf",
@@ -232,6 +235,7 @@ __all__ = [
     "parse_epjson",
     "parse_idf",
     "rotate_building",
+    "set_wwr",
     "translate_building",
     "validate_document",
     "validate_object",

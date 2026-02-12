@@ -14,6 +14,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from ._compat import EppyDocumentMixin
 from .exceptions import ValidationFailedError
 from .introspection import ObjectDescription, describe_object_type
 from .objects import IDFCollection, IDFObject
@@ -81,7 +82,7 @@ _PYTHON_TO_IDF = {
 _IDF_TO_PYTHON = {v.upper(): k for k, v in _PYTHON_TO_IDF.items()}
 
 
-class IDFDocument:
+class IDFDocument(EppyDocumentMixin):
     """
     Main container for an EnergyPlus model.
 
@@ -98,6 +99,7 @@ class IDFDocument:
         "_references",
         "_schedules_cache",
         "_schema",
+        "_strict",
         "filepath",
         "version",
     )
@@ -108,12 +110,15 @@ class IDFDocument:
     _schema: EpJSONSchema | None
     _references: ReferenceGraph
     _schedules_cache: dict[str, IDFObject] | None
+    _strict: bool
 
     def __init__(
         self,
         version: tuple[int, int, int] | None = None,
         schema: EpJSONSchema | None = None,
         filepath: Path | str | None = None,
+        *,
+        strict: bool = False,
     ) -> None:
         """
         Initialize an IDFDocument.
@@ -122,6 +127,11 @@ class IDFDocument:
             version: EnergyPlus version tuple
             schema: EpJSONSchema for validation
             filepath: Source file path
+            strict: When ``True``, accessing an unknown field name on any
+                :class:`IDFObject` owned by this document raises
+                ``AttributeError`` instead of returning ``None``.  This
+                is useful during migration from eppy to catch field-name
+                typos early.
         """
         self.version = version or LATEST_VERSION
         self.filepath = Path(filepath) if filepath else None
@@ -129,6 +139,20 @@ class IDFDocument:
         self._collections: dict[str, IDFCollection] = {}
         self._references = ReferenceGraph()
         self._schedules_cache: dict[str, IDFObject] | None = None
+        self._strict = strict
+
+    @property
+    def strict(self) -> bool:
+        """Whether strict field access mode is enabled.
+
+        When ``True``, accessing an unknown field name on objects in this
+        document raises ``AttributeError`` instead of returning ``None``.
+        """
+        return self._strict
+
+    @strict.setter
+    def strict(self, value: bool) -> None:
+        self._strict = value
 
     @property
     def schema(self) -> EpJSONSchema | None:
@@ -279,59 +303,6 @@ class IDFDocument:
             [('Zone', 1)]
         """
         return [(k, v) for k, v in self._collections.items() if v]
-
-    # -------------------------------------------------------------------------
-    # Object Access (eppy compatibility)
-    # -------------------------------------------------------------------------
-
-    @property
-    def idfobjects(self) -> _IDFObjectsView:
-        """
-        Dict-like access to all object collections (eppy compatibility).
-
-        Returns a view that allows access like idf.idfobjects["ZONE"]
-        """
-        return _IDFObjectsView(self)
-
-    def getobject(self, obj_type: str, name: str) -> IDFObject | None:
-        """
-        Get a specific object by type and name.
-
-        Args:
-            obj_type: Object type (e.g., "Zone")
-            name: Object name
-
-        Returns:
-            IDFObject or None if not found
-
-        Examples:
-            >>> from idfkit import new_document
-            >>> model = new_document()
-            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
-            Zone('Perimeter_ZN_1')
-            >>> model.getobject("Zone", "Perimeter_ZN_1").name
-            'Perimeter_ZN_1'
-            >>> model.getobject("Zone", "NonExistent") is None
-            True
-        """
-        collection = self._collections.get(obj_type)
-        if collection:
-            return collection.get(name)
-        return None
-
-    def getiddgroupdict(self) -> dict[str, list[str]]:
-        """Get dict of object groups (eppy compatibility)."""
-        # This would require IDD group info from schema
-        # For now, return a simplified version
-        groups: dict[str, list[str]] = {}
-        for obj_type in self._collections:
-            # Simple grouping by first part of name
-            parts = obj_type.split(":")
-            group = parts[0] if len(parts) > 1 else "Miscellaneous"
-            if group not in groups:
-                groups[group] = []
-            groups[group].append(obj_type)
-        return groups
 
     def describe(self, obj_type: str) -> ObjectDescription:
         """
@@ -485,38 +456,14 @@ class IDFDocument:
 
         return obj
 
-    def newidfobject(self, obj_type: str, **kwargs: Any) -> IDFObject:
-        """
-        Create a new object (eppy compatibility).
-
-        The 'Name' kwarg becomes the object name if provided.
-        """
-        name = kwargs.pop("Name", kwargs.pop("name", ""))
-        return self.add(obj_type, name, **kwargs)
-
-    def addidfobject(self, obj: IDFObject) -> IDFObject:
-        """Add an existing IDFObject to the document."""
-        # Set document reference
-        object.__setattr__(obj, "_document", self)
-
-        # Compute ref_fields if not already set
-        if object.__getattribute__(obj, "_ref_fields") is None and self._schema:
-            object.__setattr__(obj, "_ref_fields", self._compute_ref_fields(self._schema, obj.obj_type))
-
-        # Add to collection
-        self[obj.obj_type].add(obj)
-
-        # Index references
-        self._index_object_references(obj)
-
-        return obj
-
-    def addidfobjects(self, objects: list[IDFObject]) -> list[IDFObject]:
-        """Add multiple objects to the document."""
-        return [self.addidfobject(obj) for obj in objects]
-
     def removeidfobject(self, obj: IDFObject) -> None:
-        """Remove an object from the document."""
+        """Remove an object from the document.
+
+        .. tip::
+
+            This method is also the recommended idfkit API.  Alternatively,
+            use :meth:`popidfobject` to remove by index.
+        """
         obj_type = obj.obj_type
 
         if obj_type in self._collections:
@@ -528,88 +475,6 @@ class IDFDocument:
         # Invalidate caches
         if obj_type.upper().startswith("SCHEDULE"):
             self._schedules_cache = None
-
-    def popidfobject(self, obj_type: str, index: int) -> IDFObject:
-        """Remove and return an object by type and index (eppy compatibility).
-
-        Args:
-            obj_type: Object type (e.g. "Zone")
-            index: Zero-based index within the collection
-
-        Returns:
-            The removed IDFObject
-
-        Raises:
-            IndexError: If the index is out of range
-        """
-        collection = self[obj_type]
-        obj = collection[index]
-        self.removeidfobject(obj)
-        return obj
-
-    def removeidfobjects(self, objects: list[IDFObject]) -> None:
-        """Remove multiple objects from the document."""
-        for obj in objects:
-            self.removeidfobject(obj)
-
-    def copyidfobject(self, obj: IDFObject, new_name: str | None = None) -> IDFObject:
-        """Create a copy of an object with optional new name."""
-        new_obj = obj.copy()
-        if new_name:
-            new_obj.name = new_name
-        return self.addidfobject(new_obj)
-
-    def update(self, updates: dict[str, Any]) -> None:
-        """Apply batch field updates using dot-separated key paths.
-
-        Mirrors eppy's ``json_functions.updateidf`` for parametric
-        sweeps and bulk modifications.
-
-        Each key has the form ``"ObjectType.ObjectName.field_name"``
-        and the value is the new field value.  The object must already
-        exist in the document.
-
-        .. note::
-
-           Object names containing literal dots are **not** supported
-           because the separator is itself a dot.  For objects whose
-           names may contain dots, modify fields directly via
-           :meth:`getobject` instead.
-
-        Args:
-            updates: Mapping of ``"Type.Name.field"`` -> new_value.
-
-        Raises:
-            KeyError: If the referenced object does not exist or the
-                key format is invalid.
-
-        Examples:
-            Batch-update fields for parametric analysis -- for instance,
-            sweep insulation thickness without touching the rest of the model:
-
-            >>> from idfkit import new_document
-            >>> model = new_document()
-            >>> model.add("Material", "Insulation",
-            ...     roughness="Rough", thickness=0.05,
-            ...     conductivity=0.04, density=30.0, specific_heat=1500.0)  # doctest: +ELLIPSIS
-            Material('Insulation')
-            >>> model.update({"Material.Insulation.thickness": 0.1})
-            >>> model.getobject("Material", "Insulation").thickness
-            0.1
-        """
-        from .objects import to_python_name
-
-        for dotted_key, value in updates.items():
-            parts = dotted_key.split(".", 2)
-            if len(parts) != 3:
-                msg = f"Expected 'ObjectType.ObjectName.field_name', got '{dotted_key}'"
-                raise KeyError(msg)
-            obj_type, obj_name, field_name = parts
-            obj = self.getobject(obj_type, obj_name)
-            if obj is None:
-                msg = f"No {obj_type} named '{obj_name}'"
-                raise KeyError(msg)
-            setattr(obj, to_python_name(field_name), value)
 
     def rename(self, obj_type: str, old_name: str, new_name: str) -> None:
         """
@@ -809,44 +674,8 @@ class IDFDocument:
         return used
 
     # -------------------------------------------------------------------------
-    # Surfaces (common access pattern)
+    # Zone Surfaces (common access pattern)
     # -------------------------------------------------------------------------
-
-    def getsurfaces(self, surface_type: str | None = None) -> list[IDFObject]:
-        """
-        Get building surfaces, optionally filtered by type.
-
-        Args:
-            surface_type: Filter by surface type ("wall", "floor", "roof", "ceiling")
-
-        Returns:
-            List of surface objects
-
-        Examples:
-            Query the building envelope by surface type:
-
-            >>> from idfkit import new_document
-            >>> model = new_document()
-            >>> model.add("BuildingSurface:Detailed", "South_Wall",
-            ...     surface_type="Wall", construction_name="", zone_name="",
-            ...     outside_boundary_condition="Outdoors",
-            ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
-            ...     validate=False)  # doctest: +ELLIPSIS
-            BuildingSurface:Detailed('South_Wall')
-            >>> len(model.getsurfaces())
-            1
-            >>> len(model.getsurfaces("wall"))
-            1
-            >>> len(model.getsurfaces("floor"))
-            0
-        """
-        surfaces = list(self["BuildingSurface:Detailed"])
-
-        if surface_type:
-            surface_type_upper = surface_type.upper()
-            surfaces = [s for s in surfaces if (getattr(s, "surface_type", None) or "").upper() == surface_type_upper]
-
-        return surfaces
 
     def get_zone_surfaces(self, zone_name: str) -> list[IDFObject]:
         """Get all surfaces belonging to a zone."""
@@ -960,86 +789,6 @@ class IDFDocument:
         return new_doc
 
     # -------------------------------------------------------------------------
-    # File I/O (eppy compatibility)
-    # -------------------------------------------------------------------------
-
-    def save(self, filepath: str | Path | None = None, encoding: str = "latin-1") -> None:
-        """Save the document to its current filepath (eppy compatibility).
-
-        Args:
-            filepath: Explicit path override.  If ``None``, uses
-                ``self.filepath``.
-            encoding: Output encoding (default ``latin-1``).
-
-        Raises:
-            ValueError: If no filepath is set and none is provided.
-
-        Examples:
-            Save a modified model back to its original IDF file::
-
-                model = load_idf("5ZoneAirCooled.idf")
-                model.add("Zone", "Mech_Room")
-                model.save()   # overwrites 5ZoneAirCooled.idf
-
-            Save to a new path for archival::
-
-                model.save("5ZoneAirCooled_v2.idf")
-        """
-        from .writers import write_idf
-
-        target = Path(filepath) if filepath else self.filepath
-        if target is None:
-            msg = "No filepath set - pass a path or use saveas()"
-            raise ValueError(msg)
-        write_idf(self, target, encoding=encoding)
-        self.filepath = target
-
-    def saveas(self, filepath: str | Path, encoding: str = "latin-1") -> None:
-        """Save to a new path and update ``self.filepath`` (eppy compatibility).
-
-        After saving, ``self.filepath`` is updated to the new path so
-        subsequent :meth:`save` calls write to it.
-
-        Args:
-            filepath: Destination path.
-            encoding: Output encoding.
-
-        Examples:
-            Save under a new name and continue editing there::
-
-                model = load_idf("Baseline.idf")
-                model.saveas("HighInsulation_Variant.idf")
-                model.save()   # now writes to HighInsulation_Variant.idf
-        """
-        from .writers import write_idf
-
-        target = Path(filepath)
-        write_idf(self, target, encoding=encoding)
-        self.filepath = target
-
-    def savecopy(self, filepath: str | Path, encoding: str = "latin-1") -> None:
-        """Save a copy without changing ``self.filepath`` (eppy compatibility).
-
-        Unlike :meth:`saveas`, the document's ``filepath`` remains
-        unchanged.
-
-        Args:
-            filepath: Destination path.
-            encoding: Output encoding.
-
-        Examples:
-            Create a snapshot before running a parametric sweep::
-
-                model = load_idf("Baseline.idf")
-                model.savecopy("Baseline_backup.idf")
-                # ... modify model ...
-                model.save()   # still writes to Baseline.idf
-        """
-        from .writers import write_idf
-
-        write_idf(self, Path(filepath), encoding=encoding)
-
-    # -------------------------------------------------------------------------
     # String Representation
     # -------------------------------------------------------------------------
 
@@ -1053,53 +802,3 @@ class IDFDocument:
             if collection:
                 lines.append(f"  {obj_type}: {len(collection)} objects")
         return "\n".join(lines)
-
-
-class _IDFObjectsView:
-    """
-    Dict-like view for idfobjects access (eppy compatibility).
-
-    Allows: idf.idfobjects["ZONE"], idf.idfobjects["Zone"], etc.
-    """
-
-    __slots__ = ("_doc",)
-
-    def __init__(self, doc: IDFDocument) -> None:
-        self._doc = doc
-
-    def __getitem__(self, key: str) -> IDFCollection:
-        collections = self._doc.collections
-        # Try exact match first
-        if key in collections:
-            return collections[key]
-
-        # Try case-insensitive match
-        key_upper = key.upper()
-        for obj_type, collection in collections.items():
-            if obj_type.upper() == key_upper:
-                return collection
-
-        # Return empty collection
-        return self._doc[key]
-
-    def __contains__(self, key: object) -> bool:
-        if not isinstance(key, str):
-            return False
-        collections = self._doc.collections
-        key_upper = key.upper()
-        for obj_type, collection in collections.items():
-            if obj_type.upper() == key_upper:
-                return len(collection) > 0
-        return False
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._doc.collections)
-
-    def keys(self) -> list[str]:
-        return list(self._doc.collections.keys())
-
-    def values(self) -> list[IDFCollection]:
-        return list(self._doc.collections.values())
-
-    def items(self) -> list[tuple[str, IDFCollection]]:
-        return list(self._doc.collections.items())

@@ -11,6 +11,8 @@ import re
 from collections.abc import Callable, Iterator
 from typing import TYPE_CHECKING, Any
 
+from ._compat_object import EppyObjectMixin
+
 if TYPE_CHECKING:
     from .document import IDFDocument
 
@@ -35,7 +37,7 @@ def to_idf_name(python_name: str) -> str:
     return " ".join(word.capitalize() for word in python_name.split("_"))
 
 
-class IDFObject:
+class IDFObject(EppyObjectMixin):
     """
     Lightweight wrapper around a dict representing an EnergyPlus object.
 
@@ -147,42 +149,14 @@ class IDFObject:
         """Set the object's name."""
         self._set_name(value)
 
-    @property
-    def key(self) -> str:
-        """The object type (alias for eppy compatibility)."""
-        return self._type
-
-    @property
-    def Name(self) -> str:
-        """The object's name (eppy compatibility - capitalized)."""
-        return self._name
-
-    @Name.setter
-    def Name(self, value: str) -> None:
-        """Set the object's name (eppy compatibility)."""
-        self._set_name(value)
-
-    @property
-    def fieldnames(self) -> list[str]:
-        """List of field names (eppy compatibility)."""
-        if self._field_order:
-            return ["Name", *list(self._field_order)]
-        return ["Name", *list(self._data.keys())]
-
-    @property
-    def fieldvalues(self) -> list[Any]:
-        """List of field values in order (eppy compatibility)."""
-        if self._field_order:
-            return [self._name] + [self._data.get(f) for f in self._field_order]
-        return [self._name, *list(self._data.values())]
-
-    @property
-    def theidf(self) -> IDFDocument | None:
-        """Reference to parent document (eppy compatibility)."""
-        return self._document
-
     def __getattr__(self, key: str) -> Any:
-        """Get field value by attribute name."""
+        """Get field value by attribute name.
+
+        When the parent document has ``strict=True``, accessing a field
+        name that is neither present in the data dict nor recognised by
+        the schema raises ``AttributeError`` instead of returning
+        ``None``.  This catches typos during migration.
+        """
         if key.startswith("_"):
             raise AttributeError(key)
 
@@ -201,7 +175,19 @@ class IDFObject:
         if python_key in data:
             return data[python_key]
 
-        # Field not found - return None (eppy behavior)
+        # Field not found — check strict mode
+        doc = object.__getattribute__(self, "_document")
+        if doc is not None and getattr(doc, "_strict", False):
+            # In strict mode, only allow known schema fields
+            field_order = object.__getattribute__(self, "_field_order")
+            if field_order is not None and python_key not in field_order:
+                obj_type = object.__getattribute__(self, "_type")
+                raise AttributeError(  # noqa: TRY003
+                    f"'{obj_type}' object has no field '{key}'. "
+                    f"Known fields: {', '.join(field_order[:10])}{'...' if len(field_order) > 10 else ''}"
+                )
+
+        # Default: return None (eppy behaviour)
         return None
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -311,258 +297,6 @@ class IDFObject:
         """
         value = getattr(self, key)
         return value if value is not None else default
-
-    # -----------------------------------------------------------------
-    # eppy compatibility: cross-referencing
-    # -----------------------------------------------------------------
-
-    def get_referenced_object(self, field_name: str) -> IDFObject | None:
-        """Follow a reference field and return the referenced object.
-
-        Given a field that contains the *name* of another object (e.g.
-        ``construction_name``), look up and return the actual
-        :class:`IDFObject` that it points to.
-
-        This mirrors ``epbunch.get_referenced_object(fieldname)`` in eppy.
-
-        Args:
-            field_name: The field whose value is the name of the target
-                object (e.g. ``"zone_name"``, ``"construction_name"``).
-
-        Returns:
-            The referenced :class:`IDFObject`, or ``None`` if the field is
-            empty, the document is not attached, or the target cannot be
-            found.
-
-        Examples:
-            Follow a surface's ``zone_name`` reference to retrieve the
-            Zone object it belongs to:
-
-            >>> from idfkit import new_document
-            >>> model = new_document()
-            >>> model.add("Zone", "Perimeter_ZN_1")  # doctest: +ELLIPSIS
-            Zone('Perimeter_ZN_1')
-            >>> wall = model.add("BuildingSurface:Detailed", "South_Wall",
-            ...     surface_type="Wall", construction_name="",
-            ...     zone_name="Perimeter_ZN_1",
-            ...     outside_boundary_condition="Outdoors",
-            ...     sun_exposure="SunExposed", wind_exposure="WindExposed",
-            ...     validate=False)
-            >>> zone = wall.get_referenced_object("zone_name")
-            >>> zone.name
-            'Perimeter_ZN_1'
-        """
-        doc = self._document
-        if doc is None:
-            return None
-
-        # Resolve the field value
-        value = getattr(self, field_name)
-        if not value or not isinstance(value, str):
-            return None
-
-        # Use schema to find which object types could provide this name
-        schema = doc.schema
-        if schema is not None:
-            python_key = to_python_name(field_name)
-            object_lists = schema.get_field_object_list(self._type, python_key)
-            if object_lists:
-                for obj_list in object_lists:
-                    provider_types = schema.get_types_providing_reference(obj_list)
-                    for ptype in provider_types:
-                        found = doc.getobject(ptype, value)
-                        if found is not None:
-                            return found
-
-        # Fallback: scan all collections for an object with this name
-        for collection in doc.collections.values():
-            result = collection.get(value)
-            if result is not None:
-                return result
-
-        return None
-
-    def getreferingobjs(
-        self,
-        iddgroups: list[str] | None = None,
-        fields: list[str] | None = None,
-    ) -> list[IDFObject]:
-        """Find all objects that reference this object by name.
-
-        This mirrors ``epbunch.getreferingobjs()`` in eppy.
-
-        Args:
-            iddgroups: Optional list of IDD group names to restrict the
-                search to (e.g. ``["Thermal Zones and Surfaces"]``).
-            fields: Optional list of field names to restrict the search to.
-
-        Returns:
-            List of :class:`IDFObject` instances that reference this
-            object's name.
-        """
-        doc = self._document
-        if doc is None or not self._name:
-            return []
-
-        refs_with_fields = doc.references.get_referencing_with_fields(self._name)
-        if not refs_with_fields:
-            return []
-
-        group_filter = self._build_group_filter(iddgroups)
-        normalized_fields = {to_python_name(f) for f in fields} if fields is not None else None
-
-        results: list[IDFObject] = []
-        seen: set[int] = set()
-        for obj, field_name in refs_with_fields:
-            obj_id = id(obj)
-            if obj_id in seen:
-                continue
-            if normalized_fields is not None and to_python_name(field_name) not in normalized_fields:
-                continue
-            if group_filter is not None and obj.obj_type not in group_filter:
-                continue
-            seen.add(obj_id)
-            results.append(obj)
-
-        return results
-
-    def _build_group_filter(self, iddgroups: list[str] | None) -> set[str] | None:
-        """Build a set of object types belonging to the given IDD groups."""
-        doc = self._document
-        if iddgroups is None or doc is None or doc.schema is None:
-            return None
-        result: set[str] = set()
-        for obj_type in doc.schema.object_types:
-            grp = doc.schema.get_group(obj_type)
-            if grp and grp in iddgroups:
-                result.add(obj_type)
-        return result
-
-    def get_referring_objects(
-        self,
-        iddgroups: list[str] | None = None,
-        fields: list[str] | None = None,
-    ) -> list[IDFObject]:
-        """Properly-spelled alias for :meth:`getreferingobjs`."""
-        return self.getreferingobjs(iddgroups=iddgroups, fields=fields)
-
-    # -----------------------------------------------------------------
-    # eppy compatibility: range checking
-    # -----------------------------------------------------------------
-
-    def getrange(self, field_name: str) -> dict[str, Any]:
-        """Return the valid range constraints for *field_name* from the schema.
-
-        Mirrors ``epbunch.getrange(fieldname)`` in eppy.
-
-        Returns a dict which may contain keys ``minimum``,
-        ``exclusiveMinimum``, ``maximum``, ``exclusiveMaximum``, and
-        ``type``.
-
-        Examples:
-            Check valid thickness bounds before setting a new value:
-
-            >>> from idfkit import new_document
-            >>> model = new_document()
-            >>> mat = model.add("Material", "Insulation_Board",
-            ...     roughness="MediumRough", thickness=0.05,
-            ...     conductivity=0.04, density=30.0, specific_heat=1500.0)
-            >>> rng = mat.getrange("thickness")
-            >>> rng["exclusiveMinimum"]
-            0.0
-        """
-        result: dict[str, Any] = {}
-        field_idd = self.get_field_idd(to_python_name(field_name))
-        if not field_idd:
-            return result
-
-        for key in ("minimum", "exclusiveMinimum", "maximum", "exclusiveMaximum", "type"):
-            if key in field_idd:
-                result[key] = field_idd[key]
-
-        # Also check inside anyOf
-        if "anyOf" in field_idd:
-            for sub in field_idd["anyOf"]:
-                for key in ("minimum", "exclusiveMinimum", "maximum", "exclusiveMaximum"):
-                    if key in sub and key not in result:
-                        result[key] = sub[key]
-
-        return result
-
-    def checkrange(self, field_name: str) -> bool:
-        """Validate that the current value of *field_name* is within range.
-
-        Mirrors ``epbunch.checkrange(fieldname)`` in eppy.
-
-        Returns:
-            ``True`` if the value is within the valid range.
-
-        Raises:
-            RangeError: If the value is outside the valid range.
-
-        Examples:
-            Verify a material's thickness is within EnergyPlus limits:
-
-            >>> from idfkit import new_document
-            >>> model = new_document()
-            >>> mat = model.add("Material", "Concrete_200mm",
-            ...     roughness="MediumRough", thickness=0.2,
-            ...     conductivity=1.4, density=2240.0, specific_heat=900.0)
-            >>> mat.checkrange("thickness")
-            True
-        """
-        from .exceptions import RangeError
-
-        value = getattr(self, field_name)
-        if value is None or not isinstance(value, (int, float)):
-            return True
-
-        constraints = self.getrange(field_name)
-        if not constraints:
-            return True
-
-        if "minimum" in constraints and value < constraints["minimum"]:
-            msg = f"Value {value} for '{field_name}' is below minimum {constraints['minimum']}"
-            raise RangeError(self._type, self._name, field_name, msg)
-
-        if "exclusiveMinimum" in constraints and value <= constraints["exclusiveMinimum"]:
-            msg = f"Value {value} for '{field_name}' must be > {constraints['exclusiveMinimum']}"
-            raise RangeError(self._type, self._name, field_name, msg)
-
-        if "maximum" in constraints and value > constraints["maximum"]:
-            msg = f"Value {value} for '{field_name}' is above maximum {constraints['maximum']}"
-            raise RangeError(self._type, self._name, field_name, msg)
-
-        if "exclusiveMaximum" in constraints and value >= constraints["exclusiveMaximum"]:
-            msg = f"Value {value} for '{field_name}' must be < {constraints['exclusiveMaximum']}"
-            raise RangeError(self._type, self._name, field_name, msg)
-
-        return True
-
-    # -----------------------------------------------------------------
-    # Schema introspection
-    # -----------------------------------------------------------------
-
-    def get_field_idd(self, field_name: str) -> dict[str, Any] | None:
-        """Get IDD/schema info for a field (eppy compatibility)."""
-        if not self._schema:
-            return None
-        pattern_props: dict[str, Any] = self._schema.get("patternProperties", {})
-        # The pattern key varies (e.g. ".*", "^.*\\S.*$") - get the first one
-        default: dict[str, Any] = {}
-        inner: dict[str, Any] = next(iter(pattern_props.values()), default) if pattern_props else default
-        return inner.get("properties", {}).get(to_python_name(field_name))
-
-    def getfieldidd(self, field_name: str) -> dict[str, Any] | None:
-        """Alias for get_field_idd (eppy compatibility)."""
-        return self.get_field_idd(field_name)
-
-    def getfieldidd_item(self, field_name: str, item: str) -> Any:
-        """Get specific item from field IDD info (eppy compatibility)."""
-        field_idd = self.get_field_idd(field_name)
-        if field_idd:
-            return field_idd.get(item)
-        return None
 
     def copy(self) -> IDFObject:
         """Create a copy of this object."""
