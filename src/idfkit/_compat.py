@@ -42,19 +42,19 @@ class _IDFObjectsView:
         self._doc = doc
 
     def __getitem__(self, key: str) -> IDFCollection:
-        collections: dict[str, IDFCollection] = self._doc._collections  # type: ignore[attr-defined]
+        collections = self._doc.collections
         if key in collections:
             return collections[key]
         key_upper = key.upper()
         for obj_type, collection in collections.items():
             if obj_type.upper() == key_upper:
                 return collection
-        return self._doc[key]  # type: ignore[index]
+        return self._doc[key]
 
     def __contains__(self, key: object) -> bool:
         if not isinstance(key, str):
             return False
-        collections: dict[str, IDFCollection] = self._doc._collections  # type: ignore[attr-defined]
+        collections = self._doc.collections
         key_upper = key.upper()
         for obj_type, collection in collections.items():
             if obj_type.upper() == key_upper:
@@ -62,23 +62,19 @@ class _IDFObjectsView:
         return False
 
     def __iter__(self) -> Iterator[str]:
-        collections: dict[str, IDFCollection] = self._doc._collections  # type: ignore[attr-defined]
-        return iter(collections)
+        return iter(self._doc.collections)
 
     def keys(self) -> list[str]:
         """Return object type names."""
-        collections: dict[str, IDFCollection] = self._doc._collections  # type: ignore[attr-defined]
-        return list(collections.keys())
+        return list(self._doc.collections.keys())
 
     def values(self) -> list[IDFCollection]:
         """Return all collections."""
-        collections: dict[str, IDFCollection] = self._doc._collections  # type: ignore[attr-defined]
-        return list(collections.values())
+        return list(self._doc.collections.values())
 
     def items(self) -> list[tuple[str, IDFCollection]]:
         """Return (type, collection) pairs."""
-        collections: dict[str, IDFCollection] = self._doc._collections  # type: ignore[attr-defined]
-        return list(collections.items())
+        return list(self._doc.collections.items())
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +97,8 @@ class EppyDocumentMixin:
         _schema: EpJSONSchema | None
         filepath: Path | None
 
+        @property
+        def collections(self) -> dict[str, IDFCollection]: ...
         def __getitem__(self, key: str) -> IDFCollection: ...
         def add(self, obj_type: str, name: str = "", **kwargs: Any) -> IDFObject: ...
         def removeidfobject(self, obj: IDFObject) -> None: ...
