@@ -448,8 +448,9 @@ class TestGetIddGroupDict:
     def test_basic(self, simple_doc: IDFDocument) -> None:
         groups = simple_doc.getiddgroupdict()
         assert isinstance(groups, dict)
-        # BuildingSurface:Detailed should be grouped under "BuildingSurface"
-        assert "BuildingSurface" in groups
+        # BuildingSurface:Detailed should be in "Thermal Zones and Surfaces" group
+        assert "Thermal Zones and Surfaces" in groups
+        assert "BuildingSurface:Detailed" in groups["Thermal Zones and Surfaces"]
 
 
 class TestAddWithValidation:
