@@ -244,6 +244,48 @@ Translate or rotate all surfaces in the model:
 --8<-- "docs/snippets/migration/building_transforms.py:example"
 ```
 
+### Window-wall ratio
+
+**geomeppy** sets window-wall ratios as a method on the IDF:
+
+```python
+--8<-- "docs/snippets/migration/set_wwr.py:example"
+```
+
+**idfkit** uses a standalone function:
+
+```python
+--8<-- "docs/snippets/migration/set_wwr_2.py:example"
+```
+
+### Surface intersection and matching
+
+**geomeppy** matches adjacent surfaces as a method on the IDF:
+
+```python
+--8<-- "docs/snippets/migration/intersect_match.py:example"
+```
+
+**idfkit** uses a standalone function:
+
+```python
+--8<-- "docs/snippets/migration/intersect_match_2.py:example"
+```
+
+## Strict field access (new in idfkit)
+
+eppy silently returns an empty string when you mistype a field name,
+making bugs hard to find. idfkit defaults to the same behaviour for
+compatibility, but you can opt in to **strict mode** to catch typos
+immediately:
+
+```python
+--8<-- "docs/snippets/migration/strict_mode.py:example"
+```
+
+Enable strict mode during migration to surface field-name mismatches
+early. Once your code is clean you can leave it on or turn it off.
+
 ## Running a simulation
 
 **eppy** runs simulations directly on the IDF object:
