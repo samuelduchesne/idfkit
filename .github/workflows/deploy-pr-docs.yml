@@ -20,19 +20,32 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
+      - name: Check out gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages-deploy
+
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
 
       - name: Build documentation
         run: uv run mkdocs build
 
-      - name: Deploy preview
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          destination_dir: pr-preview/pr-${{ github.event.number }}
-          keep_files: true
+      - name: Deploy preview to gh-pages
+        run: |
+          rm -rf "gh-pages-deploy/pr-preview/pr-${{ github.event.number }}"
+          mkdir -p "gh-pages-deploy/pr-preview/pr-${{ github.event.number }}"
+          cp -r site/. "gh-pages-deploy/pr-preview/pr-${{ github.event.number }}/"
+
+          cd gh-pages-deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || {
+            git commit -m "Deploy docs preview for PR #${{ github.event.number }}"
+            git push origin gh-pages
+          }
 
       - name: Add or update preview comment
         uses: actions/github-script@v7
