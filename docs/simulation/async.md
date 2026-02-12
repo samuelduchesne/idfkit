@@ -149,18 +149,26 @@ errors = await result.async_errors()
 sql = await result.async_sql()
 ```
 
-A sync `FileSystem` (e.g., `S3FileSystem`) is still accepted — it will be
-automatically wrapped in `asyncio.to_thread()` so uploads don't block the
-event loop.  However, an `AsyncFileSystem` avoids the thread-pool overhead
-and enables true non-blocking I/O:
+For S3 storage, use `AsyncS3FileSystem` (requires `pip install idfkit[async-s3]`):
 
 ```python
-from idfkit.simulation import S3FileSystem
+from idfkit.simulation import AsyncS3FileSystem, SimulationCache
 
-# Works but uploads run in a background thread
-fs = S3FileSystem(bucket="my-bucket", prefix="study/")
-result = await async_simulate(model, "weather.epw", output_dir="run-001", fs=fs)
+cache = SimulationCache()
+
+async with AsyncS3FileSystem(bucket="my-bucket", prefix="study/") as fs:
+    result = await async_simulate(
+        model, "weather.epw",
+        cache=cache,
+        output_dir="run-001",
+        fs=fs,
+    )
 ```
+
+A sync `FileSystem` (e.g., `S3FileSystem`) is still accepted — it will be
+automatically wrapped in `asyncio.to_thread()` so uploads don't block the
+event loop.  However, `AsyncS3FileSystem` avoids the thread-pool overhead
+and provides true non-blocking I/O.
 
 ## FastAPI Integration
 

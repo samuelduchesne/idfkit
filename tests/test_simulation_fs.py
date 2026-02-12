@@ -10,7 +10,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from conftest import InMemoryAsyncFileSystem, InMemoryFileSystem
 
-from idfkit.simulation.fs import AsyncFileSystem, AsyncLocalFileSystem, FileSystem, LocalFileSystem, S3FileSystem
+from idfkit.simulation.fs import (
+    AsyncFileSystem,
+    AsyncLocalFileSystem,
+    AsyncS3FileSystem,
+    FileSystem,
+    LocalFileSystem,
+    S3FileSystem,
+)
 
 # ---------------------------------------------------------------------------
 # FileSystem protocol
@@ -182,6 +189,85 @@ class TestS3FileSystem:
             # Should not raise or call any S3 method
             fs.makedirs("some/dir", exist_ok=True)
             fs.makedirs("some/dir", exist_ok=False)
+
+
+# ---------------------------------------------------------------------------
+# AsyncS3FileSystem
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_aiobotocore() -> ModuleType:
+    """Create a fake aiobotocore.session module with a mocked get_session."""
+    session_mod = ModuleType("aiobotocore.session")
+
+    mock_session = MagicMock()
+
+    def get_session() -> MagicMock:  # type: ignore[return-value]
+        return mock_session
+
+    session_mod.get_session = get_session  # type: ignore[attr-defined]
+    return session_mod
+
+
+class TestAsyncS3FileSystem:
+    """Tests for AsyncS3FileSystem."""
+
+    def test_import_error_when_aiobotocore_missing(self) -> None:
+        with (
+            patch.dict(sys.modules, {"aiobotocore": None, "aiobotocore.session": None}),
+            pytest.raises(ImportError, match="aiobotocore is required"),
+        ):
+            AsyncS3FileSystem(bucket="test-bucket")
+
+    def test_constructor_with_mocked_aiobotocore(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        # Need both aiobotocore and aiobotocore.session to pass import
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="my-bucket", prefix="results")
+            assert fs._bucket == "my-bucket"
+            assert fs._prefix == "results"
+
+    def test_key_with_prefix(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b", prefix="pre/fix")
+            assert fs._key("file.txt") == "pre/fix/file.txt"
+
+    def test_key_without_prefix(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b", prefix="")
+            assert fs._key("file.txt") == "file.txt"
+
+    @pytest.mark.asyncio
+    async def test_makedirs_is_noop(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b")
+            # Should not raise or need a client
+            await fs.makedirs("some/dir", exist_ok=True)
+            await fs.makedirs("some/dir", exist_ok=False)
+
+    def test_ensure_client_raises_without_context(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            fs = AsyncS3FileSystem(bucket="b")
+            with pytest.raises(RuntimeError, match="not initialised"):
+                fs._ensure_client()
+
+    def test_is_detected_as_async_fs(self) -> None:
+        fake_mod = _make_fake_aiobotocore()
+        fake_parent = ModuleType("aiobotocore")
+        with patch.dict(sys.modules, {"aiobotocore": fake_parent, "aiobotocore.session": fake_mod}):
+            from idfkit.simulation.async_runner import _is_async_fs
+
+            fs = AsyncS3FileSystem(bucket="b")
+            assert _is_async_fs(fs)
 
 
 # ---------------------------------------------------------------------------

@@ -126,16 +126,52 @@ errors = await result.async_errors()
 sql = await result.async_sql()
 ```
 
+### Built-in: AsyncS3FileSystem
+
+Non-blocking S3 backend powered by `aiobotocore`:
+
+```python
+from idfkit.simulation import AsyncS3FileSystem, async_simulate
+
+async with AsyncS3FileSystem(bucket="my-bucket", prefix="sims/") as fs:
+    result = await async_simulate(
+        model, "weather.epw",
+        output_dir="run-001",
+        fs=fs,
+    )
+    errors = await result.async_errors()
+```
+
+Requires: `pip install idfkit[async-s3]`
+
+The `AsyncS3FileSystem` must be used as an async context manager
+(`async with`) which manages the underlying aiobotocore client lifecycle.
+It accepts the same `**boto_kwargs` as `S3FileSystem` (e.g.,
+`region_name`, `endpoint_url`, explicit credentials).
+
+S3-compatible services (MinIO, LocalStack) work identically:
+
+```python
+async with AsyncS3FileSystem(
+    bucket="local-bucket",
+    endpoint_url="http://localhost:9000",
+    aws_access_key_id="minioadmin",
+    aws_secret_access_key="minioadmin",
+) as fs:
+    ...
+```
+
 ### Custom Async Backend
 
-Implement the `AsyncFileSystem` protocol for full control:
+Implement the `AsyncFileSystem` protocol for other storage systems
+(Azure Blob Storage, GCS, etc.):
 
 ```python
 from idfkit.simulation import AsyncFileSystem
 
 
-class AsyncS3FileSystem:
-    """Example async S3 backend using aioboto3."""
+class AsyncGCSFileSystem:
+    """Example async GCS backend."""
 
     async def read_bytes(self, path, **kw):
         ...
