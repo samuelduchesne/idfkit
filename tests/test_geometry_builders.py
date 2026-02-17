@@ -366,3 +366,162 @@ class TestAddShadingBlockBaseZ:
         # Wall bottom at base_z=5, top at base_z+height=7
         assert _close(z_values[0], 5.0)
         assert _close(z_values[1], 7.0)
+
+
+# ---------------------------------------------------------------------------
+# GlobalGeometryRules convention
+# ---------------------------------------------------------------------------
+
+
+class TestGeometryConvention:
+    """Verify that builders adapt vertex ordering to GlobalGeometryRules."""
+
+    def test_default_ulc_ccw(self) -> None:
+        """Without GlobalGeometryRules the default is ULC + CCW."""
+        doc = new_document()
+        add_block(doc, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        wall = doc.getobject("BuildingSurface:Detailed", "B Wall 1")
+        assert wall is not None
+        coords = get_surface_coords(wall)
+        assert coords is not None
+        # ULC+CCW: upper-left first → (p1,z_top), (p1,z_bot), (p2,z_bot), (p2,z_top)
+        assert coords.vertices[0] == Vector3D(0, 0, 3)  # UL
+        assert coords.vertices[1] == Vector3D(0, 0, 0)  # LL
+        assert coords.vertices[2] == Vector3D(10, 0, 0)  # LR
+        assert coords.vertices[3] == Vector3D(10, 0, 3)  # UR
+
+    def test_ulc_clockwise_wall_order(self) -> None:
+        """ULC + Clockwise reverses winding: UL → UR → LR → LL."""
+        doc = new_document()
+        doc.add(
+            "GlobalGeometryRules",
+            starting_vertex_position="UpperLeftCorner",
+            vertex_entry_direction="Clockwise",
+            coordinate_system="World",
+            validate=False,
+        )
+        add_block(doc, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        wall = doc.getobject("BuildingSurface:Detailed", "B Wall 1")
+        assert wall is not None
+        coords = get_surface_coords(wall)
+        assert coords is not None
+        assert coords.vertices[0] == Vector3D(0, 0, 3)  # UL
+        assert coords.vertices[1] == Vector3D(10, 0, 3)  # UR
+        assert coords.vertices[2] == Vector3D(10, 0, 0)  # LR
+        assert coords.vertices[3] == Vector3D(0, 0, 0)  # LL
+
+    def test_llc_ccw_wall_order(self) -> None:
+        """LLC + CCW starts from lower-left: LL → LR → UR → UL."""
+        doc = new_document()
+        doc.add(
+            "GlobalGeometryRules",
+            starting_vertex_position="LowerLeftCorner",
+            vertex_entry_direction="Counterclockwise",
+            coordinate_system="World",
+            validate=False,
+        )
+        add_block(doc, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        wall = doc.getobject("BuildingSurface:Detailed", "B Wall 1")
+        assert wall is not None
+        coords = get_surface_coords(wall)
+        assert coords is not None
+        assert coords.vertices[0] == Vector3D(0, 0, 0)  # LL
+        assert coords.vertices[1] == Vector3D(10, 0, 0)  # LR
+        assert coords.vertices[2] == Vector3D(10, 0, 3)  # UR
+        assert coords.vertices[3] == Vector3D(0, 0, 3)  # UL
+
+    def test_clockwise_floor_winding_inverted(self) -> None:
+        """In CW convention, raw Newell normal flips vs CCW (EnergyPlus negates it)."""
+        doc_ccw = new_document()
+        add_block(doc_ccw, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        floor_ccw = doc_ccw.getobject("BuildingSurface:Detailed", "B Floor")
+        assert floor_ccw is not None
+        coords_ccw = get_surface_coords(floor_ccw)
+        assert coords_ccw is not None
+
+        doc_cw = new_document()
+        doc_cw.add(
+            "GlobalGeometryRules",
+            starting_vertex_position="UpperLeftCorner",
+            vertex_entry_direction="Clockwise",
+            coordinate_system="World",
+            validate=False,
+        )
+        add_block(doc_cw, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        floor_cw = doc_cw.getobject("BuildingSurface:Detailed", "B Floor")
+        assert floor_cw is not None
+        coords_cw = get_surface_coords(floor_cw)
+        assert coords_cw is not None
+
+        # The raw Newell normals should point in opposite Z directions:
+        # CCW floor → normal.z < 0 (down); CW floor → normal.z > 0.
+        # EnergyPlus flips the CW normal internally so the physical
+        # interpretation is the same.
+        assert coords_ccw.normal.z * coords_cw.normal.z < 0
+
+    def test_clockwise_ceiling_winding_inverted(self) -> None:
+        """In CW convention, raw Newell normal of ceiling flips vs CCW."""
+        doc_ccw = new_document()
+        add_block(doc_ccw, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        roof_ccw = doc_ccw.getobject("BuildingSurface:Detailed", "B Roof")
+        assert roof_ccw is not None
+        coords_ccw = get_surface_coords(roof_ccw)
+        assert coords_ccw is not None
+
+        doc_cw = new_document()
+        doc_cw.add(
+            "GlobalGeometryRules",
+            starting_vertex_position="UpperLeftCorner",
+            vertex_entry_direction="Clockwise",
+            coordinate_system="World",
+            validate=False,
+        )
+        add_block(doc_cw, "B", [(0, 0), (10, 0), (10, 5), (0, 5)], floor_to_floor=3)
+        roof_cw = doc_cw.getobject("BuildingSurface:Detailed", "B Roof")
+        assert roof_cw is not None
+        coords_cw = get_surface_coords(roof_cw)
+        assert coords_cw is not None
+
+        assert coords_ccw.normal.z * coords_cw.normal.z < 0
+
+    def test_shading_block_respects_clockwise(self) -> None:
+        """Shading wall and cap vertices flip for CW convention."""
+        doc_ccw = new_document()
+        add_shading_block(doc_ccw, "S", [(0, 0), (5, 0), (5, 5), (0, 5)], height=10)
+        cap_ccw = doc_ccw.getobject("Shading:Site:Detailed", "S Top")
+        assert cap_ccw is not None
+        coords_ccw = get_surface_coords(cap_ccw)
+        assert coords_ccw is not None
+
+        doc_cw = new_document()
+        doc_cw.add(
+            "GlobalGeometryRules",
+            starting_vertex_position="UpperLeftCorner",
+            vertex_entry_direction="Clockwise",
+            coordinate_system="World",
+            validate=False,
+        )
+        add_shading_block(doc_cw, "S", [(0, 0), (5, 0), (5, 5), (0, 5)], height=10)
+        cap_cw = doc_cw.getobject("Shading:Site:Detailed", "S Top")
+        assert cap_cw is not None
+        coords_cw = get_surface_coords(cap_cw)
+        assert coords_cw is not None
+
+        # Normals should be opposite (same Z coords, reversed winding)
+        assert coords_ccw.normal.z * coords_cw.normal.z < 0
+
+    def test_surface_count_unchanged_by_convention(self) -> None:
+        """Convention changes vertex ordering, not the number of surfaces."""
+        doc = new_document()
+        doc.add(
+            "GlobalGeometryRules",
+            starting_vertex_position="LowerRightCorner",
+            vertex_entry_direction="Clockwise",
+            coordinate_system="World",
+            validate=False,
+        )
+        s = Shoebox(name="Box", width=10, depth=8, floor_to_floor=3, num_stories=2)
+        s.build(doc)
+        assert len(doc["Zone"]) == 2
+        # Per story: 4 walls + floor + ceiling/roof = 6; total = 12
+        assert len(doc["BuildingSurface:Detailed"]) == 12

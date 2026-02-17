@@ -7,6 +7,11 @@ document.  For arbitrary polygon footprints, use :func:`add_block` directly.
 
 These functions complement the lower-level :mod:`~idfkit.geometry` module
 which operates on *existing* surfaces.
+
+All generated vertex coordinates respect the document's
+``GlobalGeometryRules`` (``starting_vertex_position`` and
+``vertex_entry_direction``).  When no rules are present the EnergyPlus
+default of ``UpperLeftCorner`` / ``Counterclockwise`` is assumed.
 """
 
 from __future__ import annotations
@@ -26,6 +31,45 @@ from .geometry import (
 if TYPE_CHECKING:
     from .document import IDFDocument
     from .objects import IDFObject
+
+# ---------------------------------------------------------------------------
+# GlobalGeometryRules helpers
+# ---------------------------------------------------------------------------
+
+# Wall corner indices in canonical order [UL, LL, LR, UR].
+# The tuple gives the output index order for each
+# (starting_vertex_position, clockwise) combination.
+_WALL_ORDER: dict[tuple[str, bool], tuple[int, int, int, int]] = {
+    # Counterclockwise ---------------------------------------------------
+    ("UpperLeftCorner", False): (0, 1, 2, 3),  # UL LL LR UR
+    ("LowerLeftCorner", False): (1, 2, 3, 0),  # LL LR UR UL
+    ("LowerRightCorner", False): (2, 3, 0, 1),  # LR UR UL LL
+    ("UpperRightCorner", False): (3, 0, 1, 2),  # UR UL LL LR
+    # Clockwise ----------------------------------------------------------
+    ("UpperLeftCorner", True): (0, 3, 2, 1),  # UL UR LR LL
+    ("UpperRightCorner", True): (3, 2, 1, 0),  # UR LR LL UL
+    ("LowerRightCorner", True): (2, 1, 0, 3),  # LR LL UL UR
+    ("LowerLeftCorner", True): (1, 0, 3, 2),  # LL UL UR LR
+}
+
+
+def _get_geometry_convention(doc: IDFDocument) -> tuple[str, bool]:
+    """Read the vertex ordering convention from ``GlobalGeometryRules``.
+
+    Returns:
+        ``(starting_vertex_position, clockwise)`` where *clockwise* is
+        ``True`` when ``vertex_entry_direction`` is ``"Clockwise"``.
+        Defaults to ``("UpperLeftCorner", False)`` if no rules exist.
+    """
+    geo_rules = doc["GlobalGeometryRules"]
+    if not geo_rules:
+        return ("UpperLeftCorner", False)
+    rules = geo_rules.first()
+    if rules is None:
+        return ("UpperLeftCorner", False)
+    svp = getattr(rules, "starting_vertex_position", None) or "UpperLeftCorner"
+    ved = getattr(rules, "vertex_entry_direction", None) or "Counterclockwise"
+    return (str(svp), str(ved).lower() == "clockwise")
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +228,9 @@ def add_shading_block(
         msg = f"Height must be positive, got {height}"
         raise ValueError(msg)
 
+    svp, clockwise = _get_geometry_convention(doc)
+    wall_order = _WALL_ORDER.get((svp, clockwise), (0, 1, 2, 3))
+
     z_bot = base_z
     z_top = base_z + height
     created: list[IDFObject] = []
@@ -194,21 +241,21 @@ def add_shading_block(
         p1 = fp[j]
         p2 = fp[(j + 1) % n]
         wall_name = f"{name} Wall {j + 1}"
-        poly = Polygon3D([
-            Vector3D(p1[0], p1[1], z_top),
-            Vector3D(p1[0], p1[1], z_bot),
-            Vector3D(p2[0], p2[1], z_bot),
-            Vector3D(p2[0], p2[1], z_top),
-        ])
+        corners = [
+            Vector3D(p1[0], p1[1], z_top),  # UL
+            Vector3D(p1[0], p1[1], z_bot),  # LL
+            Vector3D(p2[0], p2[1], z_bot),  # LR
+            Vector3D(p2[0], p2[1], z_top),  # UR
+        ]
+        poly = Polygon3D([corners[k] for k in wall_order])
         obj = doc.add("Shading:Site:Detailed", wall_name, validate=False)
         set_surface_coords(obj, poly)
         created.append(obj)
 
-    # Top cap — footprint at z_top (normal up: CCW viewed from above)
+    # Top cap — horizontal surface with normal pointing up
     cap_name = f"{name} Top"
-    cap_poly = Polygon3D([Vector3D(p[0], p[1], z_top) for p in fp])
     cap = doc.add("Shading:Site:Detailed", cap_name, validate=False)
-    set_surface_coords(cap, cap_poly)
+    set_surface_coords(cap, _horizontal_poly(fp, z_top, reverse=clockwise))
     created.append(cap)
 
     return created
@@ -323,6 +370,22 @@ def scale_building(
 
 
 # ---------------------------------------------------------------------------
+# Horizontal polygon helper
+# ---------------------------------------------------------------------------
+
+
+def _horizontal_poly(footprint: list[tuple[float, float]], z: float, *, reverse: bool) -> Polygon3D:
+    """Build a horizontal polygon at height *z*.
+
+    When *reverse* is ``True`` the footprint is reversed, flipping the
+    polygon normal.  Used to produce floor and ceiling polygons in the
+    correct winding for the active ``GlobalGeometryRules`` convention.
+    """
+    pts = reversed(footprint) if reverse else footprint
+    return Polygon3D([Vector3D(p[0], p[1], z) for p in pts])
+
+
+# ---------------------------------------------------------------------------
 # _build_block — shared implementation for Shoebox.build() and add_block()
 # ---------------------------------------------------------------------------
 
@@ -334,7 +397,12 @@ def _build_block(
     floor_to_floor: float,
     num_stories: int,
 ) -> list[IDFObject]:
-    """Create zones and surfaces from a footprint (internal helper)."""
+    """Create zones and surfaces from a footprint (internal helper).
+
+    Reads ``GlobalGeometryRules`` from *doc* to determine the vertex
+    ordering convention.  If no rules exist, defaults to
+    ``UpperLeftCorner`` / ``Counterclockwise``.
+    """
     if len(footprint) < 3:
         msg = f"Footprint must have at least 3 vertices, got {len(footprint)}"
         raise ValueError(msg)
@@ -344,6 +412,9 @@ def _build_block(
     if num_stories < 1:
         msg = f"num_stories must be >= 1, got {num_stories}"
         raise ValueError(msg)
+
+    svp, clockwise = _get_geometry_convention(doc)
+    wall_order = _WALL_ORDER.get((svp, clockwise), (0, 1, 2, 3))
 
     created: list[IDFObject] = []
     n = len(footprint)
@@ -367,7 +438,6 @@ def _build_block(
             p1 = footprint[j]
             p2 = footprint[(j + 1) % n]
             wall_name = f"{zone_name} Wall {j + 1}"
-            # Upper-left-first convention: outward-facing normal for CCW footprint
             wall = doc.add(
                 "BuildingSurface:Detailed",
                 wall_name,
@@ -379,12 +449,14 @@ def _build_block(
                 wind_exposure="WindExposed",
                 validate=False,
             )
-            poly = Polygon3D([
-                Vector3D(p1[0], p1[1], z_top),
-                Vector3D(p1[0], p1[1], z_bot),
-                Vector3D(p2[0], p2[1], z_bot),
-                Vector3D(p2[0], p2[1], z_top),
-            ])
+            # Canonical wall corners viewed from outside: UL, LL, LR, UR
+            corners = [
+                Vector3D(p1[0], p1[1], z_top),  # UL
+                Vector3D(p1[0], p1[1], z_bot),  # LL
+                Vector3D(p2[0], p2[1], z_bot),  # LR
+                Vector3D(p2[0], p2[1], z_top),  # UR
+            ]
+            poly = Polygon3D([corners[k] for k in wall_order])
             set_surface_coords(wall, poly)
             created.append(wall)
 
@@ -409,9 +481,8 @@ def _build_block(
             wind_exposure="NoWind",
             validate=False,
         )
-        # Floor normal should point down → reverse vertex order
-        floor_poly = Polygon3D([Vector3D(p[0], p[1], z_bot) for p in reversed(footprint)])
-        set_surface_coords(floor_srf, floor_poly)
+        # CCW: reversed footprint → normal down; CW: footprint order → normal down.
+        set_surface_coords(floor_srf, _horizontal_poly(footprint, z_bot, reverse=not clockwise))
         created.append(floor_srf)
 
         # --- Ceiling / Roof ---
@@ -443,9 +514,8 @@ def _build_block(
             wind_exposure=ceil_wind,
             validate=False,
         )
-        # Ceiling/roof normal should point up → footprint order (CCW from above)
-        ceil_poly = Polygon3D([Vector3D(p[0], p[1], z_top) for p in footprint])
-        set_surface_coords(ceil_srf, ceil_poly)
+        # CCW: footprint order → normal up; CW: reversed footprint → normal up.
+        set_surface_coords(ceil_srf, _horizontal_poly(footprint, z_top, reverse=clockwise))
         created.append(ceil_srf)
 
     return created
