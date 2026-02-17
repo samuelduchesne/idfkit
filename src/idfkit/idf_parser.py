@@ -21,7 +21,7 @@ from .exceptions import VersionNotFoundError
 from .objects import IDFObject
 
 if TYPE_CHECKING:
-    from .schema import EpJSONSchema
+    from .schema import EpJSONSchema, ParsingCache
 
 # Regex patterns for parsing
 _VERSION_PATTERN = re.compile(
@@ -45,6 +45,21 @@ _FIELD_SPLIT_PATTERN = re.compile(rb"\s*,\s*")
 
 # Memory map threshold (10 MB)
 _MMAP_THRESHOLD = 10 * 1024 * 1024
+
+
+def _coerce_value_fast(field_type: str | None, value: str) -> Any:
+    """Coerce a field value using a pre-resolved type string."""
+    if field_type == "number":
+        try:
+            return float(value)
+        except ValueError:
+            return value
+    if field_type == "integer":
+        try:
+            return int(float(value))
+        except ValueError:
+            return value
+    return value
 
 
 def parse_idf(
@@ -189,168 +204,133 @@ class IDFParser:
         # Strip comments before matching to prevent phantom objects
         # (e.g. "!- X,Y,Z Origin" matching "X," as an object type)
         content = _COMMENT_PATTERN.sub(b"", content)
+
+        # Local per-type cache avoids repeated schema lookups
+        type_cache: dict[str, ParsingCache | None] = {}
+        encoding = self._encoding
+        addidfobject = doc.addidfobject
+
         for match in _OBJECT_PATTERN.finditer(content):
             try:
-                obj = self._parse_object(match, schema)
+                obj_type = match.group(1).decode(encoding).strip()
+
+                # Skip version object (handled separately)
+                if obj_type.upper() == "VERSION":
+                    continue
+
+                # Get or build per-type cache
+                if schema is not None:
+                    pc = type_cache.get(obj_type)
+                    if pc is None and obj_type not in type_cache:
+                        pc = schema.get_parsing_cache(obj_type)
+                        type_cache[obj_type] = pc
+                    if pc is None:
+                        continue  # Unknown object type
+                else:
+                    pc = None
+
+                obj = self._parse_object_cached(match, pc, encoding)
                 if obj:
-                    doc.addidfobject(obj)
+                    addidfobject(obj)
             except Exception:  # noqa: S110
                 # Log parse errors but continue
                 pass
 
-    def _parse_object(
+    def _parse_object_cached(
         self,
         match: re.Match[bytes],
-        schema: EpJSONSchema | None,
+        pc: ParsingCache | None,
+        encoding: str,
     ) -> IDFObject | None:
-        """Parse a single object from regex match."""
-        obj_type = match.group(1).decode(self._encoding).strip()
-        fields_raw = match.group(2).decode(self._encoding)
+        """Parse a single object from regex match using cached metadata."""
+        obj_type = match.group(1).decode(encoding).strip()
+        fields_raw = match.group(2).decode(encoding)
 
-        # Skip version object (handled separately)
-        if obj_type.upper() == "VERSION":
-            return None
-
-        # Skip unknown object types (filters phantom objects from non-EnergyPlus text)
-        if schema and schema.get_object_schema(obj_type) is None:
-            return None
-
-        # Split and clean fields
         fields = self._parse_fields(fields_raw)
         if not fields:
             return None
 
-        # Get schema info
-        obj_schema: dict[str, Any] | None = None
-        field_names: list[str] | None = None
-        has_name = True  # default for no-schema fallback
+        if pc is not None:
+            has_name = pc.has_name
+            # Mutable copy since extensible parsing appends to it
+            field_names: list[str] = list(pc.field_names) if has_name else list(pc.all_field_names)
 
-        if schema:
-            obj_schema = schema.get_object_schema(obj_type)
-            has_name = schema.has_name(obj_type)
-            field_names = schema.get_field_names(obj_type) if has_name else schema.get_all_field_names(obj_type)
+            name, remaining_fields = (fields[0], fields[1:]) if has_name else ("", fields)
 
-        # Name handling: named objects use fields[0] as name, nameless use ""
-        name, remaining_fields = (fields[0], fields[1:]) if has_name else ("", fields)
+            data = self._build_data_dict_cached(remaining_fields, field_names, pc)
 
-        # Build data dict
-        data = self._build_data_dict(obj_type, remaining_fields, field_names, schema)
+            return IDFObject(
+                obj_type=obj_type,
+                name=name,
+                data=data,
+                schema=pc.obj_schema,
+                field_order=field_names,
+                ref_fields=pc.ref_fields,
+            )
 
-        return IDFObject(
-            obj_type=obj_type,
-            name=name,
-            data=data,
-            schema=obj_schema,
-            field_order=field_names,
-        )
-
-    def _build_data_dict(
-        self,
-        obj_type: str,
-        remaining_fields: list[str],
-        field_names: list[str] | None,
-        schema: EpJSONSchema | None,
-    ) -> dict[str, Any]:
-        """Build the data dict from parsed fields using schema field ordering."""
+        # No-schema fallback
+        name = fields[0] if fields else ""
+        remaining = fields[1:]
         data: dict[str, Any] = {}
+        for i, value in enumerate(remaining):
+            if value:
+                data[f"field_{i + 1}"] = value
+        return IDFObject(obj_type=obj_type, name=name, data=data)
 
-        if field_names is not None:
-            # Schema-based: map fields by name, then parse extensibles
-            for i, value in enumerate(remaining_fields):
-                if i < len(field_names):
-                    field_name = field_names[i]
-                    # Always store values to preserve field positions
-                    # Empty strings are stored as empty strings
-                    if value:
-                        data[field_name] = self._coerce_value(obj_type, field_name, value, schema)
-                    else:
-                        data[field_name] = ""
-            self._parse_extensible_fields(obj_type, remaining_fields, field_names, data, schema)
-        else:
-            # No schema — use generic field names
-            for i, value in enumerate(remaining_fields):
+    def _build_data_dict_cached(
+        self,
+        remaining_fields: list[str],
+        field_names: list[str],
+        pc: ParsingCache,
+    ) -> dict[str, Any]:
+        """Build the data dict using pre-computed field types from the cache."""
+        data: dict[str, Any] = {}
+        field_types = pc.field_types
+        num_named = len(field_names)
+
+        for i, value in enumerate(remaining_fields):
+            if i < num_named:
+                field_name = field_names[i]
                 if value:
-                    data[f"field_{i + 1}"] = value
+                    data[field_name] = _coerce_value_fast(field_types.get(field_name), value)
+                else:
+                    data[field_name] = ""
+
+        # Handle extensible fields
+        if pc.extensible and num_named < len(remaining_fields):
+            ext_size = pc.ext_size
+            ext_names = pc.ext_field_names
+            num_ext = len(ext_names)
+            extra = remaining_fields[num_named:]
+            for group_idx in range(0, len(extra), ext_size):
+                group = extra[group_idx : group_idx + ext_size]
+                suffix = "" if group_idx == 0 else f"_{group_idx // ext_size + 1}"
+                for j, value in enumerate(group):
+                    if j < num_ext:
+                        ext_field = f"{ext_names[j]}{suffix}"
+                        if value:
+                            data[ext_field] = _coerce_value_fast(field_types.get(ext_names[j]), value)
+                        else:
+                            data[ext_field] = ""
+                        field_names.append(ext_field)
 
         return data
 
-    def _parse_extensible_fields(
-        self,
-        obj_type: str,
-        remaining_fields: list[str],
-        field_names: list[str],
-        data: dict[str, Any],
-        schema: EpJSONSchema | None,
-    ) -> None:
-        """Parse extensible fields (e.g. vertices) beyond the schema-defined field count."""
-        extra_start = len(field_names)
-        if not schema or not schema.is_extensible(obj_type) or extra_start >= len(remaining_fields):
-            return
-
-        ext_size = int(schema.get_extensible_size(obj_type) or 1)
-        ext_names = schema.get_extensible_field_names(obj_type)
-        extra = remaining_fields[extra_start:]
-        for group_idx in range(0, len(extra), ext_size):
-            group = extra[group_idx : group_idx + ext_size]
-            suffix = "" if group_idx == 0 else f"_{group_idx // ext_size + 1}"
-            for j, value in enumerate(group):
-                if j < len(ext_names):
-                    ext_field = f"{ext_names[j]}{suffix}"
-                    # Always store values to preserve field positions in extensible groups
-                    # Empty strings are stored as empty strings
-                    if value:
-                        data[ext_field] = self._coerce_value(obj_type, ext_names[j], value, schema)
-                    else:
-                        data[ext_field] = ""
-                    field_names.append(ext_field)  # extend field_order
-
     def _parse_fields(self, fields_raw: str) -> list[str]:
         """Parse and clean field values from raw string."""
-        # First, strip comments from each line (comments may contain commas)
+        # Fast path: comments already stripped by _COMMENT_PATTERN in _parse_objects
+        if "!" not in fields_raw:
+            return [part.strip() for part in fields_raw.split(",")]
+
+        # Slow path: strip inline comments (safety fallback)
         lines: list[str] = []
         for line in fields_raw.split("\n"):
-            if "!" in line:
-                line = line[: line.index("!")]
+            idx = line.find("!")
+            if idx >= 0:
+                line = line[:idx]
             lines.append(line)
-
-        # Join lines and split by comma
         clean_text = " ".join(lines)
-        fields: list[str] = []
-        for part in clean_text.split(","):
-            value = part.strip()
-            fields.append(value)
-
-        return fields
-
-    def _coerce_value(
-        self,
-        obj_type: str,
-        field_name: str,
-        value: str,
-        schema: EpJSONSchema | None,
-    ) -> Any:
-        """Coerce a field value to the appropriate type."""
-        if not schema or not value:
-            return value
-
-        field_type = schema.get_field_type(obj_type, field_name)
-
-        if field_type == "number":
-            try:
-                # Handle scientific notation
-                return float(value)
-            except ValueError:
-                # Might be "Autocalculate", "Autosize", etc. — preserve original casing
-                return value
-
-        elif field_type == "integer":
-            try:
-                return int(float(value))
-            except ValueError:
-                return value
-
-        # Default: return as string
-        return value
+        return [part.strip() for part in clean_text.split(",")]
 
 
 def iter_idf_objects(

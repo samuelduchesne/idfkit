@@ -16,7 +16,7 @@ from .exceptions import VersionNotFoundError
 from .objects import IDFObject
 
 if TYPE_CHECKING:
-    from .schema import EpJSONSchema
+    from .schema import EpJSONSchema, ParsingCache
 
 
 def parse_epjson(
@@ -138,6 +138,8 @@ class EpJSONParser:
         schema: EpJSONSchema | None,
     ) -> None:
         """Parse all objects from epJSON data into document."""
+        addidfobject = doc.addidfobject
+
         for obj_type, objects in data.items():
             # Skip Version (handled separately)
             if obj_type == "Version":
@@ -146,16 +148,19 @@ class EpJSONParser:
             if not isinstance(objects, dict):
                 continue
 
-            # Get schema info for this type
+            # Get schema info from parsing cache
+            pc: ParsingCache | None = None
             obj_schema: dict[str, Any] | None = None
-            base_field_names: list[str] | None = None
+            base_field_names: tuple[str, ...] | None = None
+            ref_fields: frozenset[str] | None = None
             has_name = True
             if schema:
-                obj_schema = schema.get_object_schema(obj_type)
-                has_name = schema.has_name(obj_type)
-                base_field_names = (
-                    schema.get_field_names(obj_type) if has_name else schema.get_all_field_names(obj_type)
-                )
+                pc = schema.get_parsing_cache(obj_type)
+                if pc is not None:
+                    obj_schema = pc.obj_schema
+                    has_name = pc.has_name
+                    base_field_names = pc.field_names if has_name else pc.all_field_names
+                    ref_fields = pc.ref_fields
 
             # epJSON format: {"ObjectType": {"obj_name": {fields...}, ...}}
             objects_dict = cast(dict[str, Any], objects)
@@ -168,7 +173,7 @@ class EpJSONParser:
 
                 # Create per-object field_order copy so extensible fields can be added
                 fields_dict = cast(dict[str, Any], fields)
-                field_order = self._build_field_order(obj_type, base_field_names, fields_dict, schema)
+                field_order = self._build_field_order(base_field_names, fields_dict, pc)
 
                 obj = IDFObject(
                     obj_type=obj_type,
@@ -176,16 +181,16 @@ class EpJSONParser:
                     data=dict(fields_dict),  # Copy the fields dict
                     schema=obj_schema,
                     field_order=field_order,
+                    ref_fields=ref_fields,
                 )
 
-                doc.addidfobject(obj)
+                addidfobject(obj)
 
+    @staticmethod
     def _build_field_order(
-        self,
-        obj_type: str,
-        base_field_names: list[str] | None,
+        base_field_names: tuple[str, ...] | None,
         fields_dict: dict[str, Any],
-        schema: EpJSONSchema | None,
+        pc: ParsingCache | None,
     ) -> list[str] | None:
         """Build field_order including extensible fields present in the data."""
         if base_field_names is None:
@@ -196,25 +201,21 @@ class EpJSONParser:
         base_set = set(base_field_names)
 
         # Find extensible fields in the data that aren't in the base field list
-        if schema and schema.is_extensible(obj_type):
-            ext_names = schema.get_extensible_field_names(obj_type)
+        if pc is not None and pc.extensible and pc.ext_field_names:
+            ext_names = pc.ext_field_names
+            group_idx = 0
+            while True:
+                suffix = "" if group_idx == 0 else f"_{group_idx + 1}"
+                group_fields = [f"{name}{suffix}" for name in ext_names]
 
-            if ext_names:
-                # Collect extensible fields from data, grouped and ordered
-                group_idx = 0
-                while True:
-                    suffix = "" if group_idx == 0 else f"_{group_idx + 1}"
-                    group_fields = [f"{name}{suffix}" for name in ext_names]
+                if not any(f in fields_dict for f in group_fields):
+                    break
 
-                    # Check if any field from this group exists in the data
-                    if not any(f in fields_dict for f in group_fields):
-                        break
+                for f in group_fields:
+                    if f not in base_set:
+                        field_order.append(f)
 
-                    for f in group_fields:
-                        if f not in base_set:
-                            field_order.append(f)
-
-                    group_idx += 1
+                group_idx += 1
 
         return field_order
 

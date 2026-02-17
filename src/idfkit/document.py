@@ -519,6 +519,9 @@ class IDFDocument(EppyDocumentMixin):
     @staticmethod
     def _compute_ref_fields(schema: EpJSONSchema, obj_type: str) -> frozenset[str]:
         """Return frozenset of reference field names (python-style) for an object type."""
+        pc = schema.get_parsing_cache(obj_type)
+        if pc is not None:
+            return pc.ref_fields
         field_names = schema.get_field_names(obj_type)
         return frozenset(f for f in field_names if schema.is_reference_field(obj_type, f))
 
@@ -556,13 +559,23 @@ class IDFDocument(EppyDocumentMixin):
         self._references.update_reference(obj, field_name, old_str, new_str)
 
     def _index_object_references(self, obj: IDFObject) -> None:
-        """Index all references in an object using schema information."""
-        if not self._schema:
-            return  # Schema required for reference indexing
+        """Index all references in an object using pre-computed ref_fields."""
+        # Fast path: use pre-computed ref_fields from parser / _ParsingCache
+        ref_fields = object.__getattribute__(obj, "_ref_fields")
+        if ref_fields is not None:
+            data = obj.data
+            register = self._references.register
+            for field_name in ref_fields:
+                value = data.get(field_name)
+                if value and isinstance(value, str) and value.strip():
+                    register(obj, field_name, value)
+            return
 
+        # Fallback for objects without pre-computed ref_fields
+        if not self._schema:
+            return
         obj_type = obj.obj_type
         field_names = self._schema.get_field_names(obj_type)
-
         for field_name in field_names:
             if self._schema.is_reference_field(obj_type, field_name):
                 value = obj.data.get(field_name)

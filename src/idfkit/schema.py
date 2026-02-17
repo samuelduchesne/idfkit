@@ -11,6 +11,7 @@ from __future__ import annotations
 import gzip
 import json
 import os
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, ClassVar
@@ -21,6 +22,51 @@ from .versions import (
     find_closest_version,
     version_dirname,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class ParsingCache:
+    """Pre-computed parsing metadata for a single object type.
+
+    Built lazily on first access per object type and cached for reuse.
+    Eliminates repeated nested dict traversals during parsing.
+    """
+
+    obj_schema: dict[str, Any]
+    has_name: bool
+    field_names: tuple[str, ...]
+    all_field_names: tuple[str, ...]
+    field_types: dict[str, str | None]
+    ref_fields: frozenset[str]
+    extensible: bool
+    ext_size: int
+    ext_field_names: tuple[str, ...]
+
+
+def _resolve_field_type(
+    field_name: str,
+    props: dict[str, Any],
+    field_info: dict[str, Any],
+) -> str | None:
+    """Resolve the type string for a single field from pre-extracted schema dicts."""
+    field_schema = props.get(field_name)
+    if field_schema is None:
+        fi = field_info.get(field_name)
+        if fi:
+            ft = fi.get("field_type")
+            if ft == "n":
+                return "number"
+            if ft == "a":
+                return "string"
+        return None
+
+    if "anyOf" in field_schema:
+        for sub in field_schema["anyOf"]:
+            if sub.get("type") in ("number", "integer"):
+                return sub["type"]
+        return "string"
+
+    return field_schema.get("type")
 
 
 class EpJSONSchema:
@@ -56,13 +102,14 @@ class EpJSONSchema:
         _properties: Object definitions
     """
 
-    __slots__ = ("_object_lists", "_properties", "_raw", "_reference_lists", "version")
+    __slots__ = ("_object_lists", "_parsing_cache", "_properties", "_raw", "_reference_lists", "version")
 
     version: tuple[int, int, int]
     _raw: dict[str, Any]
     _properties: dict[str, Any]
     _reference_lists: dict[str, list[str]]
     _object_lists: dict[str, set[str]]
+    _parsing_cache: dict[str, ParsingCache]
 
     def __init__(self, version: tuple[int, int, int], schema_data: dict[str, Any]) -> None:
         self.version = version
@@ -72,6 +119,7 @@ class EpJSONSchema:
         # Build reference indexes
         self._reference_lists: dict[str, list[str]] = {}
         self._object_lists: dict[str, set[str]] = {}
+        self._parsing_cache: dict[str, ParsingCache] = {}
         self._build_reference_indexes()
 
     def _build_reference_indexes(self) -> None:
@@ -230,6 +278,72 @@ class EpJSONSchema:
     def is_reference_field(self, obj_type: str, field_name: str) -> bool:
         """Check if a field is a reference to another object."""
         return self.get_field_object_list(obj_type, field_name) is not None
+
+    def get_parsing_cache(self, obj_type: str) -> ParsingCache | None:
+        """Get or lazily build pre-computed parsing metadata for an object type.
+
+        Returns None if *obj_type* is not in the schema.
+        """
+        cached = self._parsing_cache.get(obj_type)
+        if cached is not None:
+            return cached
+
+        obj_schema = self._properties.get(obj_type)
+        if obj_schema is None:
+            return None
+
+        cached = self._build_parsing_cache(obj_type, obj_schema)
+        self._parsing_cache[obj_type] = cached
+        return cached
+
+    def _build_parsing_cache(self, obj_type: str, obj_schema: dict[str, Any]) -> ParsingCache:
+        """Build parsing metadata for a single object type."""
+        has_name = "name" in obj_schema
+
+        legacy: dict[str, Any] = obj_schema.get("legacy_idd", {})
+        all_fields_list: list[str] = legacy.get("fields", [])
+        all_field_names = tuple(all_fields_list)
+        field_names = tuple(all_fields_list[1:]) if all_fields_list else ()
+
+        # Extract inner schema properties
+        pattern_props: dict[str, Any] = obj_schema.get("patternProperties", {})
+        default_dict: dict[str, Any] = {}
+        inner: dict[str, Any] = next(iter(pattern_props.values()), default_dict) if pattern_props else default_dict
+        props: dict[str, Any] = inner.get("properties", {})
+
+        field_info: dict[str, Any] = legacy.get("field_info", {})
+
+        # Pre-compute field types and reference fields
+        field_types: dict[str, str | None] = {}
+        ref_fields_set: set[str] = set()
+        target_fields = field_names if has_name else all_field_names
+        for fname in target_fields:
+            field_types[fname] = _resolve_field_type(fname, props, field_info)
+            field_schema = props.get(fname)
+            if field_schema is not None and "object_list" in field_schema:
+                ref_fields_set.add(fname)
+
+        # Extensible info
+        extensible = "extensible_size" in obj_schema
+        ext_size = int(obj_schema.get("extensible_size", 0))
+        ext_field_names_list: list[str] = legacy.get("extensibles", [])
+
+        # Pre-compute field types for extensible base names
+        for ext_fname in ext_field_names_list:
+            if ext_fname not in field_types:
+                field_types[ext_fname] = _resolve_field_type(ext_fname, props, field_info)
+
+        return ParsingCache(
+            obj_schema=obj_schema,
+            has_name=has_name,
+            field_names=field_names,
+            all_field_names=all_field_names,
+            field_types=field_types,
+            ref_fields=frozenset(ref_fields_set),
+            extensible=extensible,
+            ext_size=ext_size,
+            ext_field_names=tuple(ext_field_names_list),
+        )
 
     def get_types_providing_reference(self, ref_list: str) -> list[str]:
         """Get object types that provide names for a reference list."""
