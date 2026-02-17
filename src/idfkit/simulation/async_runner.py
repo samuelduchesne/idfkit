@@ -171,7 +171,7 @@ async def async_simulate(
         # When using a remote fs, always run locally in a temp dir
         local_output_dir = None if fs is not None else output_dir
         run_dir = prepare_run_directory(local_output_dir, weather_path)
-        idf_path = run_dir / "in.idf"
+        idf_path = run_dir / "model.idf"
 
         from ..writers import write_idf
 

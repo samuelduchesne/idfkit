@@ -267,6 +267,8 @@ class TestSchemaManager:
 
     def test_schema_not_found_error(self) -> None:
         """Should raise SchemaNotFoundError for unavailable version."""
+        from unittest.mock import patch
+
         import pytest
 
         from idfkit.exceptions import SchemaNotFoundError
@@ -276,7 +278,8 @@ class TestSchemaManager:
                 bundled_schema_dir=Path(tmpdir) / "empty",
                 cache_dir=Path(tmpdir) / "empty_cache",
             )
-            with pytest.raises(SchemaNotFoundError):
+            # Patch install paths to avoid finding schemas from local EnergyPlus installations
+            with patch.object(manager, "_get_install_paths", return_value=[]), pytest.raises(SchemaNotFoundError):
                 manager.get_schema((99, 0, 0))
 
 
