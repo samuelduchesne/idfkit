@@ -214,7 +214,7 @@ def benchmark_idfkit(idf_path: str) -> dict[str, dict[str, float]]:
 
     # 2. Query all objects of a type
     def query_type():
-        _ = list(model["Zone"])
+        _ = model["Zone"]
 
     results["Get all objects by type"] = bench(query_type, iterations=ITERATIONS * 10)
 

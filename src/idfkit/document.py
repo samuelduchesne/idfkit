@@ -196,10 +196,12 @@ class IDFDocument(EppyDocumentMixin):
             >>> model["Zone"]["Perimeter_ZN_1"].name
             'Perimeter_ZN_1'
         """
-        key = obj_type
-        if key not in self._collections:
-            self._collections[key] = IDFCollection(obj_type)
-        return self._collections[key]
+        try:
+            return self._collections[obj_type]
+        except KeyError:
+            coll = IDFCollection(obj_type)
+            self._collections[obj_type] = coll
+            return coll
 
     def __getattr__(self, name: str) -> IDFCollection:
         """
