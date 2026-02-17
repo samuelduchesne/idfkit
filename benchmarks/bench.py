@@ -24,6 +24,7 @@ import gc
 import json
 import os
 import platform
+import re
 import sys
 import tempfile
 import time
@@ -607,6 +608,78 @@ def _format_time(seconds: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# README / docs auto-update from results.json
+# ---------------------------------------------------------------------------
+
+_README_PATH = Path(__file__).parent.parent / "README.md"
+_BENCHMARKS_DOC_PATH = Path(__file__).parent.parent / "docs" / "benchmarks.md"
+
+# Regex for the Performance paragraph in README.md.  Captures the two
+# dynamic values: total objects and speedup multiplier.
+_PERF_RE = re.compile(
+    r"(idfkit is designed from the ground up for speed\. On a \*\*)"
+    r"[\d,]+-object"
+    r"( IDF\*\*,\s*\nlooking up a single object by name is \*\*over )"
+    r"\d+"
+    r"(x faster\*\*)"
+)
+
+
+def update_readme(results_path: Path = RESULTS_FILE) -> None:
+    """Patch README.md and docs/benchmarks.md with numbers from results.json."""
+    with open(results_path) as f:
+        data = json.load(f)
+
+    metadata = data["metadata"]
+    total_objects = metadata["total_objects"]
+
+    # Compute hero speedup (slowest competitor vs idfkit on HERO_OPERATION)
+    idfkit_t = data[TOOL_IDFKIT][HERO_OPERATION]["min"]
+    slowest = max(
+        tool_data[HERO_OPERATION]["min"]
+        for tool_name, tool_data in data.items()
+        if tool_name != "metadata" and tool_name != TOOL_IDFKIT and HERO_OPERATION in tool_data
+    )
+    raw_speedup = slowest / idfkit_t if idfkit_t > 0 else 0
+    # Round down to a clean number for readability (e.g. 4261 → 4,000)
+    if raw_speedup >= 1000:
+        speedup = int(raw_speedup / 1000) * 1000
+    elif raw_speedup >= 100:
+        speedup = int(raw_speedup / 100) * 100
+    elif raw_speedup >= 10:
+        speedup = int(raw_speedup / 10) * 10
+    else:
+        speedup = int(raw_speedup)
+
+    # --- README.md ---
+    if _README_PATH.exists():
+        readme = _README_PATH.read_text()
+        new_readme = _PERF_RE.sub(
+            rf"\g<1>{total_objects:,}-object\g<2>{speedup}\g<3>",
+            readme,
+        )
+        if new_readme != readme:
+            _README_PATH.write_text(new_readme)
+            print(f"README.md updated: {total_objects:,} objects, {speedup}x speedup")
+        else:
+            print("README.md already up to date")
+
+    # --- docs/benchmarks.md ---
+    if _BENCHMARKS_DOC_PATH.exists():
+        doc = _BENCHMARKS_DOC_PATH.read_text()
+        new_doc = re.sub(
+            r"\*\*[\d,]+-object IDF file\*\*",
+            f"**{total_objects:,}-object IDF file**",
+            doc,
+        )
+        if new_doc != doc:
+            _BENCHMARKS_DOC_PATH.write_text(new_doc)
+            print(f"docs/benchmarks.md updated: {total_objects:,} objects")
+        else:
+            print("docs/benchmarks.md already up to date")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -702,6 +775,9 @@ def main() -> None:
         # Per-operation charts for docs benchmarks page
         print("Per-operation charts:")
         generate_operation_charts(all_results, assets_dir)
+
+        # Update README / docs with numbers from results.json
+        update_readme()
 
     finally:
         os.unlink(idf_path)
