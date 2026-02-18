@@ -672,9 +672,7 @@ def _build_story_surfaces(
             # Determine if this wall edge is shared with another zone on
             # this story by checking if the reversed edge belongs to
             # another zone's polygon.
-            adjacent_zone = _find_adjacent_zone(
-                zf, spec.zones, base_name, spec.story, num_stories, p1, p2
-            )
+            adjacent_zone = _find_adjacent_zone(zf, spec.zones, base_name, spec.story, num_stories, p1, p2)
 
             if adjacent_zone is not None:
                 bc = "Surface"
@@ -717,9 +715,7 @@ def _build_story_surfaces(
         else:
             # Link to the ceiling of the same zone suffix on the story below
             below_spec = all_story_specs[spec.story - 2]
-            below_zone = _find_matching_zone_below(
-                zf.name_suffix, below_spec, base_name, num_stories
-            )
+            below_zone = _find_matching_zone_below(zf.name_suffix, below_spec, base_name, num_stories)
             floor_bc = "Surface"
             floor_bc_obj = f"{below_zone} Ceiling"
 
@@ -751,9 +747,7 @@ def _build_story_surfaces(
             ceil_name = f"{zone_name} Ceiling"
             ceil_type = "Ceiling"
             above_spec = all_story_specs[spec.story]
-            above_zone = _find_matching_zone_above(
-                zf.name_suffix, above_spec, base_name, num_stories
-            )
+            above_zone = _find_matching_zone_above(zf.name_suffix, above_spec, base_name, num_stories)
             ceil_bc = "Surface"
             ceil_bc_obj = f"{above_zone} Floor"
             ceil_sun = "NoSun"

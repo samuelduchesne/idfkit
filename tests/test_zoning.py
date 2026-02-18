@@ -238,11 +238,7 @@ class TestSplitCorePerimeter:
     def test_perimeter_areas_sum(self) -> None:
         fp = footprint_rectangle(50, 30)
         zones = _split_core_perimeter(fp, 5.0)
-        total_perim = sum(
-            abs(_polygon_area_signed(z.polygon))
-            for z in zones
-            if z.name_suffix != "Core"
-        )
+        total_perim = sum(abs(_polygon_area_signed(z.polygon)) for z in zones if z.name_suffix != "Core")
         total = abs(_polygon_area_signed(fp))
         core = abs(_polygon_area_signed(next(z for z in zones if z.name_suffix == "Core").polygon))
         assert _close(total_perim, total - core, tol=0.1)
@@ -347,7 +343,10 @@ class TestByStorey:
     def test_single_story(self) -> None:
         doc = new_document()
         objs = create_building(
-            doc, "Box", footprint_rectangle(10, 8), floor_to_floor=3,
+            doc,
+            "Box",
+            footprint_rectangle(10, 8),
+            floor_to_floor=3,
         )
         assert len(doc["Zone"]) == 1
         # 4 walls + floor + roof = 6 surfaces
@@ -358,7 +357,11 @@ class TestByStorey:
     def test_multi_story(self) -> None:
         doc = new_document()
         create_building(
-            doc, "Stack", footprint_rectangle(10, 10), floor_to_floor=3, num_stories=3,
+            doc,
+            "Stack",
+            footprint_rectangle(10, 10),
+            floor_to_floor=3,
+            num_stories=3,
         )
         assert len(doc["Zone"]) == 3
         # 3 * (4 walls + floor + ceiling/roof) = 18
@@ -382,7 +385,11 @@ class TestByStorey:
     def test_inter_story_boundary(self) -> None:
         doc = new_document()
         create_building(
-            doc, "T", footprint_rectangle(10, 10), floor_to_floor=3, num_stories=2,
+            doc,
+            "T",
+            footprint_rectangle(10, 10),
+            floor_to_floor=3,
+            num_stories=2,
         )
         ceil = doc.getobject("BuildingSurface:Detailed", "T Story 1 Ceiling")
         assert ceil is not None
@@ -465,7 +472,8 @@ class TestCorePerimeter:
             zoning=ZoningScheme.CORE_PERIMETER,
         )
         interior_walls = [
-            s for s in doc["BuildingSurface:Detailed"]
+            s
+            for s in doc["BuildingSurface:Detailed"]
             if (getattr(s, "surface_type", "") or "").upper() == "WALL"
             and (getattr(s, "outside_boundary_condition", "") or "").upper() == "SURFACE"
         ]
@@ -490,13 +498,13 @@ class TestCorePerimeter:
         for zone in doc["Zone"]:
             if "Perimeter" in zone.name:
                 zone_walls = [
-                    s for s in doc["BuildingSurface:Detailed"]
+                    s
+                    for s in doc["BuildingSurface:Detailed"]
                     if (getattr(s, "zone_name", "") or "") == zone.name
                     and (getattr(s, "surface_type", "") or "").upper() == "WALL"
                 ]
                 has_exterior = any(
-                    (getattr(w, "outside_boundary_condition", "") or "").upper() == "OUTDOORS"
-                    for w in zone_walls
+                    (getattr(w, "outside_boundary_condition", "") or "").upper() == "OUTDOORS" for w in zone_walls
                 )
                 assert has_exterior, f"{zone.name} has no exterior wall"
 
@@ -511,7 +519,8 @@ class TestCorePerimeter:
             zoning=ZoningScheme.CORE_PERIMETER,
         )
         core_walls = [
-            s for s in doc["BuildingSurface:Detailed"]
+            s
+            for s in doc["BuildingSurface:Detailed"]
             if (getattr(s, "zone_name", "") or "") == "B Core"
             and (getattr(s, "surface_type", "") or "").upper() == "WALL"
         ]
@@ -541,21 +550,31 @@ class TestCorePerimeter:
         """A larger perimeter depth means a smaller core."""
         doc1 = new_document()
         create_building(
-            doc1, "A", footprint_rectangle(50, 30), floor_to_floor=3,
-            zoning=ZoningScheme.CORE_PERIMETER, perimeter_depth=3.0,
+            doc1,
+            "A",
+            footprint_rectangle(50, 30),
+            floor_to_floor=3,
+            zoning=ZoningScheme.CORE_PERIMETER,
+            perimeter_depth=3.0,
         )
         doc2 = new_document()
         create_building(
-            doc2, "A", footprint_rectangle(50, 30), floor_to_floor=3,
-            zoning=ZoningScheme.CORE_PERIMETER, perimeter_depth=6.0,
+            doc2,
+            "A",
+            footprint_rectangle(50, 30),
+            floor_to_floor=3,
+            zoning=ZoningScheme.CORE_PERIMETER,
+            perimeter_depth=6.0,
         )
         core1_floor = [
-            s for s in doc1["BuildingSurface:Detailed"]
+            s
+            for s in doc1["BuildingSurface:Detailed"]
             if (getattr(s, "zone_name", "") or "") == "A Core"
             and (getattr(s, "surface_type", "") or "").upper() == "FLOOR"
         ]
         core2_floor = [
-            s for s in doc2["BuildingSurface:Detailed"]
+            s
+            for s in doc2["BuildingSurface:Detailed"]
             if (getattr(s, "zone_name", "") or "") == "A Core"
             and (getattr(s, "surface_type", "") or "").upper() == "FLOOR"
         ]
@@ -651,7 +670,8 @@ class TestAirBoundary:
             air_boundary=True,
         )
         interior_walls = [
-            s for s in doc["BuildingSurface:Detailed"]
+            s
+            for s in doc["BuildingSurface:Detailed"]
             if (getattr(s, "surface_type", "") or "").upper() == "WALL"
             and (getattr(s, "outside_boundary_condition", "") or "").upper() == "SURFACE"
         ]
@@ -669,7 +689,8 @@ class TestAirBoundary:
             air_boundary=True,
         )
         exterior_walls = [
-            s for s in doc["BuildingSurface:Detailed"]
+            s
+            for s in doc["BuildingSurface:Detailed"]
             if (getattr(s, "surface_type", "") or "").upper() == "WALL"
             and (getattr(s, "outside_boundary_condition", "") or "").upper() == "OUTDOORS"
         ]
@@ -702,11 +723,16 @@ class TestDefaultPerimeterDepth:
         doc = new_document()
         fp = footprint_rectangle(50, 30)
         create_building(
-            doc, "B", fp, floor_to_floor=3, zoning=ZoningScheme.CORE_PERIMETER,
+            doc,
+            "B",
+            fp,
+            floor_to_floor=3,
+            zoning=ZoningScheme.CORE_PERIMETER,
         )
         # With 4.57m depth on 50x30: core = (50-2*4.57)x(30-2*4.57)
         core_floors = [
-            s for s in doc["BuildingSurface:Detailed"]
+            s
+            for s in doc["BuildingSurface:Detailed"]
             if (getattr(s, "zone_name", "") or "") == "B Core"
             and (getattr(s, "surface_type", "") or "").upper() == "FLOOR"
         ]
@@ -725,7 +751,10 @@ class TestWallGeometry:
     def test_exterior_wall_area(self) -> None:
         doc = new_document()
         create_building(
-            doc, "B", footprint_rectangle(10, 8), floor_to_floor=3,
+            doc,
+            "B",
+            footprint_rectangle(10, 8),
+            floor_to_floor=3,
         )
         south_wall = doc.getobject("BuildingSurface:Detailed", "B Wall 1")
         assert south_wall is not None
@@ -736,7 +765,10 @@ class TestWallGeometry:
     def test_wall_height(self) -> None:
         doc = new_document()
         create_building(
-            doc, "B", footprint_rectangle(10, 8), floor_to_floor=4.2,
+            doc,
+            "B",
+            footprint_rectangle(10, 8),
+            floor_to_floor=4.2,
         )
         wall = doc.getobject("BuildingSurface:Detailed", "B Wall 1")
         assert wall is not None
