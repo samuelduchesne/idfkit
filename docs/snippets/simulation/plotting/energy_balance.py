@@ -7,7 +7,7 @@ result: SimulationResult = ...  # type: ignore[assignment]
 from idfkit.simulation import plot_energy_balance
 
 fig = plot_energy_balance(
-    result,
+    result.sql,
     title="Annual Energy Balance",
 )
 # --8<-- [end:example]

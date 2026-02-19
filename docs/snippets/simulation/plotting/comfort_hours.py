@@ -7,8 +7,8 @@ result: SimulationResult = ...  # type: ignore[assignment]
 from idfkit.simulation import plot_comfort_hours
 
 fig = plot_comfort_hours(
-    result,
-    zone_name="THERMAL ZONE 1",
+    result.sql,
+    zones=["THERMAL ZONE 1"],
     title="Thermal Comfort Analysis",
 )
 # --8<-- [end:example]
