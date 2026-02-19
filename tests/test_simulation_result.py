@@ -147,6 +147,28 @@ class TestVariablesProperty:
         )
         assert r.variables is None
 
+    def test_search_and_iterate(self, result: SimulationResult) -> None:
+        """End-to-end test matching the documented usage pattern."""
+        variables = result.variables
+        assert variables is not None
+        matches = variables.search("Temperature")
+        assert len(matches) == 3
+        formatted = [f"{var.name} [{var.units}]" for var in matches]
+        assert "Site Outdoor Air Drybulb Temperature [C]" in formatted
+        assert "Site Outdoor Air Wetbulb Temperature [C]" in formatted
+        assert "Zone Mean Air Temperature [C]" in formatted
+
+    def test_list_all_variables(self, result: SimulationResult) -> None:
+        """Test iterating over all variables and meters."""
+        variables = result.variables
+        assert variables is not None
+        all_items = list(variables)
+        assert len(all_items) == 12
+        # Every item has name and units
+        for item in all_items:
+            assert isinstance(item.name, str)
+            assert isinstance(item.units, str)
+
 
 class TestCsvProperty:
     """Tests for SimulationResult.csv."""

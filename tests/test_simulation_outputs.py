@@ -131,6 +131,45 @@ class TestAddAllToModel:
         assert output_vars[0].reporting_frequency == "Hourly"
 
 
+class TestIteration:
+    """Tests for OutputVariableIndex iteration and listing."""
+
+    def test_len(self, index: OutputVariableIndex) -> None:
+        assert len(index) == 12  # 7 variables + 5 meters
+
+    def test_iter_yields_all(self, index: OutputVariableIndex) -> None:
+        items = list(index)
+        assert len(items) == 12
+        # Variables come first, then meters
+        assert all(isinstance(v, OutputVariable) for v in items[:7])
+        assert all(isinstance(m, OutputMeter) for m in items[7:])
+
+    def test_iter_variables_have_name_and_units(self, index: OutputVariableIndex) -> None:
+        for var in index:
+            assert hasattr(var, "name")
+            assert hasattr(var, "units")
+
+    def test_repr(self, index: OutputVariableIndex) -> None:
+        r = repr(index)
+        assert "7 variables" in r
+        assert "5 meters" in r
+
+    def test_search_results_have_name_and_units(self, index: OutputVariableIndex) -> None:
+        """Verify the user example pattern: iterate search results accessing .name and .units."""
+        matches = index.search("Temperature")
+        assert len(matches) > 0
+        for var in matches:
+            formatted = f"{var.name} [{var.units}]"
+            assert isinstance(formatted, str)
+            assert len(formatted) > 0
+
+    def test_empty_index(self) -> None:
+        idx = OutputVariableIndex(variables=(), meters=())
+        assert len(idx) == 0
+        assert list(idx) == []
+        assert repr(idx) == "OutputVariableIndex(0 variables, 0 meters)"
+
+
 class TestFromSimulation:
     """Tests for OutputVariableIndex.from_simulation()."""
 

@@ -8,6 +8,7 @@ for subsequent runs.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -33,6 +34,18 @@ class OutputVariableIndex:
 
     variables: tuple[OutputVariable, ...]
     meters: tuple[OutputMeter, ...]
+
+    def __iter__(self) -> Iterator[OutputVariable | OutputMeter]:
+        """Iterate over all variables followed by all meters."""
+        yield from self.variables
+        yield from self.meters
+
+    def __len__(self) -> int:
+        """Return the total number of variables and meters."""
+        return len(self.variables) + len(self.meters)
+
+    def __repr__(self) -> str:
+        return f"OutputVariableIndex({len(self.variables)} variables, {len(self.meters)} meters)"
 
     @classmethod
     def from_simulation(cls, result: SimulationResult) -> OutputVariableIndex:
