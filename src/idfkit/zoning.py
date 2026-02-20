@@ -865,7 +865,7 @@ def _apply_air_boundaries(doc: IDFDocument, created: list[IDFObject]) -> None:
 class ZonedBlock:
     """Describes a building block with a zoning strategy.
 
-    This is a pure data object.  Call [build][] to realise the
+    This is a pure data object.  Call `build()` to realise the
     geometry in an [IDFDocument][idfkit.document.IDFDocument].
 
     Attributes:
