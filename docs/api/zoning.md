@@ -107,8 +107,7 @@ Supply your own named zone polygons per floor using `custom_zones`.
 Each entry is a `(name, polygon)` tuple:
 
 ```python
-from idfkit import new_document, create_building, ZoningScheme
-from idfkit.zoning import _ZoneFootprint
+from idfkit import ZoneFootprint, ZoningScheme, create_building, new_document
 
 doc = new_document()
 create_building(
@@ -119,8 +118,8 @@ create_building(
     num_stories=1,
     zoning=ZoningScheme.CUSTOM,
     custom_zones=[
-        _ZoneFootprint("Wet Lab", [(0, 0), (15, 0), (15, 20), (0, 20)]),
-        _ZoneFootprint("Dry Lab", [(15, 0), (30, 0), (30, 20), (15, 20)]),
+        ZoneFootprint("Wet Lab", [(0, 0), (15, 0), (15, 20), (0, 20)]),
+        ZoneFootprint("Dry Lab", [(15, 0), (30, 0), (30, 20), (15, 20)]),
     ],
 )
 

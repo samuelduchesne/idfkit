@@ -9,13 +9,13 @@ from idfkit.geometry import calculate_surface_area, get_surface_coords
 from idfkit.zoning import (
     ASHRAE_PERIMETER_DEPTH,
     ZonedBlock,
+    ZoneFootprint,
     ZoningScheme,
     _classify_edge_orientation,
     _inset_polygon_2d,
     _is_convex,
     _polygon_area_signed,
     _split_core_perimeter,
-    _ZoneFootprint,
     create_building,
     footprint_courtyard,
     footprint_h_shape,
@@ -622,8 +622,8 @@ class TestCustomZoning:
     def test_custom_zones(self) -> None:
         doc = new_document()
         custom = [
-            _ZoneFootprint("East_Wing", [(0, 0), (10, 0), (10, 10), (0, 10)]),
-            _ZoneFootprint("West_Wing", [(10, 0), (20, 0), (20, 10), (10, 10)]),
+            ZoneFootprint("East_Wing", [(0, 0), (10, 0), (10, 10), (0, 10)]),
+            ZoneFootprint("West_Wing", [(10, 0), (20, 0), (20, 10), (10, 10)]),
         ]
         create_building(
             doc,

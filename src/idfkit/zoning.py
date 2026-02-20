@@ -360,7 +360,7 @@ def footprint_courtyard(
 
 
 @dataclass(frozen=True)
-class _ZoneFootprint:
+class ZoneFootprint:
     """Named 2-D polygon for one thermal zone on one floor."""
 
     name_suffix: str  # e.g. "Core", "Perimeter_South"
@@ -515,7 +515,7 @@ def _classify_edge_orientation(
 def _split_core_perimeter_convex(
     footprint: list[tuple[float, float]],
     depth: float,
-) -> list[_ZoneFootprint]:
+) -> list[ZoneFootprint]:
     """Split a convex footprint into core + perimeter zones.
 
     Each footprint edge produces one perimeter zone.  The inward-offset
@@ -525,11 +525,11 @@ def _split_core_perimeter_convex(
     n = len(footprint)
     inner = _inset_polygon_2d(footprint, depth)
     if inner is None:
-        return [_ZoneFootprint("Whole", footprint)]
+        return [ZoneFootprint("Whole", footprint)]
 
     # Count zones per orientation so we can append indices if duplicates arise
     orient_count: dict[str, int] = {}
-    zones: list[_ZoneFootprint] = []
+    zones: list[ZoneFootprint] = []
 
     for i in range(n):
         j = (i + 1) % n
@@ -545,14 +545,14 @@ def _split_core_perimeter_convex(
         # When the offset exceeds the apothem, the inner vertices
         # swap and non-adjacent edges of the quad cross each other.
         if _quad_is_self_intersecting(perim_poly):
-            return [_ZoneFootprint("Whole", footprint)]
+            return [ZoneFootprint("Whole", footprint)]
 
         orientation = _classify_edge_orientation(outer_p1, outer_p2)
         orient_count[orientation] = orient_count.get(orientation, 0) + 1
         count = orient_count[orientation]
         suffix = f"Perimeter_{orientation}" if count == 1 else f"Perimeter_{orientation}_{count}"
 
-        zones.append(_ZoneFootprint(suffix, perim_poly))
+        zones.append(ZoneFootprint(suffix, perim_poly))
 
     # Rename first occurrence if there are duplicates
     for orient, cnt in orient_count.items():
@@ -560,10 +560,10 @@ def _split_core_perimeter_convex(
             target = f"Perimeter_{orient}"
             for k, z in enumerate(zones):
                 if z.name_suffix == target:
-                    zones[k] = _ZoneFootprint(f"Perimeter_{orient}_1", z.polygon)
+                    zones[k] = ZoneFootprint(f"Perimeter_{orient}_1", z.polygon)
                     break
 
-    zones.append(_ZoneFootprint("Core", inner))
+    zones.append(ZoneFootprint("Core", inner))
     return zones
 
 
@@ -591,7 +591,7 @@ def _is_convex(footprint: list[tuple[float, float]]) -> bool:
 def _split_core_perimeter(
     footprint: list[tuple[float, float]],
     depth: float,
-) -> list[_ZoneFootprint]:
+) -> list[ZoneFootprint]:
     """Split a footprint into core + perimeter zones.
 
     Handles convex polygons directly.  For concave polygons, falls back
@@ -600,7 +600,7 @@ def _split_core_perimeter(
     if _is_convex(footprint):
         return _split_core_perimeter_convex(footprint, depth)
     # Concave footprint: fall back to single zone
-    return [_ZoneFootprint("Whole", footprint)]
+    return [ZoneFootprint("Whole", footprint)]
 
 
 # ---------------------------------------------------------------------------
@@ -634,7 +634,7 @@ class _StorySpec:
     story: int
     z_bot: float
     z_top: float
-    zones: list[_ZoneFootprint]
+    zones: list[ZoneFootprint]
 
 
 def _build_story_surfaces(
@@ -810,8 +810,8 @@ def _edge_key(p1: tuple[float, float], p2: tuple[float, float]) -> tuple[float, 
 
 
 def _find_adjacent_zone(
-    current: _ZoneFootprint,
-    all_zones: list[_ZoneFootprint],
+    current: ZoneFootprint,
+    all_zones: list[ZoneFootprint],
     base_name: str,
     story: int,
     num_stories: int,
@@ -889,7 +889,7 @@ class ZonedBlock:
     num_stories: int = 1
     zoning: ZoningScheme = ZoningScheme.BY_STOREY
     perimeter_depth: float = ASHRAE_PERIMETER_DEPTH
-    custom_zones: list[_ZoneFootprint] | None = None
+    custom_zones: list[ZoneFootprint] | None = None
     air_boundary: bool = False
 
     def __post_init__(self) -> None:
@@ -921,9 +921,9 @@ class ZonedBlock:
         if self.zoning == ZoningScheme.CORE_PERIMETER:
             zone_footprints = _split_core_perimeter(fp, self.perimeter_depth)
         elif self.zoning == ZoningScheme.CUSTOM:
-            zone_footprints = self.custom_zones or [_ZoneFootprint("Whole", fp)]
+            zone_footprints = self.custom_zones or [ZoneFootprint("Whole", fp)]
         else:  # BY_STOREY
-            zone_footprints = [_ZoneFootprint("Whole", fp)]
+            zone_footprints = [ZoneFootprint("Whole", fp)]
 
         # Build story specs
         story_specs: list[_StorySpec] = []
@@ -962,7 +962,7 @@ def create_building(
     *,
     zoning: ZoningScheme = ZoningScheme.BY_STOREY,
     perimeter_depth: float = ASHRAE_PERIMETER_DEPTH,
-    custom_zones: list[_ZoneFootprint] | None = None,
+    custom_zones: list[ZoneFootprint] | None = None,
     air_boundary: bool = False,
 ) -> list[IDFObject]:
     """Create a fully-zoned building in one call.
