@@ -26,7 +26,7 @@ from .versions import LATEST_VERSION
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .schema import EpJSONSchema
+    from .schema import EpJSONSchema, ParsingCache
     from .simulation.config import EnergyPlusConfig
 
 
@@ -355,6 +355,51 @@ class IDFDocument(EppyDocumentMixin):
     # Object Manipulation
     # -------------------------------------------------------------------------
 
+    @staticmethod
+    def _build_field_order_for_add(
+        base_field_order: list[str] | None,
+        field_data: dict[str, Any],
+        parsing_cache: ParsingCache | None,
+    ) -> list[str] | None:
+        """Build field order for newly created objects.
+
+        For extensible objects, include extensible fields present in input data so
+        IDF serialization preserves those values.
+        """
+        if base_field_order is None:
+            return None
+
+        field_order = list(base_field_order)
+        if parsing_cache is None or not parsing_cache.extensible:
+            return field_order
+
+        known_fields = set(field_order)
+
+        # First add schema-style extensible groups: field, field_2, field_3, ...
+        if parsing_cache.ext_field_names:
+            group_idx = 0
+            while True:
+                suffix = "" if group_idx == 0 else f"_{group_idx + 1}"
+                group_fields = [f"{name}{suffix}" for name in parsing_cache.ext_field_names]
+                if not any(field in field_data for field in group_fields):
+                    break
+
+                for field_name in group_fields:
+                    if field_name not in known_fields:
+                        field_order.append(field_name)
+                        known_fields.add(field_name)
+
+                group_idx += 1
+
+        # Then preserve any additional user-provided extensible aliases
+        # (for example eppy-style vertex_1_x_coordinate naming).
+        for field_name in field_data:
+            if field_name not in known_fields:
+                field_order.append(field_name)
+                known_fields.add(field_name)
+
+        return field_order
+
     def add(
         self,
         obj_type: str,
@@ -424,12 +469,15 @@ class IDFDocument(EppyDocumentMixin):
         obj_schema: dict[str, Any] | None = None
         field_order: list[str] | None = None
         ref_fields: frozenset[str] | None = None
+        parsing_cache: ParsingCache | None = None
         if self._schema:
             obj_schema = self._schema.get_object_schema(obj_type)
             if self._schema.has_name(obj_type):
                 field_order = self._schema.get_field_names(obj_type)
             else:
                 field_order = self._schema.get_all_field_names(obj_type)
+            parsing_cache = self._schema.get_parsing_cache(obj_type)
+            field_order = self._build_field_order_for_add(field_order, field_data, parsing_cache)
             ref_fields = self._compute_ref_fields(self._schema, obj_type)
 
         # Create object
