@@ -2337,6 +2337,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#idfkit.zoning.ZoneFootprint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZoneFootprint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#idfkit.zoning.ZonedBlock" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3601,6 +3612,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#idfkit.zoning.ZoneFootprint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ZoneFootprint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#idfkit.zoning.ZonedBlock" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3869,24 +3891,23 @@ automatically falls back to a single zone per floor.</p>
 <h3 id="custom-zoning">Custom Zoning<a class="headerlink" href="#custom-zoning" title="Permanent link">&para;</a></h3>
 <p>Supply your own named zone polygons per floor using <code>custom_zones</code>.
 Each entry is a <code>(name, polygon)</code> tuple:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">idfkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_document</span><span class="p">,</span> <span class="n">create_building</span><span class="p">,</span> <span class="n">ZoningScheme</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">idfkit.zoning</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ZoneFootprint</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">doc</span> <span class="o">=</span> <span class="n">new_document</span><span class="p">()</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">create_building</span><span class="p">(</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">doc</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Lab&quot;</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">footprint</span><span class="o">=</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">)],</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">floor_to_floor</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">num_stories</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">zoning</span><span class="o">=</span><span class="n">ZoningScheme</span><span class="o">.</span><span class="n">CUSTOM</span><span class="p">,</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">custom_zones</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="n">_ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Wet Lab&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]),</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>        <span class="n">_ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Dry Lab&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]),</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="p">],</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="p">)</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;Zone&quot;</span><span class="p">]))</span>  <span class="c1"># 2</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">idfkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">ZoneFootprint</span><span class="p">,</span> <span class="n">ZoningScheme</span><span class="p">,</span> <span class="n">create_building</span><span class="p">,</span> <span class="n">new_document</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">doc</span> <span class="o">=</span> <span class="n">new_document</span><span class="p">()</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">create_building</span><span class="p">(</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">doc</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Lab&quot;</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">footprint</span><span class="o">=</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">)],</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">floor_to_floor</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">num_stories</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">zoning</span><span class="o">=</span><span class="n">ZoningScheme</span><span class="o">.</span><span class="n">CUSTOM</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">custom_zones</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="n">ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Wet Lab&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]),</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="n">ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Dry Lab&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">)]),</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>    <span class="p">],</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">)</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;Zone&quot;</span><span class="p">]))</span>  <span class="c1"># 2</span>
 </span></code></pre></div>
 <h2 id="air-boundaries">Air Boundaries<a class="headerlink" href="#air-boundaries" title="Permanent link">&para;</a></h2>
 <p>Set <code>air_boundary=True</code> to apply <code>Construction:AirBoundary</code> to all
@@ -4108,6 +4129,71 @@ zones = create_building(
 
 
 
+<h2 id="idfkit.zoning.ZoneFootprint" class="doc doc-heading">
+            <code>ZoneFootprint</code>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#idfkit.zoning.ZoneFootprint" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>Named 2-D polygon for one thermal zone on one floor.</p>
+
+
+
+
+
+
+
+
+              <details class="mkdocstrings-source">
+                <summary>Source code in <code>src/idfkit/zoning.py</code></summary>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#__codelineno-0-366">366</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a><span class="k">class</span><span class="w"> </span><span class="nc">ZoneFootprint</span><span class="p">:</span>
+</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Named 2-D polygon for one thermal zone on one floor.&quot;&quot;&quot;</span>
+</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a>
+</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a>    <span class="n">name_suffix</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># e.g. &quot;Core&quot;, &quot;Perimeter_South&quot;</span>
+</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>    <span class="n">polygon</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span>
+</span></code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="idfkit.zoning.ZonedBlock" class="doc doc-heading">
             <code>ZonedBlock</code>
 
@@ -4208,7 +4294,12 @@ when <code>zoning</code> is <code>CORE_PERIMETER</code>.</p>
           <tr class="doc-section-item">
             <td><code><span title="idfkit.zoning.ZonedBlock.custom_zones">custom_zones</span></code></td>
             <td>
-                  <code><span title="list">list</span>[<span title="idfkit.zoning._ZoneFootprint">_ZoneFootprint</span>] | None</code>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="&lt;code&gt;ZoneFootprint&lt;/code&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;idfkit.zoning.ZoneFootprint&lt;/code&gt;)" href="#idfkit.zoning.ZoneFootprint">ZoneFootprint</a>] | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4351,7 +4442,7 @@ between inter-zone walls.</p>
 </span><span id="__span-0-888"><a id="__codelineno-0-888" name="__codelineno-0-888"></a>    <span class="n">num_stories</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-0-889"><a id="__codelineno-0-889" name="__codelineno-0-889"></a>    <span class="n">zoning</span><span class="p">:</span> <span class="n">ZoningScheme</span> <span class="o">=</span> <span class="n">ZoningScheme</span><span class="o">.</span><span class="n">BY_STOREY</span>
 </span><span id="__span-0-890"><a id="__codelineno-0-890" name="__codelineno-0-890"></a>    <span class="n">perimeter_depth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">ASHRAE_PERIMETER_DEPTH</span>
-</span><span id="__span-0-891"><a id="__codelineno-0-891" name="__codelineno-0-891"></a>    <span class="n">custom_zones</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_ZoneFootprint</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-891"><a id="__codelineno-0-891" name="__codelineno-0-891"></a>    <span class="n">custom_zones</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ZoneFootprint</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-892"><a id="__codelineno-0-892" name="__codelineno-0-892"></a>    <span class="n">air_boundary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 </span><span id="__span-0-893"><a id="__codelineno-0-893" name="__codelineno-0-893"></a>
 </span><span id="__span-0-894"><a id="__codelineno-0-894" name="__codelineno-0-894"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4383,9 +4474,9 @@ between inter-zone walls.</p>
 </span><span id="__span-0-920"><a id="__codelineno-0-920" name="__codelineno-0-920"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoning</span> <span class="o">==</span> <span class="n">ZoningScheme</span><span class="o">.</span><span class="n">CORE_PERIMETER</span><span class="p">:</span>
 </span><span id="__span-0-921"><a id="__codelineno-0-921" name="__codelineno-0-921"></a>            <span class="n">zone_footprints</span> <span class="o">=</span> <span class="n">_split_core_perimeter</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">perimeter_depth</span><span class="p">)</span>
 </span><span id="__span-0-922"><a id="__codelineno-0-922" name="__codelineno-0-922"></a>        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoning</span> <span class="o">==</span> <span class="n">ZoningScheme</span><span class="o">.</span><span class="n">CUSTOM</span><span class="p">:</span>
-</span><span id="__span-0-923"><a id="__codelineno-0-923" name="__codelineno-0-923"></a>            <span class="n">zone_footprints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_zones</span> <span class="ow">or</span> <span class="p">[</span><span class="n">_ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
+</span><span id="__span-0-923"><a id="__codelineno-0-923" name="__codelineno-0-923"></a>            <span class="n">zone_footprints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_zones</span> <span class="ow">or</span> <span class="p">[</span><span class="n">ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
 </span><span id="__span-0-924"><a id="__codelineno-0-924" name="__codelineno-0-924"></a>        <span class="k">else</span><span class="p">:</span>  <span class="c1"># BY_STOREY</span>
-</span><span id="__span-0-925"><a id="__codelineno-0-925" name="__codelineno-0-925"></a>            <span class="n">zone_footprints</span> <span class="o">=</span> <span class="p">[</span><span class="n">_ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
+</span><span id="__span-0-925"><a id="__codelineno-0-925" name="__codelineno-0-925"></a>            <span class="n">zone_footprints</span> <span class="o">=</span> <span class="p">[</span><span class="n">ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
 </span><span id="__span-0-926"><a id="__codelineno-0-926" name="__codelineno-0-926"></a>
 </span><span id="__span-0-927"><a id="__codelineno-0-927" name="__codelineno-0-927"></a>        <span class="c1"># Build story specs</span>
 </span><span id="__span-0-928"><a id="__codelineno-0-928" name="__codelineno-0-928"></a>        <span class="n">story_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_StorySpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -4511,9 +4602,9 @@ between inter-zone walls.</p>
 </span><span id="__span-0-920"><a id="__codelineno-0-920" name="__codelineno-0-920"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoning</span> <span class="o">==</span> <span class="n">ZoningScheme</span><span class="o">.</span><span class="n">CORE_PERIMETER</span><span class="p">:</span>
 </span><span id="__span-0-921"><a id="__codelineno-0-921" name="__codelineno-0-921"></a>        <span class="n">zone_footprints</span> <span class="o">=</span> <span class="n">_split_core_perimeter</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">perimeter_depth</span><span class="p">)</span>
 </span><span id="__span-0-922"><a id="__codelineno-0-922" name="__codelineno-0-922"></a>    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoning</span> <span class="o">==</span> <span class="n">ZoningScheme</span><span class="o">.</span><span class="n">CUSTOM</span><span class="p">:</span>
-</span><span id="__span-0-923"><a id="__codelineno-0-923" name="__codelineno-0-923"></a>        <span class="n">zone_footprints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_zones</span> <span class="ow">or</span> <span class="p">[</span><span class="n">_ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
+</span><span id="__span-0-923"><a id="__codelineno-0-923" name="__codelineno-0-923"></a>        <span class="n">zone_footprints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_zones</span> <span class="ow">or</span> <span class="p">[</span><span class="n">ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
 </span><span id="__span-0-924"><a id="__codelineno-0-924" name="__codelineno-0-924"></a>    <span class="k">else</span><span class="p">:</span>  <span class="c1"># BY_STOREY</span>
-</span><span id="__span-0-925"><a id="__codelineno-0-925" name="__codelineno-0-925"></a>        <span class="n">zone_footprints</span> <span class="o">=</span> <span class="p">[</span><span class="n">_ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
+</span><span id="__span-0-925"><a id="__codelineno-0-925" name="__codelineno-0-925"></a>        <span class="n">zone_footprints</span> <span class="o">=</span> <span class="p">[</span><span class="n">ZoneFootprint</span><span class="p">(</span><span class="s2">&quot;Whole&quot;</span><span class="p">,</span> <span class="n">fp</span><span class="p">)]</span>
 </span><span id="__span-0-926"><a id="__codelineno-0-926" name="__codelineno-0-926"></a>
 </span><span id="__span-0-927"><a id="__codelineno-0-927" name="__codelineno-0-927"></a>    <span class="c1"># Build story specs</span>
 </span><span id="__span-0-928"><a id="__codelineno-0-928" name="__codelineno-0-928"></a>    <span class="n">story_specs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_StorySpec</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -4817,7 +4908,12 @@ Defaults to 4.57 m (ASHRAE 90.1 / DOE prototypes).</p>
                 <code>custom_zones</code>
             </td>
             <td>
-                  <code><span title="list">list</span>[<span title="idfkit.zoning._ZoneFootprint">_ZoneFootprint</span>] | None</code>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="&lt;code&gt;ZoneFootprint&lt;/code&gt;
+
+
+  &lt;span class=&quot;doc doc-labels&quot;&gt;
+      &lt;small class=&quot;doc doc-label doc-label-dataclass&quot;&gt;&lt;code&gt;dataclass&lt;/code&gt;&lt;/small&gt;
+  &lt;/span&gt; (&lt;code&gt;idfkit.zoning.ZoneFootprint&lt;/code&gt;)" href="#idfkit.zoning.ZoneFootprint">ZoneFootprint</a>] | None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -4971,7 +5067,7 @@ create_building(
 </span><span id="__span-0-961"><a id="__codelineno-0-961" name="__codelineno-0-961"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-962"><a id="__codelineno-0-962" name="__codelineno-0-962"></a>    <span class="n">zoning</span><span class="p">:</span> <span class="n">ZoningScheme</span> <span class="o">=</span> <span class="n">ZoningScheme</span><span class="o">.</span><span class="n">BY_STOREY</span><span class="p">,</span>
 </span><span id="__span-0-963"><a id="__codelineno-0-963" name="__codelineno-0-963"></a>    <span class="n">perimeter_depth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">ASHRAE_PERIMETER_DEPTH</span><span class="p">,</span>
-</span><span id="__span-0-964"><a id="__codelineno-0-964" name="__codelineno-0-964"></a>    <span class="n">custom_zones</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_ZoneFootprint</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-964"><a id="__codelineno-0-964" name="__codelineno-0-964"></a>    <span class="n">custom_zones</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ZoneFootprint</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-965"><a id="__codelineno-0-965" name="__codelineno-0-965"></a>    <span class="n">air_boundary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-966"><a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">IDFObject</span><span class="p">]:</span>
 </span><span id="__span-0-967"><a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a fully-zoned building in one call.</span>
