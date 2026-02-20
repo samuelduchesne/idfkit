@@ -205,6 +205,13 @@ def describe_object_type(schema: EpJSONSchema, obj_type: str) -> ObjectDescripti
         # Fallback to properties keys if no legacy_idd
         field_names = list(properties.keys())
 
+    is_extensible = schema.is_extensible(obj_type)
+    extensible_size = schema.get_extensible_size(obj_type)
+    if is_extensible:
+        for ext_name in schema.get_extensible_field_names(obj_type):
+            if ext_name not in field_names:
+                field_names.append(ext_name)
+
     fields: list[FieldDescription] = []
     for field_name in field_names:
         field_schema: dict[str, Any] = properties.get(field_name, {})
@@ -249,8 +256,8 @@ def describe_object_type(schema: EpJSONSchema, obj_type: str) -> ObjectDescripti
         fields=fields,
         required_fields=required_list,
         has_name=schema.has_name(obj_type),
-        is_extensible=schema.is_extensible(obj_type),
-        extensible_size=schema.get_extensible_size(obj_type),
+        is_extensible=is_extensible,
+        extensible_size=extensible_size,
     )
 
 

@@ -135,6 +135,15 @@ class TestDescribeObjectType:
         assert desc.is_extensible is True
         assert desc.extensible_size is not None
         assert desc.extensible_size > 0
+        field_names = [f.name for f in desc.fields]
+        assert "field" in field_names
+
+    def test_extensible_surface_includes_vertex_fields(self, schema: EpJSONSchema) -> None:
+        desc = describe_object_type(schema, "BuildingSurface:Detailed")
+        field_names = [f.name for f in desc.fields]
+        assert "vertex_x_coordinate" in field_names
+        assert "vertex_y_coordinate" in field_names
+        assert "vertex_z_coordinate" in field_names
 
     def test_nameless_object(self, schema: EpJSONSchema) -> None:
         desc = describe_object_type(schema, "Timestep")
