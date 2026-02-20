@@ -12,13 +12,13 @@
         <meta name="author" content="Samuel Letellier-Duchesne">
       
       
-        <link rel="canonical" href="https://samuelduchesne.github.io/idfkit/troubleshooting/energyplus/">
+        <link rel="canonical" href="https://samuelduchesne.github.io/idfkit/concepts/logging/">
       
       
-        <link rel="prev" href="../errors/">
+        <link rel="prev" href="../caching/">
       
       
-        <link rel="next" href="../../benchmarks/">
+        <link rel="next" href="../cloud-storage/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>EnergyPlus Issues - idfkit</title>
+        <title>Logging - idfkit</title>
       
     
     
@@ -84,7 +84,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#energyplus-issues" class="md-skip">
+        <a href="#logging" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              EnergyPlus Issues
+              Logging
             
           </span>
         </div>
@@ -271,11 +271,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../concepts/simulation-architecture/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../simulation-architecture/" class="md-tabs__link">
           
   
   
@@ -413,13 +415,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../errors/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../troubleshooting/errors/" class="md-tabs__link">
           
   
   
@@ -715,8 +715,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -734,19 +736,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -764,7 +769,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -782,7 +787,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/simulation-architecture/" class="md-nav__link">
+      <a href="../simulation-architecture/" class="md-nav__link">
         
   
   
@@ -810,7 +815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/weather-pipeline/" class="md-nav__link">
+      <a href="../weather-pipeline/" class="md-nav__link">
         
   
   
@@ -838,7 +843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/caching/" class="md-nav__link">
+      <a href="../caching/" class="md-nav__link">
         
   
   
@@ -863,10 +868,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../concepts/logging/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -882,6 +914,203 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logger-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logger Hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#targeted-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Targeted Logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging-to-a-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging to a File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging-simulations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging Simulations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrating-with-your-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integrating with Your Application
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integrating with Your Application">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#django" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Django
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structured-json-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured / JSON Logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#silencing-all-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silencing All Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-log-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Log Messages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Log Messages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        INFO
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DEBUG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WARNING
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -894,7 +1123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/cloud-storage/" class="md-nav__link">
+      <a href="../cloud-storage/" class="md-nav__link">
         
   
   
@@ -2845,10 +3074,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -2860,22 +3087,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
             
   
   
@@ -2893,7 +3117,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2911,7 +3135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../troubleshooting/errors/" class="md-nav__link">
         
   
   
@@ -2936,37 +3160,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    EnergyPlus Issues
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../troubleshooting/energyplus/" class="md-nav__link">
         
   
   
@@ -2982,337 +3179,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#installation-problems" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation Problems
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Installation Problems">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#energyplus-not-found" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        EnergyPlus Not Found
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multiple-versions-installed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multiple Versions Installed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#permission-denied" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Permission Denied
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#simulation-failures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation Failures
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Simulation Failures">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fatal-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fatal Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#common-fatal-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common Fatal Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#severe-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Severe Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#warnings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Warnings
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#model-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Model Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Model Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#missing-outputsqlite" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Missing Output:SQLite
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#version-mismatch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Version Mismatch
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#geometry-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Geometry Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#simulation-takes-too-long" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation Takes Too Long
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#high-memory-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        High Memory Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#output-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Output Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#no-sql-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No SQL Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#missing-time-series-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Missing Time-Series Data
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#platform-specific-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Platform-Specific Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Platform-Specific Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#macos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        macOS
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linux" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Linux
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Getting Help
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See Also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3379,44 +3245,88 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#installation-problems" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation Problems
+        Quick Start
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Installation Problems">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logger-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logger Hierarchy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#targeted-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Targeted Logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging-to-a-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging to a File
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging-simulations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging Simulations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integrating-with-your-application" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integrating with Your Application
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integrating with Your Application">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#energyplus-not-found" class="md-nav__link">
+  <a href="#django" class="md-nav__link">
     <span class="md-ellipsis">
       
-        EnergyPlus Not Found
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multiple-versions-installed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multiple Versions Installed
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#permission-denied" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Permission Denied
+        Django
       
     </span>
   </a>
@@ -3429,22 +3339,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#simulation-failures" class="md-nav__link">
+  <a href="#structured-json-logging" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Simulation Failures
+        Structured / JSON Logging
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Simulation Failures">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#silencing-all-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silencing All Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-log-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Log Messages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key Log Messages">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fatal-errors" class="md-nav__link">
+  <a href="#info" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fatal Errors
+        INFO
       
     </span>
   </a>
@@ -3452,10 +3384,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#common-fatal-errors" class="md-nav__link">
+  <a href="#debug" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Common Fatal Errors
+        DEBUG
       
     </span>
   </a>
@@ -3463,21 +3395,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#severe-errors" class="md-nav__link">
+  <a href="#warning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Severe Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#warnings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Warnings
+        WARNING
       
     </span>
   </a>
@@ -3486,195 +3407,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#model-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Model Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Model Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#missing-outputsqlite" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Missing Output:SQLite
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#version-mismatch" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Version Mismatch
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#geometry-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Geometry Errors
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#simulation-takes-too-long" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulation Takes Too Long
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#high-memory-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        High Memory Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#output-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Output Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#no-sql-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        No SQL Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#missing-time-series-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Missing Time-Series Data
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#platform-specific-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Platform-Specific Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Platform-Specific Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#macos" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        macOS
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linux" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Linux
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Getting Help
-      
-    </span>
-  </a>
   
 </li>
       
@@ -3706,7 +3438,7 @@
 
 
   
-    <a href="https://github.com/samuelduchesne/idfkit/edit/main/docs/troubleshooting/energyplus.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/samuelduchesne/idfkit/edit/main/docs/concepts/logging.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
     </a>
@@ -3715,273 +3447,311 @@
     
       
     
-    <a href="https://github.com/samuelduchesne/idfkit/raw/main/docs/troubleshooting/energyplus.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/samuelduchesne/idfkit/raw/main/docs/concepts/logging.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
     </a>
   
 
 
-<h1 id="energyplus-issues">EnergyPlus Issues<a class="headerlink" href="#energyplus-issues" title="Permanent link">&para;</a></h1>
-<p>This page covers common EnergyPlus-related issues and their solutions.</p>
-<h2 id="installation-problems">Installation Problems<a class="headerlink" href="#installation-problems" title="Permanent link">&para;</a></h2>
-<h3 id="energyplus-not-found">EnergyPlus Not Found<a class="headerlink" href="#energyplus-not-found" title="Permanent link">&para;</a></h3>
-<p>idfkit searches for EnergyPlus in this order:</p>
-<ol>
-<li>Explicit path in code</li>
-<li><code>ENERGYPLUS_DIR</code> environment variable</li>
-<li>System PATH</li>
-<li>Platform default locations:<ul>
-<li>macOS: <code>/Applications/EnergyPlus-*/</code></li>
-<li>Linux: <code>/usr/local/EnergyPlus-*/</code></li>
-<li>Windows: <code>C:\EnergyPlusV*/</code></li>
-</ul>
-</li>
-</ol>
-<p><strong>Verify installation:</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">idfkit.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_energyplus</span>
+<h1 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h1>
+<p>idfkit uses Python's standard <code>logging</code> module throughout the library.
+Every module logs through a namespaced logger (e.g. <code>idfkit.idf_parser</code>,
+<code>idfkit.simulation.runner</code>), so you can control verbosity per subsystem
+using normal Python logging configuration.</p>
+<p>By default, <strong>no output is produced</strong> — idfkit never calls
+<code>logging.basicConfig()</code> or installs handlers, following the
+<a href="https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library">library logging best practice</a>.
+You opt in to log output by configuring handlers in your own application.</p>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>The simplest way to see idfkit logs is to enable <code>basicConfig</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">try</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">find_energyplus</span><span class="p">()</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">executable</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not found: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Show all INFO-level messages from idfkit</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Load and parse — idfkit logs progress automatically</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">idfkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_idf</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">doc</span> <span class="o">=</span> <span class="n">load_idf</span><span class="p">(</span><span class="s2">&quot;model.idf&quot;</span><span class="p">)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># INFO:idfkit.idf_parser:Parsed 850 objects from model.idf in 0.142s</span>
 </span></code></pre></div>
-<p><strong>Specify path manually:</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">find_energyplus</span><span class="p">(</span><span class="s2">&quot;/path/to/EnergyPlus-24-1-0&quot;</span><span class="p">)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">weather</span><span class="p">,</span> <span class="n">energyplus</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<h2 id="log-levels">Log Levels<a class="headerlink" href="#log-levels" title="Permanent link">&para;</a></h2>
+<p>idfkit uses three log levels:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>What Gets Logged</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>DEBUG</code></strong></td>
+<td>Diagnostic details — file paths, version detection, mmap usage, cache key computation, command lines, candidate paths</td>
+</tr>
+<tr>
+<td><strong><code>INFO</code></strong></td>
+<td>Operational milestones — parsing/writing completion with timing, simulation start/finish, batch progress, schema loading, weather downloads</td>
+</tr>
+<tr>
+<td><strong><code>WARNING</code></strong></td>
+<td>Potential problems — unknown object types skipped during parsing, non-zero EnergyPlus exit codes</td>
+</tr>
+</tbody>
+</table>
+<p>Errors are raised as exceptions (not logged), so there is no <code>ERROR</code>-level output.</p>
+<h2 id="logger-hierarchy">Logger Hierarchy<a class="headerlink" href="#logger-hierarchy" title="Permanent link">&para;</a></h2>
+<p>All loggers live under the <code>idfkit</code> namespace:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>idfkit
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── idfkit.schema              # Schema loading and caching
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├── idfkit.idf_parser          # IDF file parsing
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>├── idfkit.epjson_parser       # epJSON file parsing
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>├── idfkit.writers             # IDF/epJSON file writing
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>├── idfkit.document            # Object add/remove/rename
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>├── idfkit.validation          # Schema validation
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>├── idfkit.geometry            # Geometry operations (WWR, intersect_match)
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>├── idfkit.simulation
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│   ├── idfkit.simulation.config       # EnergyPlus discovery
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│   ├── idfkit.simulation.runner       # Simulation execution
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>│   ├── idfkit.simulation.async_runner # Async simulation
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│   ├── idfkit.simulation.batch        # Batch processing
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│   ├── idfkit.simulation.async_batch  # Async batch processing
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>│   ├── idfkit.simulation.cache        # Simulation result caching
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>│   └── idfkit.simulation.expand       # Preprocessors (ExpandObjects, Slab, Basement)
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>└── idfkit.weather
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    ├── idfkit.weather.download        # EPW/DDY downloads
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    └── idfkit.weather.index           # Station index loading
 </span></code></pre></div>
-<h3 id="multiple-versions-installed">Multiple Versions Installed<a class="headerlink" href="#multiple-versions-installed" title="Permanent link">&para;</a></h3>
-<p>When multiple versions exist, idfkit uses the newest by default.</p>
-<p><strong>Use a specific version:</strong></p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Find a specific version</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">find_energyplus</span><span class="p">(</span><span class="s2">&quot;/Applications/EnergyPlus-23-2-0&quot;</span><span class="p">)</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">result</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">weather</span><span class="p">,</span> <span class="n">energyplus</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<p>Setting a level on a parent logger applies to all children. For example,
+<code>logging.getLogger("idfkit.simulation").setLevel(logging.DEBUG)</code> enables
+debug output for the runner, cache, batch, and all other simulation loggers.</p>
+<h2 id="targeted-logging">Targeted Logging<a class="headerlink" href="#targeted-logging" title="Permanent link">&para;</a></h2>
+<p>Enable verbose output only for the subsystems you care about:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Silence everything by default</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Enable verbose output only for simulation</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit.simulation.runner&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Or enable all simulation sub-loggers at once</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit.simulation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 </span></code></pre></div>
-<h3 id="permission-denied">Permission Denied<a class="headerlink" href="#permission-denied" title="Permanent link">&para;</a></h3>
-<p><strong>Linux/macOS:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>chmod<span class="w"> </span>+x<span class="w"> </span>/usr/local/EnergyPlus-*/energyplus
+<h2 id="logging-to-a-file">Logging to a File<a class="headerlink" href="#logging-to-a-file" title="Permanent link">&para;</a></h2>
+<p>Write all idfkit output to a log file while keeping your console clean:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Create a file handler for idfkit logs</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s2">&quot;idfkit.log&quot;</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(name)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">))</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Attach it to the top-level idfkit logger</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 </span></code></pre></div>
-<p><strong>Windows:</strong> Run as Administrator or check file permissions.</p>
-<h2 id="simulation-failures">Simulation Failures<a class="headerlink" href="#simulation-failures" title="Permanent link">&para;</a></h2>
-<h3 id="fatal-errors">Fatal Errors<a class="headerlink" href="#fatal-errors" title="Permanent link">&para;</a></h3>
-<p>Check the error report for details:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">weather</span><span class="p">)</span>
+<h2 id="debugging-simulations">Debugging Simulations<a class="headerlink" href="#debugging-simulations" title="Permanent link">&para;</a></h2>
+<p>When a simulation fails or produces unexpected results, enable <code>DEBUG</code> on
+the simulation subsystem to see every step — EnergyPlus discovery, cache
+lookups, the exact command line, and timing:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="k">for</span> <span class="n">err</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">fatal</span><span class="p">:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fatal: </span><span class="si">{</span><span class="n">err</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Turn on DEBUG for the simulation subsystem</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(name)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit.simulation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Now run a simulation — every step is visible:</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1">#   DEBUG idfkit.simulation.config  Trying candidate /usr/local/EnergyPlus-24-2-0</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="c1">#   INFO  idfkit.simulation.config  Found EnergyPlus 24.2.0 at /usr/local/EnergyPlus-24-2-0</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1">#   DEBUG idfkit.simulation.runner  EnergyPlus: /usr/local/.../energyplus (version 24.2.0)</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1">#   INFO  idfkit.simulation.runner  Starting simulation with weather weather.epw</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="c1">#   DEBUG idfkit.simulation.runner  Cache miss for key a1b2c3d4e5f6</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1">#   DEBUG idfkit.simulation.runner  Command: /usr/local/.../energyplus -w weather.epw -d ...</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1">#   INFO  idfkit.simulation.runner  Simulation completed successfully in 12.3s</span>
 </span></code></pre></div>
-<h3 id="common-fatal-errors">Common Fatal Errors<a class="headerlink" href="#common-fatal-errors" title="Permanent link">&para;</a></h3>
+<h2 id="integrating-with-your-application">Integrating with Your Application<a class="headerlink" href="#integrating-with-your-application" title="Permanent link">&para;</a></h2>
+<p>idfkit's loggers coexist naturally with your own application logging.
+Configure them together:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Your application&#39;s own logger</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">app_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;myapp&quot;</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># Configure the root logger once (controls everything)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> [</span><span class="si">%(levelname)s</span><span class="s2">] </span><span class="si">%(name)s</span><span class="s2">: </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="p">)</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># Fine-tune individual libraries</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit.simulation&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;urllib3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">app_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting energy model workflow&quot;</span><span class="p">)</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="c1"># Both your logs and idfkit logs flow through the same handlers</span>
+</span></code></pre></div>
+<h3 id="django">Django<a class="headerlink" href="#django" title="Permanent link">&para;</a></h3>
+<p>Use Django's <code>LOGGING</code> dict to configure idfkit loggers:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># In your Django settings.py</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">LOGGING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="s2">&quot;disable_existing_loggers&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="s2">&quot;handlers&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="s2">&quot;console&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>            <span class="s2">&quot;class&quot;</span><span class="p">:</span> <span class="s2">&quot;logging.StreamHandler&quot;</span><span class="p">,</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="p">},</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="p">},</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="s2">&quot;loggers&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        <span class="s2">&quot;idfkit&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>            <span class="s2">&quot;handlers&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;console&quot;</span><span class="p">],</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        <span class="p">},</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        <span class="s2">&quot;idfkit.simulation&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>            <span class="s2">&quot;handlers&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;console&quot;</span><span class="p">],</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="s2">&quot;DEBUG&quot;</span><span class="p">,</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>            <span class="s2">&quot;propagate&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>        <span class="p">},</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="p">},</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="p">}</span>
+</span></code></pre></div>
+<h2 id="structured-json-logging">Structured / JSON Logging<a class="headerlink" href="#structured-json-logging" title="Permanent link">&para;</a></h2>
+<p>For production environments or log aggregation pipelines, attach a custom
+formatter to emit structured output:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">JSONFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Emit each log record as a single JSON line.&quot;&quot;&quot;</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>            <span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">created</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>            <span class="s2">&quot;logger&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>        <span class="p">})</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">JSONFormatter</span><span class="p">())</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="silencing-all-output">Silencing All Output<a class="headerlink" href="#silencing-all-output" title="Permanent link">&para;</a></h2>
+<p>Suppress all idfkit logging entirely:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Suppress all idfkit output</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;idfkit&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="key-log-messages">Key Log Messages<a class="headerlink" href="#key-log-messages" title="Permanent link">&para;</a></h2>
+<p>Here are some representative messages you will see at each level:</p>
+<h3 id="info">INFO<a class="headerlink" href="#info" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Error</th>
-<th>Cause</th>
-<th>Solution</th>
+<th>Logger</th>
+<th>Message</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>"No surfaces in zone"</td>
-<td>Zone has no surfaces</td>
-<td>Add surfaces referencing the zone</td>
+<td><code>idfkit.idf_parser</code></td>
+<td><code>Parsed 850 objects from model.idf in 0.142s</code></td>
 </tr>
 <tr>
-<td>"Weather file has no data"</td>
-<td>Date mismatch</td>
-<td>Check RunPeriod matches weather file</td>
+<td><code>idfkit.schema</code></td>
+<td><code>Loaded schema for version 24.1.0 (480 object types) in 0.523s</code></td>
 </tr>
 <tr>
-<td>"Node not found"</td>
-<td>HVAC node missing</td>
-<td>Fix HVAC connections</td>
+<td><code>idfkit.simulation.runner</code></td>
+<td><code>Starting simulation with weather weather.epw</code></td>
 </tr>
 <tr>
-<td>"Schedule not found"</td>
-<td>Missing schedule</td>
-<td>Add the referenced schedule</td>
+<td><code>idfkit.simulation.runner</code></td>
+<td><code>Simulation completed successfully in 12.3s</code></td>
+</tr>
+<tr>
+<td><code>idfkit.simulation.batch</code></td>
+<td><code>Starting batch of 50 jobs with 8 workers</code></td>
+</tr>
+<tr>
+<td><code>idfkit.validation</code></td>
+<td><code>Validation complete: 0 errors, 2 warnings, 1 info</code></td>
+</tr>
+<tr>
+<td><code>idfkit.weather.download</code></td>
+<td><code>Downloading weather data for Chicago-OHare (WMO 725300)</code></td>
 </tr>
 </tbody>
 </table>
-<h3 id="severe-errors">Severe Errors<a class="headerlink" href="#severe-errors" title="Permanent link">&para;</a></h3>
-<p>Severe errors don't stop the simulation but may cause incorrect results:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">for</span> <span class="n">err</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">severe</span><span class="p">:</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Severe: </span><span class="si">{</span><span class="n">err</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<h3 id="warnings">Warnings<a class="headerlink" href="#warnings" title="Permanent link">&para;</a></h3>
-<p>Warnings are informational but worth reviewing:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning count: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">warning_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<h2 id="model-issues">Model Issues<a class="headerlink" href="#model-issues" title="Permanent link">&para;</a></h2>
-<h3 id="missing-outputsqlite">Missing Output:SQLite<a class="headerlink" href="#missing-outputsqlite" title="Permanent link">&para;</a></h3>
-<p>idfkit automatically adds <code>Output:SQLite</code> if missing. However, if you
-see SQL-related errors:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Verify SQL output is present</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">if</span> <span class="s2">&quot;Output:SQLite&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model</span><span class="p">:</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;Output:SQLite&quot;</span><span class="p">,</span> <span class="n">option_type</span><span class="o">=</span><span class="s2">&quot;SimpleAndTabular&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<h3 id="version-mismatch">Version Mismatch<a class="headerlink" href="#version-mismatch" title="Permanent link">&para;</a></h3>
-<p>If the model was created for a different EnergyPlus version:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Load with explicit version</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">model</span> <span class="o">=</span> <span class="n">load_idf</span><span class="p">(</span><span class="s2">&quot;old_model.idf&quot;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
-</span></code></pre></div>
-<h3 id="geometry-errors">Geometry Errors<a class="headerlink" href="#geometry-errors" title="Permanent link">&para;</a></h3>
-<p>Common geometry issues:</p>
+<h3 id="debug">DEBUG<a class="headerlink" href="#debug" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Error</th>
-<th>Solution</th>
+<th>Logger</th>
+<th>Message</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>"Surface has zero area"</td>
-<td>Fix vertex coordinates</td>
+<td><code>idfkit.simulation.runner</code></td>
+<td><code>Cache miss for key a1b2c3d4e5f6</code></td>
 </tr>
 <tr>
-<td>"Zone volume is zero"</td>
-<td>Ensure zone is fully enclosed</td>
+<td><code>idfkit.simulation.runner</code></td>
+<td><code>Command: /usr/local/.../energyplus -w weather.epw -d ...</code></td>
 </tr>
 <tr>
-<td>"Surface vertices are not planar"</td>
-<td>Adjust vertices to be coplanar</td>
+<td><code>idfkit.simulation.config</code></td>
+<td><code>Trying candidate /usr/local/EnergyPlus-24-2-0</code></td>
+</tr>
+<tr>
+<td><code>idfkit.simulation.cache</code></td>
+<td><code>Computed cache key a1b2c3d4e5f6</code></td>
+</tr>
+<tr>
+<td><code>idfkit.idf_parser</code></td>
+<td><code>Using mmap for large file (52428800 bytes)</code></td>
+</tr>
+<tr>
+<td><code>idfkit.document</code></td>
+<td><code>Added Zone 'Office'</code></td>
 </tr>
 </tbody>
 </table>
-<p>Use idfkit's geometry tools to diagnose:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">idfkit.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">calculate_surface_area</span><span class="p">,</span> <span class="n">calculate_zone_volume</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">for</span> <span class="n">surface</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s2">&quot;BuildingSurface:Detailed&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">area</span> <span class="o">=</span> <span class="n">calculate_surface_area</span><span class="p">(</span><span class="n">surface</span><span class="p">)</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="k">if</span> <span class="n">area</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid surface: </span><span class="si">{</span><span class="n">surface</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">volume</span> <span class="o">=</span> <span class="n">calculate_zone_volume</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;Zone1&quot;</span><span class="p">)</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="k">if</span> <span class="n">volume</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Zone has invalid volume&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<h2 id="performance-issues">Performance Issues<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h2>
-<h3 id="simulation-takes-too-long">Simulation Takes Too Long<a class="headerlink" href="#simulation-takes-too-long" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p><strong>Use design-day mode for testing:</strong>
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">weather</span><span class="p">,</span> <span class="n">design_day</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Reduce timesteps:</strong>
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Check current timesteps</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">if</span> <span class="s2">&quot;Timestep&quot;</span> <span class="ow">in</span> <span class="n">model</span><span class="p">:</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="p">[</span><span class="s2">&quot;Timestep&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">number_of_timesteps_per_hour</span><span class="p">)</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Simplify the model:</strong></p>
-</li>
-<li>Reduce zone count</li>
-<li>Simplify HVAC systems</li>
-<li>Use ideal loads for initial testing</li>
-</ol>
-<h3 id="high-memory-usage">High Memory Usage<a class="headerlink" href="#high-memory-usage" title="Permanent link">&para;</a></h3>
-<p>Large models may consume significant memory:</p>
-<ol>
-<li>
-<p>Close SQL connections when done:
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">sql</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">sql</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># ... use sql ...</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">del</span> <span class="n">sql</span>  <span class="c1"># Or let it go out of scope</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p>Process results incrementally in batch runs</p>
-</li>
-</ol>
-<h2 id="output-issues">Output Issues<a class="headerlink" href="#output-issues" title="Permanent link">&para;</a></h2>
-<h3 id="no-sql-output">No SQL Output<a class="headerlink" href="#no-sql-output" title="Permanent link">&para;</a></h3>
-<p>If <code>result.sql</code> is <code>None</code>:</p>
-<ol>
-<li>
-<p>Check that EnergyPlus completed:
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exit code: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">exit_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Success: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p>Check the error report:
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p>Verify output files exist:
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SQL path: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">sql_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div></p>
-</li>
-</ol>
-<h3 id="missing-time-series-data">Missing Time-Series Data<a class="headerlink" href="#missing-time-series-data" title="Permanent link">&para;</a></h3>
-<p>If <code>get_timeseries()</code> returns <code>None</code>:</p>
-<ol>
-<li>
-<p>Verify the variable name matches exactly:
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># List available variables</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">sql</span><span class="o">.</span><span class="n">get_available_variables</span><span class="p">():</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="k">if</span> <span class="s2">&quot;Temperature&quot;</span> <span class="ow">in</span> <span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">var</span><span class="o">.</span><span class="n">key_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p>Check the reporting frequency in your model</p>
-</li>
-<li>
-<p>Verify the output was requested:
-   <div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Add output request (name is optional for Output:Variable)</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">model</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="s2">&quot;Output:Variable&quot;</span><span class="p">,</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">key_value</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="n">variable_name</span><span class="o">=</span><span class="s2">&quot;Zone Mean Air Temperature&quot;</span><span class="p">,</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="n">reporting_frequency</span><span class="o">=</span><span class="s2">&quot;Hourly&quot;</span><span class="p">,</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="p">)</span>
-</span></code></pre></div></p>
-</li>
-</ol>
-<h2 id="platform-specific-issues">Platform-Specific Issues<a class="headerlink" href="#platform-specific-issues" title="Permanent link">&para;</a></h2>
-<h3 id="macos">macOS<a class="headerlink" href="#macos" title="Permanent link">&para;</a></h3>
-<p><strong>Gatekeeper blocks EnergyPlus:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>xattr<span class="w"> </span>-d<span class="w"> </span>com.apple.quarantine<span class="w"> </span>/Applications/EnergyPlus-*/energyplus
-</span></code></pre></div>
-<h3 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h3>
-<p><strong>Shared library errors:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Install required libraries</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>libgl1-mesa-glx<span class="w"> </span>libxkbcommon-x11-0
-</span></code></pre></div>
-<h3 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h3>
-<p><strong>Path with spaces:</strong></p>
-<p>Avoid installing EnergyPlus in paths with spaces. If necessary, use
-short paths or quotes.</p>
-<p><strong>Long path issues:</strong></p>
-<p>Enable long paths in Windows or use shorter directory names.</p>
-<h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
-<p>If you can't resolve an issue:</p>
-<ol>
-<li>Check the <a href="https://github.com/samuelduchesne/idfkit/issues">idfkit GitHub issues</a></li>
-<li>Check the <a href="https://energyplus.net/documentation">EnergyPlus documentation</a></li>
-<li>Search the <a href="https://energyplushelp.freshdesk.com/">EnergyPlus Helpdesk</a></li>
-</ol>
-<p>When reporting issues, include:</p>
-<ul>
-<li>idfkit version (<code>idfkit.__version__</code>)</li>
-<li>EnergyPlus version</li>
-<li>Python version</li>
-<li>Operating system</li>
-<li>Error messages and stack traces</li>
-<li>Minimal reproducible example</li>
-</ul>
+<h3 id="warning">WARNING<a class="headerlink" href="#warning" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Logger</th>
+<th>Message</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>idfkit.idf_parser</code></td>
+<td><code>Skipping unknown object type 'FooBar'</code></td>
+</tr>
+<tr>
+<td><code>idfkit.simulation.runner</code></td>
+<td><code>Simulation exited with code 1 in 5.2s</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../errors/">Common Errors</a> — General error reference</li>
-<li><a href="../../simulation/errors/">Simulation Error Handling</a> — Parsing error reports</li>
-<li><a href="../../simulation/running/">Running Simulations</a> — Simulation guide</li>
+<li><a href="../../simulation/errors/">Error Handling</a> — Handling simulation failures</li>
+<li><a href="../caching/">Caching Strategy</a> — Cache hit/miss diagnostics</li>
+<li><a href="../../troubleshooting/errors/">Troubleshooting</a> — Common error solutions</li>
 </ul>
 
 
@@ -4018,7 +3788,7 @@ short paths or quotes.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../errors/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Common Errors">
+          <a href="../caching/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Caching Strategy">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4028,20 +3798,20 @@ short paths or quotes.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Common Errors
+                Caching Strategy
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../benchmarks/" class="md-footer__link md-footer__link--next" aria-label="Next: Benchmarks">
+          <a href="../cloud-storage/" class="md-footer__link md-footer__link--next" aria-label="Next: Cloud &amp; Remote Storage">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Benchmarks
+                Cloud & Remote Storage
               </div>
             </div>
             <div class="md-footer__button md-icon">
