@@ -96,8 +96,7 @@ nav:
 
 plugins:
   - search
-  - social:
-      cards: false
+  - social
   - meta
   - tags
   - mkdocstrings:
