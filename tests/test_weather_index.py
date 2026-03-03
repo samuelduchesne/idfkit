@@ -9,6 +9,8 @@ import pytest
 
 from idfkit.weather.index import (
     StationIndex,
+    _extract_wmo_from_filename,
+    _is_epw_filename,
     _load_compressed_index,
     _save_compressed_index,
 )
@@ -132,6 +134,111 @@ class TestSearch:
         idx = StationIndex.from_stations(_fixture_stations())
         results = idx.search("zzzznonexistent")
         assert results == []
+
+    def test_search_epw_filename(self) -> None:
+        """search() should recognize EPW filenames and return score 1.0."""
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.search("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023")
+        assert len(results) >= 1
+        assert results[0].station.wmo == "725300"
+        assert results[0].score == 1.0
+        assert results[0].match_field == "filename"
+
+    def test_search_epw_filename_with_extension(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.search("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023.epw")
+        assert len(results) >= 1
+        assert results[0].score == 1.0
+
+    def test_search_epw_filename_country_filter(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.search("GBR_London.Heathrow.AP.037720_TMYx", country="GBR")
+        assert len(results) >= 1
+        assert results[0].station.country == "GBR"
+
+    def test_search_epw_filename_wrong_country_filter(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.search("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023", country="GBR")
+        assert results == []
+
+
+class TestGetByFilename:
+    def test_exact_filename_stem(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.get_by_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023")
+        assert len(results) == 1
+        assert results[0].wmo == "725300"
+
+    def test_filename_with_zip_extension(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.get_by_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023.zip")
+        assert len(results) == 1
+
+    def test_filename_with_epw_extension(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.get_by_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023.epw")
+        assert len(results) == 1
+
+    def test_case_insensitive(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.get_by_filename("usa_il_chicago.ohare.intl.ap.725300_tmyx.2009-2023")
+        assert len(results) == 1
+
+    def test_non_us_station(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.get_by_filename("GBR_London.Heathrow.AP.037720_TMYx")
+        assert len(results) == 1
+        assert results[0].country == "GBR"
+
+    def test_non_us_station_france(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        results = idx.get_by_filename("FRA_Paris.Orly.AP.071490_TMYx")
+        assert len(results) == 1
+        assert results[0].country == "FRA"
+
+    def test_wmo_fallback(self) -> None:
+        """When exact filename doesn't match, fall back to WMO extraction."""
+        idx = StationIndex.from_stations(_fixture_stations())
+        # Use a filename that isn't in the index but has a valid WMO
+        results = idx.get_by_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2007-2021")
+        assert len(results) == 1
+        assert results[0].wmo == "725300"
+
+    def test_no_match_returns_empty(self) -> None:
+        idx = StationIndex.from_stations(_fixture_stations())
+        assert idx.get_by_filename("ZZZ_Nonexistent.Station.999999_TMYx") == []
+
+
+class TestEpwFilenameDetection:
+    """Unit tests for _is_epw_filename and _extract_wmo_from_filename."""
+
+    def test_us_filename(self) -> None:
+        assert _is_epw_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023")
+
+    def test_non_us_filename(self) -> None:
+        assert _is_epw_filename("GBR_London.Heathrow.AP.037720_TMYx")
+
+    def test_filename_with_extension(self) -> None:
+        assert _is_epw_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023.zip")
+        assert _is_epw_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023.epw")
+
+    def test_plain_query_not_detected(self) -> None:
+        assert not _is_epw_filename("chicago ohare")
+
+    def test_wmo_only_not_detected(self) -> None:
+        assert not _is_epw_filename("725300")
+
+    def test_extract_wmo(self) -> None:
+        assert _extract_wmo_from_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023") == "725300"
+
+    def test_extract_wmo_leading_zeros(self) -> None:
+        assert _extract_wmo_from_filename("GBR_London.Heathrow.AP.037720_TMYx") == "037720"
+
+    def test_extract_wmo_with_extension(self) -> None:
+        assert _extract_wmo_from_filename("USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023.zip") == "725300"
+
+    def test_extract_wmo_invalid_returns_none(self) -> None:
+        assert _extract_wmo_from_filename("just some text") is None
 
 
 class TestNearest:

@@ -9,6 +9,15 @@ climate.onebuilding.org with automatic caching.
 --8<-- "docs/snippets/weather/downloads/basic_usage.py:example"
 ```
 
+## Download by Filename
+
+If you have the canonical EPW filename, download directly without a manual
+station lookup:
+
+```python
+--8<-- "docs/snippets/weather/downloads/download_by_filename.py:example"
+```
+
 ## WeatherFiles
 
 The `download()` method returns a `WeatherFiles` object:

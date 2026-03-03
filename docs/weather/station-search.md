@@ -30,6 +30,20 @@ Fuzzy text search across station names, cities, and WMO numbers:
 --8<-- "docs/snippets/weather/station-search/search_tips.py:example"
 ```
 
+## Search by EPW Filename
+
+`search()` automatically detects canonical EPW filenames and resolves them:
+
+```python
+--8<-- "docs/snippets/weather/station-search/search_by_filename.py:example"
+```
+
+For exact lookups when you know the precise filename, use `get_by_filename()`:
+
+```python
+--8<-- "docs/snippets/weather/station-search/get_by_filename.py:example"
+```
+
 ## Search by Coordinates
 
 Find stations nearest to a location using great-circle distance:
@@ -105,6 +119,8 @@ Note: WMO numbers are **not unique** — multiple entries can share a WMO
 | `elevation` | `float` | Elevation in meters |
 | `url` | `str` | Download URL for weather files |
 | `display_name` | `str` | Formatted name (city, state, country) |
+| `filename_stem` | `str` | Canonical EPW filename stem from URL |
+| `dataset_variant` | `str` | TMYx variant (e.g., "TMYx.2009-2023") |
 
 ## Listing Countries
 
