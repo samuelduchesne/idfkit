@@ -94,6 +94,28 @@ class TestSerialization:
         assert s.latitude == 41.98
 
 
+class TestFilenameStem:
+    def test_us_station_with_year_range(self) -> None:
+        s = _make_station()
+        assert s.filename_stem == "USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023"
+
+    def test_us_station_without_year_range(self) -> None:
+        s = _make_station(
+            url="https://climate.onebuilding.org/WMO_Region_4/USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.zip"
+        )
+        assert s.filename_stem == "USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx"
+
+    def test_non_us_station_with_leading_zero_wmo(self) -> None:
+        s = _make_station(
+            country="GBR",
+            state="",
+            city="London.Heathrow.AP",
+            wmo="37720",
+            url="https://climate.onebuilding.org/WMO_Region_6/GBR_London.Heathrow.AP.037720_TMYx.zip",
+        )
+        assert s.filename_stem == "GBR_London.Heathrow.AP.037720_TMYx"
+
+
 class TestSearchResult:
     def test_fields(self) -> None:
         s = _make_station()

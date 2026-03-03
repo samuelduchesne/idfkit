@@ -9,11 +9,15 @@ import zipfile
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .index import default_cache_dir
 from .station import WeatherStation
+
+if TYPE_CHECKING:
+    from .index import StationIndex
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +173,62 @@ class WeatherDownloader:
     def get_ddy(self, station: WeatherStation) -> Path:
         """Download and return the path to the DDY file."""
         return self.download(station).ddy
+
+    def _resolve_filename(self, filename: str, index: StationIndex | None) -> WeatherStation:
+        """Resolve an EPW filename to a station, raising on failure."""
+        if index is None:
+            from .index import StationIndex as _StationIndex
+
+            index = _StationIndex.load()
+        stations = index.get_by_filename(filename)
+        if not stations:
+            msg = f"No weather station found for filename: {filename!r}"
+            raise ValueError(msg)
+        return stations[0]
+
+    def get_epw_by_filename(
+        self,
+        filename: str,
+        *,
+        index: StationIndex | None = None,
+    ) -> Path:
+        """Download and return the EPW path for an EPW filename.
+
+        Resolves the canonical EPW filename to a station via
+        [StationIndex.get_by_filename][idfkit.weather.index.StationIndex.get_by_filename]
+        and downloads the corresponding weather files.
+
+        Args:
+            filename: EPW filename or stem (with or without extension).
+            index: A pre-loaded station index.  If ``None``, loads the
+                default index via
+                [StationIndex.load][idfkit.weather.index.StationIndex.load].
+
+        Raises:
+            ValueError: If the filename does not match any station.
+        """
+        return self.get_epw(self._resolve_filename(filename, index))
+
+    def get_ddy_by_filename(
+        self,
+        filename: str,
+        *,
+        index: StationIndex | None = None,
+    ) -> Path:
+        """Download and return the DDY path for an EPW filename.
+
+        Same as
+        [get_epw_by_filename][idfkit.weather.download.WeatherDownloader.get_epw_by_filename]
+        but returns the DDY file path.
+
+        Args:
+            filename: EPW filename or stem (with or without extension).
+            index: A pre-loaded station index.
+
+        Raises:
+            ValueError: If the filename does not match any station.
+        """
+        return self.get_ddy(self._resolve_filename(filename, index))
 
     def clear_cache(self) -> None:
         """Remove all cached weather files.

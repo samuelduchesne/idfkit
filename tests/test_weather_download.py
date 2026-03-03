@@ -204,3 +204,54 @@ class TestWeatherDownloaderMaxAge:
 
         # Even though file is "old", _is_stale returns False with max_age=None
         assert not downloader._is_stale(test_file)
+
+
+class TestGetEpwByFilename:
+    """Tests for get_epw_by_filename and get_ddy_by_filename."""
+
+    @patch("idfkit.weather.download.urlopen")
+    def test_download_by_filename(self, mock_urlopen: MagicMock, tmp_path: Path) -> None:
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = _make_zip_bytes()
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        from idfkit.weather.index import StationIndex
+
+        index = StationIndex.from_stations([_make_station()])
+
+        downloader = WeatherDownloader(cache_dir=tmp_path)
+        epw = downloader.get_epw_by_filename(
+            "USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023",
+            index=index,
+        )
+        assert epw.suffix == ".epw"
+
+    @patch("idfkit.weather.download.urlopen")
+    def test_download_ddy_by_filename(self, mock_urlopen: MagicMock, tmp_path: Path) -> None:
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = _make_zip_bytes()
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        from idfkit.weather.index import StationIndex
+
+        index = StationIndex.from_stations([_make_station()])
+
+        downloader = WeatherDownloader(cache_dir=tmp_path)
+        ddy = downloader.get_ddy_by_filename(
+            "USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023",
+            index=index,
+        )
+        assert ddy.suffix == ".ddy"
+
+    def test_unknown_filename_raises(self, tmp_path: Path) -> None:
+        from idfkit.weather.index import StationIndex
+
+        index = StationIndex.from_stations([_make_station()])
+
+        downloader = WeatherDownloader(cache_dir=tmp_path)
+        with pytest.raises(ValueError, match="No weather station found"):
+            downloader.get_epw_by_filename("ZZZ_Nonexistent.999999_TMYx", index=index)

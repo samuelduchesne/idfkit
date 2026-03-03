@@ -86,23 +86,29 @@ class WeatherStation:
         return ", ".join(parts)
 
     @property
+    def filename_stem(self) -> str:
+        """The canonical EPW filename stem derived from the download URL.
+
+        Returns the ZIP filename without the ``.zip`` extension, e.g.
+        ``"USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023"``.
+        """
+        filename = self.url.rsplit("/", maxsplit=1)[-1]
+        return filename.removesuffix(".zip")
+
+    @property
     def dataset_variant(self) -> str:
         """Extract the TMYx dataset variant from the download URL.
 
         Returns a string like ``"TMYx"``, ``"TMYx.2007-2021"``, or
         ``"TMYx.2009-2023"``.
         """
-        # URL ends with e.g. ...722950_TMYx.2009-2023.zip
-        filename = self.url.rsplit("/", maxsplit=1)[-1]
-        # Remove .zip extension
-        stem = filename.removesuffix(".zip")
         # Dataset variant is everything after the last underscore
         # e.g. "USA_CA_Marina.Muni.AP.690070_TMYx" -> "TMYx"
         # e.g. "USA_CA_Twentynine.Palms.SELF.690150_TMYx.2004-2018" -> "TMYx.2004-2018"
-        parts = stem.rsplit("_", maxsplit=1)
+        parts = self.filename_stem.rsplit("_", maxsplit=1)
         if len(parts) == 2:
             return parts[1]
-        return stem
+        return self.filename_stem
 
 
 @dataclass(frozen=True)
@@ -113,7 +119,7 @@ class SearchResult:
     score: float
     """Relevance score from 0.0 to 1.0, higher is better."""
     match_field: str
-    """Which field matched: ``"wmo"``, ``"name"``, ``"state"``, ``"country"``."""
+    """Which field matched: ``"wmo"``, ``"name"``, ``"state"``, ``"country"``, or ``"filename"``."""
 
 
 @dataclass(frozen=True)

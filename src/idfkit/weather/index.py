@@ -7,6 +7,7 @@ import json
 import logging
 import math
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -137,7 +138,7 @@ def _parse_excel(path: Path) -> list[WeatherStation]:
                 country=str(country or ""),
                 state=str(state or ""),
                 city=str(city or ""),
-                wmo=str(int(wmo)) if wmo is not None and str(wmo).replace(".", "").isdigit() else "",
+                wmo=str(wmo).split(".")[0] if wmo is not None else "",
                 source=str(source or ""),
                 latitude=float(lat),
                 longitude=float(lon),
@@ -195,6 +196,60 @@ def _head_last_modified(url: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# EPW filename detection
+# ---------------------------------------------------------------------------
+
+# Matches canonical EPW filenames like:
+#   USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023
+#   GBR_London.Heathrow.AP.037720_TMYx
+#   FRA_Paris.Orly.AP.071490_TMYx.epw
+_EPW_FILENAME_RE = re.compile(
+    r"^[A-Za-z]{2,3}_"  # Country code + underscore
+    r".*"  # City/state segments
+    r"\.\d{4,6}"  # .WMO (4-6 digits)
+    r"_\w+"  # _Variant (TMYx, etc.)
+    r"(?:\.\d{4}-\d{4})?"  # Optional year range
+    r"(?:\.(?:zip|epw|ddy|stat))?$",  # Optional extension
+)
+
+_WEATHER_FILE_EXTENSIONS = (".zip", ".epw", ".ddy", ".stat")
+
+
+def _is_epw_filename(query: str) -> bool:
+    """Return ``True`` if *query* looks like a canonical EPW filename."""
+    return _EPW_FILENAME_RE.match(query) is not None
+
+
+def _strip_weather_extension(filename: str) -> str:
+    """Remove a weather file extension (``.zip``, ``.epw``, etc.) if present."""
+    lower = filename.lower()
+    for ext in _WEATHER_FILE_EXTENSIONS:
+        if lower.endswith(ext):
+            return filename[: -len(ext)]
+    return filename
+
+
+def _extract_wmo_from_filename(filename: str) -> str | None:
+    """Extract the WMO number from an EPW filename stem.
+
+    Returns the WMO as a raw string (preserving leading zeros), or
+    ``None`` if extraction fails.
+    """
+    stem = _strip_weather_extension(filename)
+    # WMO is the last dot-separated group of digits before the final underscore.
+    # e.g. "USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023"
+    #   → prefix="USA_IL_Chicago.Ohare.Intl.AP.725300", variant="TMYx.2009-2023"
+    parts = stem.rsplit("_", maxsplit=1)
+    if len(parts) < 2:
+        return None
+    prefix = parts[0]
+    dot_parts = prefix.rsplit(".", maxsplit=1)
+    if len(dot_parts) == 2 and dot_parts[1].isdigit():
+        return dot_parts[1]
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Fuzzy search scoring
 # ---------------------------------------------------------------------------
 
@@ -207,8 +262,8 @@ def _score_station(station: WeatherStation, query: str, tokens: list[str]) -> tu
     name_lower = station.city.lower().replace(".", " ").replace("-", " ")
     display_lower = station.display_name.lower()
 
-    # Signal 1: Exact WMO match (compare as strings, stripping leading zeros for flexibility)
-    if query.isdigit() and query.lstrip("0") == station.wmo.lstrip("0"):
+    # Signal 1: Exact WMO match
+    if query.isdigit() and query == station.wmo:
         return 1.0, "wmo"
 
     # Signal 2: Full query is a substring of the display name
@@ -266,17 +321,20 @@ class StationIndex:
         ```
     """
 
-    __slots__ = ("_by_wmo", "_last_modified", "_stations")
+    __slots__ = ("_by_filename", "_by_wmo", "_last_modified", "_stations")
 
     _stations: list[WeatherStation]
+    _by_filename: dict[str, list[WeatherStation]]
     _by_wmo: dict[str, list[WeatherStation]]
     _last_modified: dict[str, str]
 
     def __init__(self, stations: list[WeatherStation]) -> None:
         self._stations = stations
         self._by_wmo: dict[str, list[WeatherStation]] = {}
+        self._by_filename: dict[str, list[WeatherStation]] = {}
         for s in stations:
             self._by_wmo.setdefault(s.wmo, []).append(s)
+            self._by_filename.setdefault(s.filename_stem.lower(), []).append(s)
         self._last_modified: dict[str, str] = {}
 
     # --- Construction -------------------------------------------------------
@@ -388,6 +446,37 @@ class StationIndex:
         """
         return list(self._by_wmo.get(wmo, []))
 
+    def get_by_filename(self, filename: str) -> list[WeatherStation]:
+        """Look up stations by EPW filename.
+
+        The *filename* can include or omit the extension (``.zip``,
+        ``.epw``, ``.ddy``).  Matching is case-insensitive.
+
+        When the exact filename matches an indexed entry, those stations
+        are returned.  Otherwise the method extracts the WMO number from
+        the filename and falls back to
+        [get_by_wmo][idfkit.weather.index.StationIndex.get_by_wmo].
+
+        Args:
+            filename: An EPW filename or stem, e.g.
+                ``"USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023"``
+                or ``"GBR_London.Heathrow.AP.037720_TMYx.epw"``.
+
+        Returns:
+            Matching stations (may be empty).
+        """
+        key = _strip_weather_extension(filename).lower()
+
+        exact = self._by_filename.get(key, [])
+        if exact:
+            return list(exact)
+
+        wmo = _extract_wmo_from_filename(filename)
+        if wmo:
+            return self.get_by_wmo(wmo)
+
+        return []
+
     # --- Fuzzy text search --------------------------------------------------
 
     def search(
@@ -397,19 +486,36 @@ class StationIndex:
         limit: int = 10,
         country: str | None = None,
     ) -> list[SearchResult]:
-        """Fuzzy-search stations by name, city, state, or WMO number.
+        """Fuzzy-search stations by name, city, state, WMO number, or EPW filename.
 
         Matching is case-insensitive and uses substring / token-prefix
-        heuristics (no external NLP dependencies).
+        heuristics (no external NLP dependencies).  Canonical EPW
+        filenames (e.g.
+        ``"USA_IL_Chicago.Ohare.Intl.AP.725300_TMYx.2009-2023"``) are
+        detected automatically and resolved via
+        [get_by_filename][idfkit.weather.index.StationIndex.get_by_filename].
 
         Args:
-            query: Free-text search query.
+            query: Free-text search query or EPW filename.
             limit: Maximum number of results to return.
             country: If given, restrict to stations in this country code.
         """
-        q = query.strip().lower()
+        raw = query.strip()
+        q = raw.lower()
         if not q:
             return []
+
+        # Fast path: canonical EPW filename
+        if _is_epw_filename(raw):
+            stations = self.get_by_filename(raw)
+            if stations:
+                results = [
+                    SearchResult(station=s, score=1.0, match_field="filename")
+                    for s in stations
+                    if not country or s.country.upper() == country.upper()
+                ]
+                return results[:limit]
+
         tokens = q.split()
 
         scored: list[SearchResult] = []
