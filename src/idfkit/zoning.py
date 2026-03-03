@@ -1136,25 +1136,19 @@ def link_blocks(
     if not adjacencies:
         return []
 
-    # Group adjacencies by roof surface to handle one-roof-to-many-floors
-    roof_groups: dict[str, list[tuple[IDFObject, list[tuple[float, float]]]]] = {}
-    for adj in adjacencies:
-        roof_name = adj.roof_surface.name
-        roof_groups.setdefault(roof_name, []).append((adj.floor_surface, adj.intersection))
-
     modified: list[IDFObject] = []
 
     for adj in adjacencies:
-        roof_name = adj.roof_surface.name
-        floor_srf = adj.floor_surface
-
-        # Split the roof surface: new ceiling for the overlap, remaining roof
+        # Split the roof surface: new ceiling for the overlap, remaining roof.
+        # When a single roof overlaps multiple floor surfaces, successive
+        # splits progressively shrink the original roof geometry — each
+        # iteration operates on the (already-reduced) remaining area.
         new_ceiling, remaining_roof = split_horizontal_surface(doc, adj.roof_surface, adj.intersection)
 
         # Link the new ceiling to the floor surface
-        link_horizontal_surfaces(new_ceiling, floor_srf)
+        link_horizontal_surfaces(new_ceiling, adj.floor_surface)
         modified.append(new_ceiling)
-        modified.append(floor_srf)
+        modified.append(adj.floor_surface)
         if remaining_roof is not None:
             modified.append(remaining_roof)
 

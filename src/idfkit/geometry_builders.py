@@ -22,7 +22,6 @@ from .geometry import (
     Vector3D,
     get_surface_coords,
     polygon_area_2d,
-    polygon_contains_2d,
     polygon_difference_2d,
     polygon_intersection_2d,
     set_surface_coords,
@@ -295,17 +294,26 @@ class HorizontalAdjacency:
     intersection_area: float
 
 
+_HORIZONTAL_Z_TOL = 0.01  # metres
+
+
 def _extract_horizontal_footprint(
     surface: IDFObject,
 ) -> tuple[float, list[tuple[float, float]]] | None:
     """Extract the z-elevation and 2-D footprint from a horizontal surface.
 
-    Returns ``(z, footprint_2d)`` or ``None`` if the surface has no coords.
+    Returns ``(z, footprint_2d)`` or ``None`` if the surface has no
+    coordinates or is not horizontal (z-spread > tolerance).
     """
     coords = get_surface_coords(surface)
     if coords is None:
         return None
-    z = coords.vertices[0].z
+    z_values = [v.z for v in coords.vertices]
+    z_min = min(z_values)
+    z_max = max(z_values)
+    if z_max - z_min > _HORIZONTAL_Z_TOL:
+        return None
+    z = z_values[0]
     fp = [(v.x, v.y) for v in coords.vertices]
     # Normalise to CCW winding so polygon_intersection_2d works correctly.
     if polygon_area_2d(fp) < 0:
@@ -452,11 +460,7 @@ def split_horizontal_surface(
         return new_srf, None
 
     # Compute remaining area (frame polygon)
-    if polygon_contains_2d(footprint, inter):
-        remaining = polygon_difference_2d(footprint, inter)
-    else:
-        # Partial overlap — compute difference via intersection subtraction
-        remaining = polygon_difference_2d(footprint, inter)
+    remaining = polygon_difference_2d(footprint, inter)
 
     if remaining is None or abs(polygon_area_2d(remaining)) < 0.01:
         return new_srf, None

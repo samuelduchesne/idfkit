@@ -499,10 +499,12 @@ class TestPolygonArea2D:
         assert abs(abs(area) - 6.0) < 1e-10
 
     def test_signed_area_ccw_positive(self) -> None:
-        # Counter-clockwise winding should give positive area (shoelace formula)
-        poly = [(0, 0), (1, 0), (1, 1), (0, 1)]
-        area = polygon_area_2d(poly)
-        assert area > 0 or area < 0  # just ensure non-zero; sign depends on convention
+        # Counter-clockwise winding should give positive signed area
+        ccw = [(0, 0), (1, 0), (1, 1), (0, 1)]
+        assert polygon_area_2d(ccw) > 0
+        # Clockwise winding should give negative signed area
+        cw = [(0, 0), (0, 1), (1, 1), (1, 0)]
+        assert polygon_area_2d(cw) < 0
 
 
 class TestIsConvex2D:
