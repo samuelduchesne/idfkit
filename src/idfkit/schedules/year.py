@@ -6,13 +6,13 @@ Handles Schedule:Year objects which reference week schedules for date ranges.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from idfkit.schedules.types import DayType, Interpolation
 
 if TYPE_CHECKING:
     from idfkit.document import IDFDocument
-    from idfkit.objects import IDFCollection, IDFObject
+    from idfkit.objects import IDFObject
 
 
 def _parse_month_day(month_str: str, day_str: str) -> tuple[int, int]:
@@ -202,8 +202,7 @@ def _find_week_schedule(doc: IDFDocument, name: str) -> IDFObject | None:
 
     name_upper = name.upper()
     for sched_type in week_types:
-        collection = cast("IDFCollection[IDFObject]", doc[sched_type])
-        for obj in collection:
+        for obj in doc.get_collection(sched_type):
             if obj.name and obj.name.upper() == name_upper:
                 return obj
 

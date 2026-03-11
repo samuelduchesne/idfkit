@@ -9,7 +9,7 @@ The TypedDict approach gives pyright O(1) per-key type resolution instead
 of O(n) overload matching, yielding ~3x faster type-checking.
 
 The generated file is designed to be committed and shipped with the package.
-It uses ``TYPE_CHECKING`` guards so there is zero runtime cost.
+The ``.pyi`` file is a stub — it has zero runtime cost by design.
 
 Usage::
 
@@ -78,11 +78,18 @@ def _schema_type_to_python(
 def _generate_object_class(
     schema: EpJSONSchema,
     obj_type: str,
+    *,
+    indent: str = "",
 ) -> list[str]:
-    """Generate a typed IDFObject subclass for *obj_type*."""
+    """Generate a typed IDFObject subclass for *obj_type*.
+
+    Args:
+        indent: Prefix for each line (e.g. ``""`` for top-level, ``"    "``
+            for nested inside a block).
+    """
     cls_name = _to_class_name(obj_type)
     lines: list[str] = []
-    lines.append(f"    class {cls_name}(IDFObject):")
+    lines.append(f"{indent}class {cls_name}(IDFObject):")
 
     field_names = schema.get_field_names(obj_type)
 
@@ -92,8 +99,10 @@ def _generate_object_class(
             if ext_name not in field_names:
                 field_names.append(ext_name)
 
+    body_indent = indent + "    "
+
     if not field_names:
-        lines.append("        ...")
+        lines.append(f"{body_indent}...")
         return lines
 
     inner = schema.get_inner_schema(obj_type)
@@ -110,7 +119,7 @@ def _generate_object_class(
         py_type = _schema_type_to_python(field_schema, field_type, has_any_of)
 
         # Use simple annotated attributes (compact, 1 line per field instead of 4)
-        lines.append(f"        {field_name}: {py_type} | None")
+        lines.append(f"{body_indent}{field_name}: {py_type} | None")
 
     return lines
 
@@ -150,10 +159,10 @@ _RESERVED_ATTRS = frozenset({
 })
 
 
-def _generate_attr_overloads(
+def _generate_attr_properties(
     python_to_idf: dict[str, str],
 ) -> list[str]:
-    """Generate typed attribute accessor overloads for IDFDocument.
+    """Generate typed ``@property`` accessors for IDFDocument.
 
     These correspond to the ``_PYTHON_TO_IDF`` mapping in document.py.
     Skips names that conflict with real instance attributes or methods.
@@ -172,7 +181,7 @@ def _generate_attr_overloads(
 
 
 def generate_stubs(version: tuple[int, int, int] | None = None) -> str:
-    """Generate the full ``_generated_types.py`` content.
+    """Generate the full ``_generated_types.pyi`` content.
 
     Args:
         version: EnergyPlus version tuple.  Defaults to *LATEST_VERSION*.
@@ -200,11 +209,10 @@ def generate_stubs(version: tuple[int, int, int] | None = None) -> str:
     parts.append("# =========================================================================")
     parts.append("")
 
-    # Generate all typed object classes — NO indent (top-level in .pyi)
+    # Generate all typed object classes at top-level
     for obj_type in schema.object_types:
         class_lines = _generate_object_class(schema, obj_type)
-        # Remove the 4-space indent (was for TYPE_CHECKING block)
-        parts.extend(line[4:] if line.startswith("    ") else line for line in class_lines)
+        parts.extend(class_lines)
         parts.append("")
 
     # Generate the TypedDict mapping for __getitem__ dispatch
@@ -331,7 +339,7 @@ def generate_document_pyi(version: tuple[int, int, int] | None = None) -> str:
     lines.append("")
 
     # Attribute accessor properties
-    attr_lines = _generate_attr_overloads(_PYTHON_TO_IDF)
+    attr_lines = _generate_attr_properties(_PYTHON_TO_IDF)
     for line in attr_lines:
         lines.append(line.replace("        ", "    ", 1))
     lines.append("")

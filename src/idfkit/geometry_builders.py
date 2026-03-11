@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from .geometry import (
     VERTEX_SURFACE_TYPES,
@@ -29,7 +29,7 @@ from .geometry import (
 
 if TYPE_CHECKING:
     from .document import IDFDocument
-    from .objects import IDFCollection, IDFObject
+    from .objects import IDFObject
 
     _SurfacesByZ = dict[float, list[tuple[IDFObject, list[tuple[float, float]]]]]
 
@@ -171,7 +171,7 @@ def set_default_constructions(doc: IDFDocument, construction_name: str = "Defaul
     """
     count = 0
     for stype in ("BuildingSurface:Detailed", "FenestrationSurface:Detailed"):
-        for srf in cast("IDFCollection[IDFObject]", doc[stype]):
+        for srf in doc.get_collection(stype):
             if not srf.get("Construction Name"):
                 srf.construction_name = construction_name
                 count += 1
@@ -239,7 +239,7 @@ def scale_building(
     ax, ay, az = (anchor.x, anchor.y, anchor.z) if anchor else (0.0, 0.0, 0.0)
 
     for stype in VERTEX_SURFACE_TYPES:
-        for srf in cast("IDFCollection[IDFObject]", doc[stype]):
+        for srf in doc.get_collection(stype):
             coords = get_surface_coords(srf)
             if coords is None:
                 continue

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 from idfkit import IDFObject, new_document
@@ -184,3 +186,54 @@ class TestLoadIdfStrictFields:
 
         loaded = load_idf(str(path), strict_fields=True)
         assert loaded.strict is True
+
+
+class TestStubRuntimeConsistency:
+    """Verify that document.pyi declares every public method/property of the runtime class."""
+
+    def test_document_pyi_covers_all_public_methods(self) -> None:
+        from idfkit.codegen.generate_stubs import generate_document_pyi
+        from idfkit.document import IDFDocument
+
+        pyi_content = generate_document_pyi((24, 1, 0))
+
+        # Collect public methods/properties defined directly on IDFDocument
+        # (not inherited from EppyDocumentMixin or object)
+        own_public: set[str] = set()
+        for name in IDFDocument.__dict__:
+            if name.startswith("_") and name not in (
+                "__init__",
+                "__contains__",
+                "__iter__",
+                "__len__",
+                "__getattr__",
+            ):
+                continue
+            member = IDFDocument.__dict__[name]
+            if isinstance(member, (property, staticmethod, classmethod)) or callable(member):
+                own_public.add(name)
+
+        # Also include class-level annotations (version, filepath)
+        for name in getattr(IDFDocument, "__annotations__", {}):
+            if not name.startswith("_"):
+                own_public.add(name)
+
+        missing = {name for name in own_public if f" {name}" not in pyi_content and f".{name}" not in pyi_content}
+        assert not missing, f"Methods/properties missing from document.pyi: {sorted(missing)}"
+
+    def test_document_pyi_method_signatures_match(self) -> None:
+        """Check that stub parameter names match runtime parameter names."""
+        from idfkit.codegen.generate_stubs import generate_document_pyi
+        from idfkit.document import IDFDocument
+
+        pyi_content = generate_document_pyi((24, 1, 0))
+
+        # Spot-check key method signatures
+        for method_name in ("add", "rename", "get_referencing", "get_references"):
+            sig = inspect.signature(getattr(IDFDocument, method_name))
+            for param_name in sig.parameters:
+                if param_name == "self":
+                    continue
+                assert param_name in pyi_content, (
+                    f"Parameter '{param_name}' of {method_name}() not found in document.pyi"
+                )

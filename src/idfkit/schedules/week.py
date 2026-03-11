@@ -6,7 +6,7 @@ Handles Schedule:Week:Daily and Schedule:Week:Compact objects.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from idfkit.schedules.day_types import DAY_TYPE_PRIORITY, get_applicable_day_types
 from idfkit.schedules.types import (
@@ -17,7 +17,7 @@ from idfkit.schedules.types import (
 
 if TYPE_CHECKING:
     from idfkit.document import IDFDocument
-    from idfkit.objects import IDFCollection, IDFObject
+    from idfkit.objects import IDFObject
 
 # Schedule:Week:Daily field order (EnergyPlus uses Sunday as first day)
 _WEEK_DAILY_FIELDS = [
@@ -201,8 +201,7 @@ def _find_day_schedule(doc: IDFDocument, name: str) -> IDFObject | None:
 
     name_upper = name.upper()
     for sched_type in day_types:
-        collection = cast("IDFCollection[IDFObject]", doc[sched_type])
-        for obj in collection:
+        for obj in doc.get_collection(sched_type):
             if obj.name and obj.name.upper() == name_upper:
                 return obj
 
