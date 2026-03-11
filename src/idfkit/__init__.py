@@ -299,10 +299,10 @@ def new_document(  # type: ignore[misc]  # overload implementation
 
     # Seed core singleton objects for a minimal baseline model.
     version_identifier = f"{version[0]}.{version[1]}"
-    doc.add("Version", version_identifier=version_identifier)  # pyright: ignore[reportUnknownMemberType]
-    doc.add("Building", "Building")  # pyright: ignore[reportUnknownMemberType]
-    doc.add("SimulationControl")  # pyright: ignore[reportUnknownMemberType]
-    doc.add(  # pyright: ignore[reportUnknownMemberType]
+    doc.add("Version", version_identifier=version_identifier)
+    doc.add("Building", "Building")
+    doc.add("SimulationControl")
+    doc.add(
         "GlobalGeometryRules",
         starting_vertex_position="UpperLeftCorner",
         vertex_entry_direction="Counterclockwise",

@@ -141,7 +141,7 @@ class OutputVariableIndex:
                 # variables share the same key (e.g. "*"). EnergyPlus treats
                 # empty Key_Value the same as "*".
                 # validate=False for bulk performance
-                model.add(  # pyright: ignore[reportUnknownMemberType]
+                model.add(
                     "Output:Variable",
                     "",
                     variable_name=item.name,
@@ -151,7 +151,7 @@ class OutputVariableIndex:
                 count += 1
             else:
                 # validate=False for bulk performance
-                model.add(  # pyright: ignore[reportUnknownMemberType]
+                model.add(
                     "Output:Meter",
                     item.name,
                     reporting_frequency=frequency,

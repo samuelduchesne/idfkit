@@ -1065,7 +1065,7 @@ def set_wwr(  # noqa: C901
             win_data[f"vertex_{i}_y_coordinate"] = round(v.y, 6)
             win_data[f"vertex_{i}_z_coordinate"] = round(v.z, 6)
 
-        win_obj = doc.add("FenestrationSurface:Detailed", win_name, win_data, validate=False)  # pyright: ignore[reportUnknownMemberType]
+        win_obj = doc.add("FenestrationSurface:Detailed", win_name, win_data, validate=False)
         new_windows.append(win_obj)
 
     logger.debug("set_wwr: created %d windows at target ratio %.2f", len(new_windows), wwr)
