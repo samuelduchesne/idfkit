@@ -111,7 +111,7 @@ class EpJSONParser:
             schema = get_schema(version)
 
         # Create document
-        doc = IDFDocument(version=version, schema=schema, filepath=self._filepath)
+        doc = IDFDocument(version=version, schema=schema, filepath=self._filepath)  # type: ignore[reportCallIssue]
 
         # Parse objects
         self._parse_objects(data, doc, schema)

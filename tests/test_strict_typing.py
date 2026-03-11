@@ -120,14 +120,13 @@ class TestStubGeneration:
         assert "def 100_" not in content
         assert "def 2017_" not in content
 
-    def test_generate_document_pyi_has_overloads(self) -> None:
+    def test_generate_document_pyi_uses_typeddict(self) -> None:
         from idfkit.codegen.generate_stubs import generate_document_pyi
 
         content = generate_document_pyi((24, 1, 0))
         assert "class IDFDocument" in content
-        assert "@overload" in content
-        assert 'Literal["Zone"]' in content
-        assert 'Literal["Building"]' in content
+        assert "_ObjectTypeMap" in content
+        assert "get_collection" in content
 
     def test_generate_document_pyi_has_generic_strict(self) -> None:
         from idfkit.codegen.generate_stubs import generate_document_pyi

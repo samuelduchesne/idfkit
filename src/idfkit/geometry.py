@@ -10,13 +10,13 @@ import logging
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .document import IDFDocument
-    from .objects import IDFObject
+    from .objects import IDFCollection, IDFObject
 
 # Surface types that carry vertex geometry.  Used by translate_building,
 # rotate_building, scale_building, and related functions.
@@ -912,7 +912,7 @@ def translate_building(doc: IDFDocument, offset: Vector3D) -> None:
         100.0
     """
     for stype in VERTEX_SURFACE_TYPES:
-        for surface in doc[stype]:
+        for surface in cast("IDFCollection[IDFObject]", doc[stype]):
             coords = get_surface_coords(surface)
             if coords is not None:
                 set_surface_coords(surface, coords.translate(offset))
@@ -935,7 +935,7 @@ def rotate_building(doc: IDFDocument, angle_deg: float, anchor: Vector3D | None 
         anchor = Vector3D.origin()
 
     for stype in VERTEX_SURFACE_TYPES:
-        for surface in doc[stype]:
+        for surface in cast("IDFCollection[IDFObject]", doc[stype]):
             coords = get_surface_coords(surface)
             if coords is not None:
                 set_surface_coords(surface, coords.rotate_z(angle_deg, anchor=anchor))

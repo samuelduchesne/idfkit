@@ -210,6 +210,10 @@ class IDFDocument(EppyDocumentMixin, Generic[Strict]):
             self._collections[obj_type] = coll
             return coll
 
+    def get_collection(self, obj_type: str) -> IDFCollection[IDFObject]:
+        """Get collection by type name (typed for dynamic string keys)."""
+        return self[obj_type]
+
     def __getattr__(self, name: str) -> IDFCollection[IDFObject]:
         """
         Get collection by Python-style attribute name.
