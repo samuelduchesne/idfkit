@@ -664,7 +664,7 @@ def _build_story_surfaces(
         zone_names_this_story.append(zone_name)
 
         # --- Zone ---
-        zone = doc.add("Zone", zone_name, validate=False)
+        zone = doc.add("Zone", zone_name, validate=False)  # pyright: ignore[reportUnknownMemberType]
         created.append(zone)
 
         fp = zf.polygon
@@ -692,7 +692,7 @@ def _build_story_surfaces(
                 sun = "SunExposed"
                 wind = "WindExposed"
 
-            wall = doc.add(
+            wall = doc.add(  # pyright: ignore[reportUnknownMemberType]
                 "BuildingSurface:Detailed",
                 wall_name,
                 surface_type="Wall",
@@ -730,7 +730,7 @@ def _build_story_surfaces(
             floor_bc = "Surface"
             floor_bc_obj = f"{below_zone} Ceiling"
 
-        floor_srf = doc.add(
+        floor_srf = doc.add(  # pyright: ignore[reportUnknownMemberType]
             "BuildingSurface:Detailed",
             floor_name,
             surface_type="Floor",
@@ -764,7 +764,7 @@ def _build_story_surfaces(
             ceil_sun = "NoSun"
             ceil_wind = "NoWind"
 
-        ceil_srf = doc.add(
+        ceil_srf = doc.add(  # pyright: ignore[reportUnknownMemberType]
             "BuildingSurface:Detailed",
             ceil_name,
             surface_type=ceil_type,
@@ -856,7 +856,7 @@ def _apply_air_boundaries(doc: IDFDocument, created: list[IDFObject]) -> None:
     """
     air_name = "Air Boundary"
     if not list(doc["Construction:AirBoundary"]):
-        doc.add("Construction:AirBoundary", air_name, validate=False)
+        doc.add("Construction:AirBoundary", air_name, validate=False)  # pyright: ignore[reportUnknownMemberType]
 
     for obj in created:
         if obj.obj_type != "BuildingSurface:Detailed":

@@ -38,7 +38,7 @@ def ensure_sql_output(model: IDFDocument) -> None:
         model: The model to modify in place.
     """
     if "Output:SQLite" not in model:
-        model.add("Output:SQLite", "", option_type="SimpleAndTabular", validate=False)
+        model.add("Output:SQLite", "", option_type="SimpleAndTabular", validate=False)  # pyright: ignore[reportUnknownMemberType]
 
 
 def prep_outputs(model: IDFDocument) -> None:
@@ -58,10 +58,10 @@ def prep_outputs(model: IDFDocument) -> None:
     ensure_sql_output(model)
 
     if "Output:Table:SummaryReports" not in model:
-        model.add("Output:Table:SummaryReports", "", report_1="AllSummary", validate=False)
+        model.add("Output:Table:SummaryReports", "", report_1="AllSummary", validate=False)  # pyright: ignore[reportUnknownMemberType]
 
     if "Output:VariableDictionary" not in model:
-        model.add("Output:VariableDictionary", "", key_field="Regular", validate=False)
+        model.add("Output:VariableDictionary", "", key_field="Regular", validate=False)  # pyright: ignore[reportUnknownMemberType]
 
 
 def maybe_preprocess(

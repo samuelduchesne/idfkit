@@ -49,7 +49,7 @@ def create_schedule_type_limits(
     }
     if unit_type:
         kwargs["unit_type"] = unit_type
-    return doc.add("ScheduleTypeLimits", name, **kwargs)
+    return doc.add("ScheduleTypeLimits", name, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
 
 def create_constant_schedule(
@@ -73,7 +73,7 @@ def create_constant_schedule(
     kwargs: dict[str, Any] = {"hourly_value": value}
     if type_limits:
         kwargs["schedule_type_limits_name"] = type_limits
-    return doc.add("Schedule:Constant", name, **kwargs)
+    return doc.add("Schedule:Constant", name, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
 
 def create_compact_schedule_from_values(
@@ -162,7 +162,7 @@ def create_compact_schedule_from_values(
     for i, field_val in enumerate(fields, 1):
         kwargs[f"field_{i}"] = field_val
 
-    return doc.add("Schedule:Compact", name, validate=False, **kwargs)
+    return doc.add("Schedule:Compact", name, validate=False, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
 
 # ---------------------------------------------------------------------------

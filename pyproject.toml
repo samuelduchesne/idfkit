@@ -108,6 +108,9 @@ exclude = [
     "docs/snippets/concepts/simulation-architecture/streaming.py",
     "docs/snippets/simulation/async/early_termination.py",
     "docs/snippets/simulation/sql-queries/error_handling.py",
+    # Generated type stubs — used as stubs by pyright, not analyzed directly
+    "src/idfkit/_generated_types.pyi",
+    "src/idfkit/document.pyi",
 ]
 
 [[tool.pyright.executionEnvironments]]

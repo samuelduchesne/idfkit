@@ -134,13 +134,13 @@ def add_shading_block(
             Vector3D(p2[0], p2[1], z_top),  # UR
         ]
         poly = Polygon3D([corners[k] for k in wall_order])
-        obj = doc.add("Shading:Site:Detailed", wall_name, validate=False)
+        obj = doc.add("Shading:Site:Detailed", wall_name, validate=False)  # pyright: ignore[reportUnknownMemberType]
         set_surface_coords(obj, poly)
         created.append(obj)
 
     # Top cap — horizontal surface with normal pointing up
     cap_name = f"{name} Top"
-    cap = doc.add("Shading:Site:Detailed", cap_name, validate=False)
+    cap = doc.add("Shading:Site:Detailed", cap_name, validate=False)  # pyright: ignore[reportUnknownMemberType]
     set_surface_coords(cap, horizontal_poly(fp, z_top, reverse=clockwise))
     created.append(cap)
 
@@ -441,7 +441,7 @@ def split_horizontal_surface(
         counter += 1
         new_name = f"{surface.name} Split {counter}"
 
-    new_srf = doc.add(
+    new_srf = doc.add(  # pyright: ignore[reportUnknownMemberType]
         "BuildingSurface:Detailed",
         new_name,
         surface_type=getattr(surface, "surface_type", "") or "",
