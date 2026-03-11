@@ -102,7 +102,8 @@ def _generate_object_class(
     body_indent = indent + "    "
 
     if not field_names:
-        lines.append(f"{body_indent}...")
+        # Use single-line form to match ruff formatting
+        lines[-1] = f"{indent}class {cls_name}(IDFObject): ..."
         return lines
 
     inner = schema.get_inner_schema(obj_type)
@@ -254,7 +255,7 @@ def generate_document_pyi(version: tuple[int, int, int] | None = None) -> str:
     lines.append("from typing import Any, Generic, TypeVar")
     lines.append("")
     lines.append("from ._compat import EppyDocumentMixin")
-    lines.append("from ._generated_types import *  # noqa: F401,F403")
+    lines.append("from ._generated_types import *  # noqa: F403")
     lines.append("from ._generated_types import _ObjectTypeMap")
     lines.append("from .introspection import ObjectDescription")
     lines.append("from .objects import IDFCollection, IDFObject")
@@ -368,11 +369,19 @@ def main() -> None:
 
     types_path = base_path / "_generated_types.pyi"
     types_path.write_text(content, encoding="utf-8")
-    print(f"Generated {types_path} ({len(content):,} bytes)")
 
     pyi_path = base_path / "document.pyi"
     pyi_path.write_text(doc_pyi, encoding="utf-8")
-    print(f"Generated {pyi_path} ({len(doc_pyi):,} bytes)")
+
+    # Run ruff format so regenerated stubs match the committed (ruff-formatted) versions
+    import subprocess
+
+    subprocess.run(  # noqa: S603
+        [sys.executable, "-m", "ruff", "format", str(types_path), str(pyi_path)],
+        check=False,
+    )
+    print(f"Generated {types_path} ({types_path.stat().st_size:,} bytes)")
+    print(f"Generated {pyi_path} ({pyi_path.stat().st_size:,} bytes)")
 
 
 if __name__ == "__main__":
